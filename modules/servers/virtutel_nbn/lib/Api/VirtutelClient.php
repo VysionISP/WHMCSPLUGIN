@@ -127,15 +127,34 @@ class VirtutelClient
      */
     private function generateAccessToken(): array
     {
-        $response = $this->http->request('POST', self::PATH_ACCESS_TOKENS, [
-            'action' => 'GenerateAccessToken',
-            'json' => [
-                'client_id' => $this->clientId,
-                'client_secret' => $this->clientSecret,
-                'audience' => self::DEFAULT_HOST,
-                'grant_type' => 'client_credentials',
-            ],
-        ]);
+        try {
+            $response = $this->http->request('POST', self::PATH_ACCESS_TOKENS, [
+                'action' => 'GenerateAccessToken',
+                'json' => [
+                    'client_id' => $this->clientId,
+                    'client_secret' => $this->clientSecret,
+                    'audience' => self::DEFAULT_HOST,
+                    'grant_type' => 'client_credentials',
+                ],
+            ]);
+        } catch (ApiException $e) {
+            if ($e->isAuthError()) {
+                // Surface what was actually sent (never the secret itself) so
+                // truncated/mispasted credentials are diagnosable from the UI.
+                throw new ApiException(
+                    sprintf(
+                        '%s [sent client_id "%s", client_secret length %d]',
+                        $e->getMessage(),
+                        $this->clientId,
+                        strlen($this->clientSecret)
+                    ),
+                    $e->getShortError(),
+                    $e->getHttpStatus(),
+                    $e
+                );
+            }
+            throw $e;
+        }
 
         $token = $this->extractToken($response);
         if ($token === '') {

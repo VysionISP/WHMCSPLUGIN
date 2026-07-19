@@ -62,6 +62,7 @@ function virtutel_nbn_ConfigOptions(): array
  */
 function virtutel_nbn_TestConnection(array $params): array
 {
+    $client = null;
     try {
         Migrations::ensure();
 
@@ -70,7 +71,25 @@ function virtutel_nbn_TestConnection(array $params): array
 
         return ['success' => true, 'error' => ''];
     } catch (\Throwable $e) {
-        return ['success' => false, 'error' => $e->getMessage()];
+        $message = $e->getMessage();
+
+        if ($client !== null) {
+            $message = sprintf('[%s environment] %s', $client->getEnvironment(), $message);
+        }
+        if ($e instanceof WHMCS\Module\Server\VirtutelNbn\Api\ApiException) {
+            if ($e->getShortError() !== '') {
+                $message .= ' (vt_short_error: ' . $e->getShortError() . ')';
+            }
+            if ($e->getHttpStatus() > 0) {
+                $message .= ' (HTTP ' . $e->getHttpStatus() . ')';
+            }
+            if ($e->isAuthError()) {
+                $message .= ' — check that the Port matches the credentials: '
+                    . '8443 needs SANDBOX client_id/secret, 443 needs PRODUCTION ones.';
+            }
+        }
+
+        return ['success' => false, 'error' => $message];
     }
 }
 
