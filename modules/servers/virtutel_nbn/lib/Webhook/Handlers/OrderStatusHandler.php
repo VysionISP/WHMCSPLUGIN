@@ -68,6 +68,24 @@ class OrderStatusHandler
             $this->raiseActionTodo($order, $notification, $envelope->reason);
         }
 
+        // Appointment states are customer-actionable: email them the
+        // self-booking link.
+        if (in_array($notification, ['AppointmentRequired', 'AppointmentRescheduleRequired'], true)) {
+            $service = Capsule::table('mod_virtutel_services')->where('id', $order->service_id)->first();
+            if ($service) {
+                try {
+                    \WHMCS\Module\Server\VirtutelNbn\Service\EmailNotifier::appointmentRequired(
+                        (int) $service->whmcs_service_id,
+                        $notification === 'AppointmentRescheduleRequired'
+                    );
+                } catch (\Throwable $e) {
+                    if (function_exists('logActivity')) {
+                        logActivity('Virtutel NBN: appointment email failed: ' . $e->getMessage());
+                    }
+                }
+            }
+        }
+
         $completion = new OrderCompletion();
         if (StatusMapper::isTerminalSuccess($notification)) {
             $completion->complete($order);

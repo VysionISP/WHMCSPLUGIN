@@ -35,10 +35,24 @@ class ConnectReadiness
             }
         }
 
+        // NBN equipment present but every port occupied: an active service
+        // already exists here, so the customer is almost certainly switching
+        // providers — a remote transfer, not a technician visit. Never lead
+        // with install messaging in this state.
+        if ($q['ntds'] !== [] && $freePorts === 0) {
+            return [
+                'code' => 'existing_service',
+                'label' => 'Active service at this address',
+                'description' => 'The NBN equipment here already has a service connected. Switching from another '
+                    . 'provider? Your connection transfers to us remotely — no technician visit needed. '
+                    . 'Enter your AVC ID below to get started. (Need an extra, separate connection instead? '
+                    . 'Contact us and we\'ll arrange it.)',
+            ];
+        }
+
         return match (true) {
             // FTTP: NTD on the wall with a free port = plug and play.
             $type === 'nfas' && $class === 3 && $freePorts > 0 => self::connectNow(),
-            $type === 'nfas' && $class === 3 => self::appointment('All ports on the existing NBN box are in use — a technician visit is needed to add capacity.'),
             $type === 'nfas' => self::appointment('A technician will install the NBN fibre box at your premises.'),
 
             // Fixed Wireless.

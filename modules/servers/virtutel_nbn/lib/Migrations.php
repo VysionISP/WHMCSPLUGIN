@@ -13,7 +13,7 @@ use WHMCS\Database\Capsule;
  */
 class Migrations
 {
-    public const SCHEMA_VERSION = 2;
+    public const SCHEMA_VERSION = 3;
 
     private static bool $checkedThisRequest = false;
 
@@ -47,11 +47,42 @@ class Migrations
         if ($current < 2) {
             self::migrateToV2($schema);
         }
+        if ($current < 3) {
+            self::migrateToV3();
+        }
 
         Capsule::table('mod_virtutel_settings')->updateOrInsert(
             ['name' => 'schema_version'],
             ['value' => (string) self::SCHEMA_VERSION, 'updated_at' => date('Y-m-d H:i:s')]
         );
+    }
+
+    /** Appointment-required customer email template (admin-editable). */
+    private static function migrateToV3(): void
+    {
+        $name = 'Virtutel NBN Appointment Required';
+        $exists = Capsule::table('tblemailtemplates')
+            ->where('type', 'product')->where('name', $name)->exists();
+        if ($exists) {
+            return;
+        }
+
+        Capsule::table('tblemailtemplates')->insert([
+            'type' => 'product',
+            'name' => $name,
+            'subject' => 'Action needed: book your NBN installation appointment',
+            'message' => '<p>Hi {$client_first_name},</p>'
+                . '<p>{$appointment_reason}</p>'
+                . '<p>Booking only takes a minute — pick a time that suits you here:</p>'
+                . '<p><a href="{$appointment_link}">Choose your appointment time</a></p>'
+                . '<p>Someone over 18 will need to be at the property during the appointment window. '
+                . 'If none of the available times work, just reply to this email and we\'ll help.</p>'
+                . '<p>{$signature}</p>',
+            'custom' => 1,
+            'disabled' => 0,
+            'language' => '',
+            'plaintext' => 0,
+        ]);
     }
 
     /** Per-IP rate limiting for the public qualification endpoint. */

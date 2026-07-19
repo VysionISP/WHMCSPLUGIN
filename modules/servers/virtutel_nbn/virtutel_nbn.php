@@ -208,6 +208,61 @@ function virtutel_nbn_ChangePackage(array $params): string
     return 'Package changes are not implemented yet (build step 4)';
 }
 
+/**
+ * Client area overview panel: connection status, order progress, and the
+ * appointment booking prompt when an order is waiting on one.
+ */
+function virtutel_nbn_ClientArea(array $params): array
+{
+    try {
+        Migrations::ensure();
+
+        $state = WHMCS\Module\Server\VirtutelNbn\Service\ClientAreaState::forService((int) $params['serviceid']);
+
+        return [
+            'tabOverviewReplacementTemplate' => 'templates/overview',
+            'templateVariables' => $state,
+        ];
+    } catch (\Throwable $e) {
+        return [
+            'tabOverviewReplacementTemplate' => 'templates/overview',
+            'templateVariables' => ['vt_error' => $e->getMessage()],
+        ];
+    }
+}
+
+function virtutel_nbn_ClientAreaCustomButtonArray(): array
+{
+    return ['Book Installation Appointment' => 'bookappointment'];
+}
+
+/**
+ * Client area appointment booking page (also handles NBN-initiated
+ * reschedules). GET renders the timeslot picker; POST reserves/reschedules.
+ */
+function virtutel_nbn_bookappointment(array $params): array
+{
+    try {
+        Migrations::ensure();
+
+        $booking = new WHMCS\Module\Server\VirtutelNbn\Service\BookingPage(
+            VirtutelClient::fromModuleParams($params),
+            $params
+        );
+
+        return [
+            'templatefile' => 'templates/book',
+            'breadcrumb' => ['clientarea.php?action=productdetails&id=' . (int) $params['serviceid'] => 'Book Appointment'],
+            'vars' => $booking->handle($_POST),
+        ];
+    } catch (\Throwable $e) {
+        return [
+            'templatefile' => 'templates/book',
+            'vars' => ['vt_error' => $e->getMessage()],
+        ];
+    }
+}
+
 function virtutel_nbn_AdminServicesTabFields(array $params): array
 {
     try {

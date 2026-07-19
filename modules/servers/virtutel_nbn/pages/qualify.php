@@ -60,6 +60,7 @@ header('Content-Type: text/html; charset=utf-8');
   .status.device_shipped { background:var(--ok); }
   .status.appointment { background:var(--warn); }
   .status.nbn_work { background:var(--warn); }
+  .status.existing_service { background:var(--brand); }
   .status.not_available { background:var(--bad); }
   .tech { font-size:18px; font-weight:600; margin:12px 0 2px; }
   .desc { color:var(--muted); margin:10px 0 0; line-height:1.5; }

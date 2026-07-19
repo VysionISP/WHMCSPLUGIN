@@ -66,6 +66,24 @@ class CustomerFacingTest extends TestCase
         $this->assertSame('connect_now', ConnectReadiness::assess($q)['code']);
     }
 
+    public function testAllPortsUsedIsExistingServiceNotTechnician(): void
+    {
+        $q = $this->qualification([
+            'ntds' => [[
+                'id' => 'NTD1',
+                'ports' => [
+                    ['id' => '1', 'status' => 'Used', 'free' => false, 'service_id_match' => false],
+                ],
+                'speed_tiers_supported' => [],
+            ]],
+        ]);
+
+        $readiness = ConnectReadiness::assess($q);
+        $this->assertSame('existing_service', $readiness['code']);
+        $this->assertStringNotContainsString('technician visit is needed', $readiness['description']);
+        $this->assertStringContainsString('transfers to us remotely', $readiness['description']);
+    }
+
     public function testFttpNoNtdNeedsAppointment(): void
     {
         $q = $this->qualification(['service_class' => 2]);

@@ -148,10 +148,25 @@ try {
             'nsas' => 'NBN Satellite',
         ];
 
+        $readiness = ConnectReadiness::assess($q);
+        if ($churn !== null && $churn['matched']) {
+            // Validated transfer: the existing port/pair carries over, so no
+            // technician is needed regardless of port availability.
+            $readiness = [
+                'code' => 'transfer_ready',
+                'label' => 'Ready to transfer',
+                'description' => 'We\'ve matched your current service at this address. Transfers are done remotely '
+                    . '— no technician visit, and your connection typically switches over within a day.',
+            ];
+        }
+
         // WHMCS products on this module whose configured speed enum is
-        // orderable here become the plan cards, with live pricing.
+        // orderable here become the plan cards, with live pricing. No order
+        // buttons while an unvalidated active service occupies the port —
+        // ordering there must go through transfer validation first.
         $plans = [];
-        if ($q['speeds'] !== []) {
+        $orderable = !in_array($readiness['code'], ['not_available', 'existing_service'], true);
+        if ($q['speeds'] !== [] && $orderable) {
             try {
                 $currency = \WHMCS\Database\Capsule::table('tblcurrencies')
                     ->orderByDesc('default')->orderBy('id')->first();
@@ -192,18 +207,6 @@ try {
             } catch (\Throwable $e) {
                 $plans = []; // pricing lookup must never break qualification
             }
-        }
-
-        $readiness = ConnectReadiness::assess($q);
-        if ($churn !== null && $churn['matched']) {
-            // Validated transfer: the existing port/pair carries over, so no
-            // technician is needed regardless of port availability.
-            $readiness = [
-                'code' => 'transfer_ready',
-                'label' => 'Ready to transfer',
-                'description' => 'We\'ve matched your current service at this address. Transfers are done remotely '
-                    . '— no technician visit, and your connection typically switches over within a day.',
-            ];
         }
 
         $respond(200, [
