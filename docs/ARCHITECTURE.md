@@ -273,7 +273,7 @@ Ordered to line up with Virtutel's sandbox certification requirements (callback
 registration + one received callback is itself a certification item, and
 Product Orders certify together with Appointments).
 
-1. **Skeleton + activation + auth.** Scaffolding, `composer.json`,
+1. **Skeleton + activation + auth.** *(in progress)* Scaffolding, `composer.json`,
    `MetaData` / `ConfigOptions` (environment sandbox/production, client_id,
    client_secret, callback secret token as password fields), `Migrations`
    creating the tables, `TokenStore` + `HttpClient` (vt_success envelope,
