@@ -1,0 +1,1710 @@
+Virtutel Customer API · Apiary
+JavaScript is disabled
+Please continue
+here
+to find out how to
+enable it in your browser.
+Documentation
+Inspector
+Private API
+Virtutel Customer API
+Virtutel
+•
+virtutelcustomerapi
+Create New API Project
+Help
+Apiary is being put to end of life by Oct 31st 2026.
+Please
+see the announcement
+for more details.
+Introduction
+Important Changes
+Sandbox vs. Production
+Certification
+Test Data
+Authentication
+Firewall
+Standard response fields
+Example requests and responses
+NBN Service Classes
+Fibre Upgrade Orders
+Churn Validation
+Fixed Wireless High Speed Tiers
+Notes about Apiary
+Reference
+Access Tokens
+Generate a new access token
+Callbacks
+Register New Callback URL or List Existing URLs
+Remove a Callback URL
+Send a test Callback
+Address Searches
+Search for NBN Location IDs
+Service Qualifications
+Normal SQ
+Enhanced SQ - POTS Interconnect
+Enhanced SQ - Churn Validation
+Enhanced SQ - Customer Authority Date
+Fibre Upgrade SQ
+Enterprise Ethernet SQ
+Mobile
+Pre-Ordering ALPHA
+eSIM Activation Codes ALPHA
+SIM Swaps ALPHA
+Add Bolt-On ALPHA
+Excess Limits ALPHA
+GSM Configuration ALPHA
+Customer Care Numbers ALPHA
+Callbacks - International Roaming Welcome ALPHA
+Callbacks - Included Value Plans Data Usage Threshold ALPHA
+Callbacks - Included Value Plans MMS Usage Threshold ALPHA
+Callbacks - Data Pack Usage Threshold ALPHA
+Callbacks - IDD Pack Usage Threshold ALPHA
+Callbacks - Data Bank Usage Threshold ALPHA
+Callbacks - Data Only International Roaming Pack Usage Threshold ALPHA
+Callbacks - International Roaming Pack Usage Threshold ALPHA
+Callbacks - PAYG Usage Threshold ALPHA
+Callbacks - International Roaming Excess Usage PAYG ALPHA
+Callbacks - Fraud Notifications ALPHA
+Callbacks - Port Out ALPHA
+Product Order Qualifications
+Check product connect order feasibility
+Product Orders
+Connect Order
+Modify Speed Order
+Modify DSL Stability Profile Order
+Modify Service Restoration SLA Order
+Modify Mobile Plan Order ALPHA
+Disconnect Order
+Fetch Multiple Orders
+Appointments
+Get available time slots
+Reserve an appointment
+Retrieve or modify existing appointment
+Services
+Get Service from VT Service ID
+Get Service from Supplier Service ID
+Get All Services or Search for Services Containing a Specific String
+CVC Entitlements
+Request CVC Entitlements
+Service Health Checks
+Request NBN Service Health
+View service health report
+Example Service Health Callbacks
+Service Tests
+Request a Service Test
+Example Service Test Callbacks
+Outages
+List NBN outages
+Retrieve details for a specific outage
+Example Outage Callbacks
+Demographics
+Retrieve Demographics by POI ID, Post Code, CSA ID, or State
+Tickets - Beta
+Create NBN missing address ticket
+Out of Band Notifications
+Register New End User Contact
+Register New RSP Contact
+Fetch Multiple Contacts
+Fetch Single Contact
+Remove Contact
+Invoices - Beta
+List Invoice Summaries
+Fetch Detailed Invoice
+AVC Utilisation - Beta
+List Available Reports
+Fetch Records by Report ID as JSON
+Suspensions - Beta
+Suspend a Service BETA
+Resume a Service BETA
+Drop a Session BETA
+Overview - Beta
+Overview BETA
+One-Off Charges
+One-Off Charges BETA
+Reference
+Service Qualifications
+Enterprise Ethernet SQ
+Virtutel Customer API
+Introduction
+Important Changes
+This API is still being expanded and improved. Any important changes will be listed here.
+2026-07-02: Removed the option to disable pamServiceInfo for mobile services (in the GSM Configuration Update operation)
+2026-06-26: Removed Mobile Port Out Requests endpoint
+2026-06-18: Added
+contractStartDate
+field to /services responses
+2026-04-22: Added PORT_IN_REJECTED status to denote when a mobile port-in has been rejected by the losing carrier (both for ARN and DOB). Please
+use the Product Orders PATCH method to correct them, then the order will continue
+2026-01-14: Added suspensions endpoint (beta). This lets you temporarily suspend layer 3 NBN services.
+2025-10-09: Added the
+custData.business
+boolean to Modify order responses. This can be used when you need to reserve an appointment for a Modify
+order, since appointments for Business services require the
+siteAccess.inductionRequirements
+and
+siteAccess.operationalHours
+fields (in
+addition to all of the fields required for a Residential appointment).
+2025-10-01: Fixed bug that rejected valid speed enumerations for Fibre Upgrade orders (only the speed enums for the original access technology
+were being accepted)
+2025-09-22: Added the optional
+ntdType
+field to Product Connect Orders for NFAS (FTTP) that can be used to select between 1 and 4 port NTDs
+for FTTP connect orders. When not supplied, an appropriate default will be chosen depending on the existing site configuration. See the
+ntdType
+field in the 'Submit a Connect Order' section for more details.
+2025-09-14: Added speed enumerations for 500/50, 750/50, and 1000/100 to align with NBN's Accelerate Great changes to FTTP and HFC (a.k.a. Speed Boost).
+Other service types remain unchanged. 100/20 is being replaced by 500/50, 250/25 is being replaced by 750/50, and 1000/50 is being replaced by 1000/100.
+To maintain backwards compatibility, you will still see the old speed enumerations in the
+virtutelSpeedsAvailable
+array (in addition to the
+new tiers). You will still be able to place orders using the superseded enumerations, however they will automatically be changed to their new
+equivalents when you GET /product-orders or /services. While you transition to the new enumerations, you can add
+legacySpeedEnums=true
+to your /product-orders and /services GET requests to revert back to the old enumerations. Any service that has been reverted will also include
+the
+speedBoostFlag
+key with a value of true.
+Sandbox vs. Production
+By default until you have completed some of the basic tests with the test data provided,
+you will not be able to gain access to the production system.
+Please note all production requests are made on port 443.
+Please note all sandbox requests are made on port 8443.
+Certification
+You must demonstrate successful calls to all documented methods for each endpoint you wish to use in Production.
+The only exceptions to this are the PATCH method for Product Orders, and the PATCH and DELETE methods for Appointments,
+(orders progress too quickly in the sandbox for these to be used).
+If you wish to use any endpoint that generates callbacks, (Product Orders, Appointments,
+Service Health Checks, or Service Tests), you must successfully register a callback URL and receive at least
+one callback to be certified.
+Also note that Product Orders and Appointments certifications are only available together. This means that you must
+complete at least one order that requires an appointment, (e.g. at an NFAS (FTTP) Service Class 2 location), to gain
+this certification.
+Please contact us when you're ready to be assessed. We'll review your transactions in our Sandbox logs and
+either provide feedback or certify you for specific scopes in production.
+Test Data
+Test data will be provided to you after you sign the API Licence Agreement.
+Our test data provided is generic and can potentially be changed by any party in the Sandbox API
+hence we recommend doing full SQ on each LOC prior to using to determine current state.
+While you're welcome to run Service Qualifications on any location you find in the sandbox environment,
+we ask that you don't place any orders for locations that haven't been specifically issued
+to you in the test data document.
+Please note that live data, (e.g. NBN Location IDs), will not work in the Sandbox API,
+and test data will not work in the Production API.
+Authentication
+The API requires you to supply valid access token with every request.
+Please see the Access Tokens section for details on how to obtain and use these tokens.
+Firewall
+All Virtutel servers are protected by strict firewall polices that block traffic by default.
+Please ensure the correct forms have been filled out to ensure your traffic is allowed through.
+Please note that the Sandbox (test/staging) and Production (live) servers each have their own independent firewalls.
+You will initially be allowed through the Sandbox firewall.
+Only after completing certification will you be allowed through the production firewall.
+Standard response fields
+Responses will always be a JSON object, with
+vt_success
+(boolean),
+vt_short_error
+(string),
+and
+vt_error_desc
+(string) present at the root level.
+vt_success
+will normally be true, but will be set to false if an error has been detected
+vt_short_error
+is a short-form, generalised error code, e.g.
+"auth_error"
+vt_error_desc
+is a longer, human-readable error description, usually with more detail,
+e.g.
+"You must supply a valid access token with your request"
+When
+vt_success
+is true,
+vt_short_error
+and
+vt_error_desc
+will be empty.
+Example requests and responses
+Please note that the example requests and responses provided are automatically generated and may not correspond with each other.
+Additionally, the example values within a given request or response may not be valid together.
+NBN Service Classes
+Service Class
+Description
+0
+Planned to be serviced by Fibre in the future
+1
+Serviceable by Fibre, no drop or NTD in place
+2
+Serviceable by Fibre, drop in place, no NTD in place
+3
+Serviceable by Fibre, drop and NTD in place
+4
+Planned to be serviced by Wireless
+5
+Serviceable by Wireless, NTD not installed
+6
+Serviceable by Wireless, NTD installed
+7
+Planned to be serviced by Satellite
+8
+Serviceable by Satellite, Satellite - NTD not installed
+9
+Serviceable by Satellite, Satellite - NTD installed
+10
+Planned to be serviceable by Copper
+11
+Serviceable by copper, active node present
+12
+Serviceable by copper, jumpering is required
+13
+Serviceable by copper, infrastructure in place
+20
+Planned to be serviced by HFC, outside plant does not exist
+21
+Serviceable by HFC, the location has a street TAP but requires a lead-in, PCD, internal tie cable, and wall-plate/socket
+22
+Serviceable by HFC, the location has a street TAP, lead-in & PCD in place, but no internal tie-cables with wall plates/sockets
+23
+Serviceable by HFC, the location has a wall-plate/socket but no HFC NTD
+24
+Serviceable by HFC, Location has a wall-plate/socket & HFC NTD and is ''Ready to Connect
+30
+Planned to be serviceable by FTTC
+31
+Serviceable by FTTC, no line available (NCD required)
+32
+Serviceable by FTTC, cut-in required (NCD required)
+33
+Serviceable by FTTC, cut-in complete (NCD required)
+34
+Serviceable by FTTC, infrastructure in place (Check NCD status)
+Fibre Upgrade Orders
+As part of the Fibre Connect program, NBN is offering FTTP (NFAS) upgrades to selected FTTN and FTTC locations.
+The process is very similar to a standard NFAS order:
+Run a normal Service Qualification and ensure the
+siteRestriction
+.
+supportingTechnology
+.
+alternativeTechnology
+key is present in the response, and has the value 'Fibre'.
+Run a Fibre Upgrade SQ, (by specifying the URL parameter
+productType
+with value 'NFAS'), and ensure the site
+has a service class of 1, 2, or 3.
+Assemble a normal NFAS (FTTP) order, then add the
+service
+.
+nbn
+.
+nfas
+.
+fibreUpgrade
+key with the boolean
+value 'true'. Note that the service must have a 100Mbps minimum downstream speed.
+Optional: run a Product Order Qualification
+Submit the order
+Wait for the FibreUpgradeConfirmationRequired callback
+Penalties can apply to Fibre Upgrade services, (details below). To accept responsibility for these potential
+charges and proceed, PATCH the order with the boolean
+fibreUpgradeLiabilityConfirmed
+set to
+true
+.
+Wait for the AppointmentRequired callback
+Get appointment timeslots as you normally would, but with the
+fibreUpgrade
+parameter set to 'true', and
+demandType
+set to 'Standard Install'. Do not include a copper pair ID.
+Reserve an appointment using one of the timeslots returned.
+From here, the order should proceed as if it was a normal fibre order.
+Note that any existing FTTN/FTTC services will continue to operate at the location for the next 12 months, and you will
+continue to be billed for them if they're not cancelled. After 12 months, any remaining copper services will be
+automatically disconnected.
+Also note that penalty fees apply during the first 12 months of the fibre service if the speed is downgraded
+below 100Mbps downstream, or if the service is cancelled.
+Churn Validation
+Also referred to as 'Service Transfer Validation'. As of April 18 2025, the AVC ID of the service being churned
+will be required for all churn orders (except reversals). Until then, you can optionally provide it with your
+churn orders.
+This change is meant to reduce the number of erroneous churns, and thus reversals. This change is also beneficial
+to you as the RSP gaining the service, because it makes the process of identifying the correct copper pair or UNI-D
+port much easier.
+You'll need to get the AVC ID from the end user, (who in turn will get it from the RSP losing the service).
+Please note that you'll also need to be set up to provide AVC IDs to customers who are churning away from you. You can
+retrieve these from our /services endpoint.
+Either the entire AVC ID can be used, (e.g. AVC123456789012), or just the last five digits, (e.g. 89012).
+Once the end user has given you the full/partial AVC ID and permission to place an order on their behalf, you can
+verify it by running an Enhanced Service Qualification with the Customer Authority Date, (in the
+customerAuthorityDate
+parameter) and AVC ID (in the
+serviceID
+parameter):
+e.g.
+GET /api/v1/service-qualifications/LOC000000000001?customerAuthorityDate=2025-01-01&serviceID=89012
+Each UNI-D port or copper pair object in the response will contain the boolean
+serviceIDMatch
+, indicating whether
+the AVC ID you supplied matches the service on that UNI-D port or copper pair.
+Once you've found the matching UNI-D port or copper pair, you can place your churn order as normal. The only difference
+is that you supply the full/partial AVC ID in the
+service
+.
+nbn
+.
+churn
+.
+serviceIDToTransfer
+field in the order.
+To simplify the testing process, we're allowing you to churn your own services in our Sandbox environment.
+This means you can get the correct AVC ID from the /services endpoint to use in your SQ and order.
+Fixed Wireless High Speed Tiers
+High speed tiers are now orderable at some locations.
+We've added the following speed enumerations:
+TC4FWHF - Layer 2, TC4, Fixed Wireless Home Fast (PIR of 200-250/8-20 Mbps)
+TC4FWSF - Layer 2, TC4, Fixed Wireless Superfast (PIR of 400/10-40 Mbps)
+L3TC4FWHF - Layer 3, TC4, Fixed Wireless Home Fast (PIR of 200-250/8-20 Mbps)
+L3TC4FWSF - Layer 3, TC4, Fixed Wireless Superfast (PIR of 400/10-40 Mbps)
+Ordering process (applies to both Connect and Modify orders)
+First, run a Service Qualification and ensure the site supports the site supports the high speed tier
+you're interested in.
+You can either check the siteRestriction.supportingProductFeatures[0].speedTierAvailability array or
+our virtutelSpeedsAvailable array.
+If you're ordering a service on an existing NTD, you also need to check the
+siteRestriction.supportingResource[<ntd_index>].speedTiersSupported array to make sure the speed you've selected
+is supported by that specific NTD.
+In some cases, the NTD will need to be upgraded to support the new speed. If that's the case, there will be a note
+about it in siteRestriction.notes. Codes NTD0001 and NTD0002 mean that an upgrade will be required for all high speed
+tiers, and NTD0005 means that an upgrade will only be required for Superfast.
+Assuming your chosen speed tier is supported by the site/NTD, you submit the order to us as you normally would.
+If the NTD needs to be upgraded, we'll prompt you for an appointment. The demandType for these upgrades is
+'Additional Install'.
+Notes about Apiary
+Required vs optional URL Parameters
+Apiary displays all possible URL query parameters in their examples, but not every parameter is required in every request.
+Parameters are only required in a request if the circle immediately to the right of the parameter name is solid.
+If the circle is hollow, the parameter is optional and doesn't need to be included with every request.
+If you're unsure what a given circle means, you can hover your cursor over it and a tooltip will appear.
+Required vs optional Request Attributes
+Request attributes are only required in a request if they're explicitly marked 'required',
+(directly under the attribute name), otherwise they're optional and can be safely omitted.
+Note that nested keys marked 'required' are only required if their parent is included in the request.
+In the following example,
+a_required_key
+only needs to be included in the request if
+an_optional_key
+is also included.
+{
+"an_optional_key": {
+"a_required_key": "some_value"
+}
+}
+Apiary's Console (Try) Functionality
+Please note that the 'mock server' is simply displaying static responses based on the documentation.
+Unfortunately it's not currently possible to use the console with our Sandbox API.
+While it's technically possible for you to use the console with our Production API, it's discouraged.
+Reference
+Access Tokens
+Generate a new access token
+Attributes
+In order to make requests to the API, you will need to supply a valid access token.
+This endpoint lets you generate an access token using the
+client_id
+and
+client_secret
+you will be issued
+when you have completed the necessary paperwork.
+The Sandbox and Production APIs do not share client IDs, client secrets, or access tokens.
+Please note that access tokens have a lifetime, (30 days at the time of writing).
+Generating a new token with every request is fine when you're testing, but in production you
+should be re-using tokens for the majority of their lifetime.
+Once you have obtained an access token, you can use it by supplying it in the header of your requests
+under the
+Authorization
+key. Note that you must prepend 'Bearer' to the token, (with a space in between).
+e.g. if your access token is
+eyJhbfh0dsadfs9h0fdshfsdhmudsfhuifd98yhdfs
+,
+your request headers would look something like this:
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer eyJhbfh0dsadfs9h0fdshfsdhmudsfhuifd98yhdfs
+POST
+Callbacks
+Callbacks are asynchronous notifications. You must register at least one callback URL to receive them.
+Callbacks are POSTed as JSON objects, (Content-Type: application/json), to to URL(s) you supply.
+Your server should respond with an HTTP2xx series status code.
+All callbacks will be sent from mars.as24516.net.
+If your server is unreachable or responds with a non-HTTP2xx status code, we will try again later.
+After several failed attempts, the callback will be marked as failed and will not be re-sent.
+At the root level, callbacks will contain the following keys:
+eventUuid
+(string) - (e.g. c1043a09-44db-4a66-b00d-5caad94d657e)
+eventTime
+(string) - ISO8601 format with timezone (e.g. 2019-11-07T14:01:07+11:00)
+eventType
+(string) - Basic event type (e.g. ProductOrderStateChangeNotification)
+event
+(object) - Details about the event that triggered the callback
+The event object will always contain the following keys, (but may contain others depending on the event):
+id
+(string) - ID that triggered the event (e.g. VTORD00000000001)
+notificationType
+(string) - Specific event type (e.g. OrderCompleted)
+reason
+(string, can be empty) - Detailed reason for the event (e.g. The service has been transferred to a new Access Seeker at request of end user)
+Example callback server implementation:
+# This is a simple callback server example in Python using the Flask framework
+# Find out more about Flask here: https://pypi.org/project/Flask/
+from
+pprint
+import
+pprint
+from
+flask
+import
+Flask
+from
+flask
+import
+jsonify
+from
+flask
+import
+request
+app
+=
+Flask
+(
+__name__
+)
+@app
+.
+route
+(
+"/callbacks"
+,
+methods
+=
+[
+"POST"
+]
+)
+def
+callbacks
+(
+)
+:
+print
+(
+"Got a new callback!"
+)
+pprint
+(
+request
+.
+get_json
+(
+)
+)
+return
+jsonify
+(
+{
+"message"
+:
+"ok"
+}
+)
+if
+__name__
+==
+"__main__"
+:
+# Run Flask on port 5000 with SSL enabled.
+# Note that you'll need to supply a valid SSL certificate and key
+ssl_context
+=
+(
+"/path/to/cert.pem"
+,
+"/path/to/key.pem"
+)
+app
+.
+run
+(
+host
+=
+"0.0.0.0"
+,
+port
+=
+5000
+,
+ssl_context
+=
+ssl_context
+)
+Register New Callback URL or List Existing URLs
+Attributes
+POST
+Register a new Callback URL
+You can register up to five URLs and they will all be sent copies of each callback.
+URLs must begin with https://
+Your hostname must be registered with us before you can register a callback URL for it.
+Your server must have a valid SSL certificate to receive callbacks. Self-signed certificates are not allowed.
+Your server must send the appropriate intermediate certificate(s) along with your server certificate.
+You can use the DigiCert Certificate Checker to validate your configuration:
+https://www.digicert.com/help/
+Note that you can include query parameters in your URL, e.g.
+'
+https://your-domain.com/path/for/callbacks?token=5e940482728ceb26452608e4b35be1876d09ceb8
+'
+Required scope:
+create:callbacks
+GET
+Get a list of registered Callbacks
+Required scope:
+read:callbacks
+Remove a Callback URL
+Attributes
+DELETE
+Required scope:
+delete:callbacks
+Send a test Callback
+Attributes
+POST
+Returns HTTP200 if the callback was successfully sent, or HTTP4xx/HTTP5xx if there was a problem.
+If your server responds with a non-HTTP2xx status code, it will be included in
+vt_error_desc
+to help you debug the issue.
+Required scope:
+create:callbacks
+Address Searches
+Search for NBN Location IDs
+Attributes
+Address matching is not case sensitive.
+If multiple results are found, they will be ordered from closest to furthest match, with the closest being in position 0 of the array.
+If no results are found, you will still receive an HTTP200 code but the responseData array will be empty.
+The only exception is the reverse location ID lookup, where you'll receive an HTTP404 error instead.
+Please note that in the sandbox, you can only search for locations provided in the test data. Locations in the real world will not resolve to sandbox LOC IDs.
+Required scope:
+read:locations
+POST - Unstructured address search
+Please note that unstructured searches are unreliable in NBN's staging environment, but work as expected in production.
+Unstructured address search patterns:
+<unitTypeCode> <unitNumber> <roadNumber1>-<roadNumber2> <roadName> <roadTypeCode> <localityName> <stateTerritoryCode> <postcode>
+<unitTypeCode> <unitNumber> <roadNumber1> <roadName> <roadTypeCode> <localityName> <stateTerritoryCode> <postcode>
+<unitTypeCode> <unitNumber> <roadNumber1> <roadName> <roadTypeCode> <localityName> <stateTerritoryCode>
+<unitTypeCode> <unitNumber> <roadNumber1>-<roadNumber2> <roadName> <roadTypeCode> <localityName> <stateTerritoryCode>
+<roadNumber1>-<roadNumber2> <roadName> <roadTypeCode> <localityName> <stateTerritoryCode> <postcode>
+<roadNumber1> <roadName> <roadTypeCode> <localityName> <stateTerritoryCode> <postcode>
+POST - Structured address search
+Most of the time you'll only need to provide roadNumber1, roadName, roadTypeCode, localityName, postcode, and stateTerritoryCode, but you can supply any fields that apply to the address.
+Note that while
+stateTerritoryCode
+and
+postcode
+are marked 'required', you only need to provide one of them, (though it's usually a good idea to provide both).
+POST - Search by G-NAF ID
+See
+https://geoscape.com.au/
+for more details on G-NAF IDs
+Please note that the
+fullAddress
+value will always be a blank string because NBN does not return address details
+for G-NAF searches. If you need any address information, please perform a 'Reverse Location ID Lookup' (details below).
+POST - Search by coordinates
+Search by latitude and longitude
+POST - Reverse Location ID Lookup
+Useful if you need to convert an NBN Location ID to an address.
+Note that this will either return a single result, or HTTP404 if the location can't be found.
+Service Qualifications
+Normal SQ
+Attributes
+Required scope:
+read:service-qualifications
+GET - FTTP SERVICE CLASS 0 (NOT ORDERABLE)
+GET - FTTP SERVICE CLASS 1
+GET - FTTP SERVICE CLASS 2
+GET - FTTP SERVICE CLASS 3
+GET - FIXED WIRELESS SERVICE CLASS 4 (NOT ORDERABLE)
+GET - FIXED WIRELESS SERVICE CLASS 5
+GET - FIXED WIRELESS SERVICE CLASS 6
+GET - SATELLITE SC7 (NOT ORDERABLE)
+GET - SATELLITE SC8
+GET - SATELLITE SC9
+GET - HFC SC20 (NOT ORDERABLE)
+GET - HFC SC21
+GET - HFC SC22
+GET - HFC SC23
+GET - HFC SC24
+GET - FTTB SERVICE CLASS 10 (NOT ORDERABLE)
+GET - FTTB SERVICE CLASS 12
+GET - FTTB SERVICE CLASS 13
+GET - FTTN SERVICE CLASS 10 (NOT ORDERABLE)
+GET - FTTN SERVICE CLASS 11
+GET - FTTN SERVICE CLASS 12 ACTIVE
+GET - FTTN SERVICE CLASS 13
+GET - FTTC SERVICE CLASS 30 (NOT ORDERABLE)
+GET - FTTC SERVICE CLASS 31
+GET - FTTC SERVICE CLASS 32
+GET - FTTC SERVICE CLASS 33
+GET - FTTC SERVICE CLASS 34
+Enhanced SQ - POTS Interconnect
+Attributes
+For NCAS (FTTB/FTTN/FTTC) locations with copper pairs that haven't yet transitioned to NBN,
+(i.e. they have a
+copperPairStatus
+instead of an
+NBNServiceStatus
+)
+you can provide the
+POTSInterconnect
+parameter to help you identify the correct copper
+pair for your order.
+If provided,
+POTSInterconnect
+should be set to the Full National Number (FNN) or
+Unconditioned Local Loop Identifier (ULL ID). In the response, each copper pair will contain the
+boolean
+POTSInterconnectMatch
+indicating the match outcome.
+Required scope:
+read:service-qualifications
+GET - FTTB SERVICE CLASS 12 ACTIVE (POTS MATCH FALSE)
+GET - FTTB SERVICE CLASS 12 ACTIVE (POTS MATCH TRUE)
+Enhanced SQ - Churn Validation
+Attributes
+Once you have permission from the end user to place a churn order on their behalf, you can run an
+Enhanced SQ to locate the correct Copper Pair or NTD ID & UNI-D Port.
+You'll need the AVC ID of the existing service (either in full e.g. 'AVC123456789012',
+or the last five digits e.g. '89012'). You will have to get this from the end user (who will get it
+from their existing RSP).
+To perform the SQ, you must include the
+serviceID
+parameter (with the full/partial AVC ID)
+and the
+customerAuthorityDate
+parameter (with the date the end user gave you permission to place
+the order, in YYYY-MM-DD format).
+The response will include the
+serviceIDMatch
+boolean with all UNI-D ports and Copper Pairs.
+If the AVC ID you supplied matches the service on that UNI-D port or Copper Pair,
+serviceIDMatch
+will be set to true.
+If there are active services at the location, the response will also contain the
+supportingProduct
+array, (under
+siteRestriction
+), which contains other details about those services.
+Please note that the data in the
+supportingProduct
+array is sensitive cannot be disclosed to
+end users for privacy reasons.
+This information is only meant for internal use by your staff and systems.
+If the AVC ID you supplied does not match any Copper Pairs or UNI ports, the
+siteRestriction
+.
+siteRestrictionError
+object will be present in the response
+with one of the following code & message pairs to explain why:
+code
+message
+RJ002003
+The provided AVC does not exist: %serviceID%
+RJ002004
+The provided AVC has recently been disconnected: %serviceID%
+RJ002005
+The provided AVC exists at a different location: %serviceID%
+RJ002006
+The provided AVC has recently been disconnected at a different location: %serviceID%
+Required scope:
+read:service-qualifications
+GET - FTTP SERVICE CLASS 3 (Churn Validation SQ)
+GET - FIXED WIRELESS SERVICE CLASS 6 (Churn Validation SQ)
+GET - SATELLITE SC9 (Churn Validation SQ)
+GET - HFC SC24 (Churn Validation SQ)
+GET - FTTB SERVICE CLASS 13 (Churn Validation SQ)
+GET - FTTN SERVICE CLASS 13 (Churn Validation SQ)
+GET - FTTC SERVICE CLASS 34 (Churn Validation SQ)
+Enhanced SQ - Customer Authority Date
+Attributes
+This has been deprecated by the Churn Validation SQ above, however it's still available
+if you want to use it.
+Once you have permission from the end user to place an order on their behalf, you can run an
+Enhanced SQ to locate the correct copper pair or NTD ID & UNI-D Port.
+To do this, you supply the
+customerAuthorityDate
+parameter with your request.
+If there are active services at the location, the response will also contain the
+supportingProduct
+array, (under
+siteRestriction
+), which contains details about those services.
+Please note that the data in the
+supportingProduct
+array is sensitive cannot be disclosed to
+end users. This information is only meant for internal use by your staff and systems.
+Required scope:
+read:service-qualifications
+GET - FTTP SERVICE CLASS 3 (with Customer Authority Date)
+GET - FIXED WIRELESS SERVICE CLASS 6 (with Customer Authority Date)
+GET - SATELLITE SC9 (with Customer Authority Date)
+GET - HFC SC24 (with Customer Authority Date)
+GET - FTTB SERVICE CLASS 13 (with Customer Authority Date)
+GET - FTTN SERVICE CLASS 13 (with Customer Authority Date)
+GET - FTTC SERVICE CLASS 34 (with Customer Authority Date)
+Fibre Upgrade SQ
+Attributes
+When an SQ returns the
+alternativeTechnology
+key (under
+siteRestriction
+.
+supportingTechnology
+)
+with the value 'Fibre', the location may be eligible for an on-demand upgrade to NFAS (FTTP).
+You can run a 'Fibre SQ' on these locations by including the
+productType
+parameter
+with the value 'NFAS'. The response will be a standard NFAS (FTTP) SQ response, with a service class
+of 0, 1, 2, or 3. Only service class 1, 2, and 3 sites will accept fibre upgrade orders.
+Required scope:
+read:service-qualifications
+GET - FTTN SERVICE CLASS 13 (ALTERNATE TECHNOLOGY AVAILABLE)
+GET - FTTN SERVICE CLASS 13 (FIBRE SQ)
+Enterprise Ethernet SQ
+Attributes
+Use the
+productType
+parameter with value 'EEAS' to run an EE SQ.
+Required scope:
+read:service-qualifications
+GET - EEAS (FTTP) VALID CATEGORY A
+GET - EEAS (FIXED WIRELESS) VALID CATEGORY A
+GET - EEAS (SATELLITE) VALID CATEGORY C
+GET - EEAS (HFC) VALID CATEGORY A
+GET - EEAS (FTTB) VALID CATEGORY B
+GET - EEAS (FTTN) VALID CATEGORY B
+GET - EEAS (FTTC) VALID CATEGORY C
+GET - EEAS (FTTP) PRODUCT UNAVAILABLE
+GET - EEAS (FIXED WIRELESS) PRODUCT UNAVAILABLE
+GET - EEAS (SATELLITE) PRODUCT UNAVAILABLE
+GET - EEAS (HFC) PRODUCT UNAVAILABLE
+GET - EEAS (FTTB) PRODUCT UNAVAILABLE
+GET - EEAS (FTTN) PRODUCT UNAVAILABLE
+GET - EEAS (FTTC) PRODUCT UNAVAILABLE
+Mobile
+Pre-Ordering ALPHA
+Attributes
+GET - Request Available Mobile Numbers
+This operation is used to request a list of available mobile numbers you can use in New Activation (connect) orders.
+Required scope:
+create:mobile-orders
+Rate limits: steady - 10 requests/minute, burst - 2 requests/second
+POST - Request Dispatch of Mobile Physical SIM Cards
+This operation is used to order a box of physical SIM cards. These will be mailed to you.
+Required scope:
+create:mobile-orders
+GET - List Assigned Mobile Physical SIMs (uSIMs)
+This operation is used to request the list of SIMs assigned to you. You can optionally filter just for used status.
+Please note this endpoint is paginated.
+Required scope:
+create:mobile-orders
+Rate limits: steady - 10 requests/minute, burst - 2 requests/second
+eSIM Activation Codes ALPHA
+Attributes
+CALLBACK (POST) - ESimActivationCodeGenerated (eSIM activation code generated)
+This callback is sent as soon as an activation code is generated for an eSIM-based Connect Order, or SIM swap to an eSIM. The callback contains both the
+raw activation code as a string, as well as the Base64 representation of the activation code as a QR Code PNG image.
+POST - Generate Mobile eSIM QR Code
+This operation is used to generate a base64 encoded string representing the QR code image for an eSIM.
+Please note that you cannot generate a QR code for an eSIM until the activation code has been generated (normally this is shortly after
+Telstra order completion - i.e. order status is TELSTRA_ORDER_COMPLETED). You will be notified with an ESimActivationCodeGenerated callback (described above),
+which also contains the QR code image data that this endpoint generates.
+Required scope:
+create:mobile-orders
+Rate limits: steady - 60 requests/minute, burst - 5 requests/second
+SIM Swaps ALPHA
+Attributes
+POST - Request SIM Swap
+This operation is used to replace the SIM for a given mobile service with a new one.
+You can either specify the ICC ID of the new physical SIM, or request an eSIM (but not both).
+SIM swaps are usually completed in a few minutes.
+If you request an eSIM, you'll receive an ESimActivationCodeGenerated callback with the activation code for the new eSIM (the same callback
+you get when ordering a new service on an eSIM). Please see the eSIM Activation Codes section for details.
+Once the SIM swap is complete, you'll receive a SimSwapCompleted callback (documented below) regardless of the new SIM type.
+Required scope:
+create:mobile-orders
+Rate limits: steady - 60 requests/minute, burst - 5 requests/second
+CALLBACK (POST) - SIM Swap Completed
+This callback is sent to your server as soon as the SIM swap has been completed.
+Add Bolt-On ALPHA
+Attributes
+POST - Add Bolt-On to Existing Mobile Service
+Required scope:
+create:mobile-orders
+Rate limits: steady - 60 requests/minute, burst - 5 requests/second
+Excess Limits ALPHA
+Attributes
+POST - Set Mobile Excess Limit
+This operation is used to change the excess limit to a new value.
+Note that the new value cannot be the same as the old value, and you must wait 5 minutes after one excess limit change is complete before
+submitting another one for the same service.
+Changes are made asynchronously and usually complete in 1-2 minutes.
+Required scope:
+create:mobile-orders
+Rate limits: steady - 30 requests/minute, burst - 5 requests/second
+GET - Check Mobile Excess Limit
+Required scope:
+create:mobile-orders
+Rate limits: steady - 30 requests/minute, burst - 5 requests/second
+GSM Configuration ALPHA
+Attributes
+GET - Fetch GSM Configuration
+This operation returns the GSM configuration of a mobile service.
+Required scope:
+create:mobile-orders
+Rate limits: steady - 60 requests/minute, burst - 5 requests/second
+POST - Modify GSM Configuration
+This operation is used to update one or more of the GSM configuration options for a mobile service.
+You do not need to supply values for all options - only the ones you're changing. Any omitted objects will keep their existing values.
+For example, you can just supply the
+callForwarding
+.
+unanswered
+object and the
+callManagement
+.
+callHold
+object if you only
+want to update the configuration for those two features.
+It can take several minutes for this operation to complete. You cannot make another update request until the previous one has completed.
+You can check if there is another update in progress, just GET this endpoint and check the
+modificationInProgress
+flag.
+Changes for each specific feature have an additional 15 minute cooldown (e.g. if you disable
+callManagement
+.
+callWaiting
+in one request,
+you must wait 15 minutes after the
+modificationInProgress
+flag changes to false before enabling
+callManagement
+.
+callWaiting
+.
+Pay special attention to the
+forwardTo
+numbers in the
+callForwarding
+section. These are always required when
+enabled
+is set to true,
+but ignored when
+enabled
+is set to false.
+Rate limits: steady - 30 requests/minute, burst - 5 requests/second
+Required scope:
+create:mobile-orders
+Customer Care Numbers ALPHA
+Attributes
+POST - Add or Update Customer Care Numbers
+This operation is used to add new customer care numbers, or update to new numbers.
+You must provide at least one number for this operation. Numbers must be in E164 format (e.g. 61200000000) and at least 8 digits long.
+To remove an existing number, you need to supply a new number to take its place.
+You can supply one or both numbers.
+Required scope:
+create:mobile-orders
+Rate limits: steady - 60 requests/minute, burst - 5 requests/second
+GET - Fetch Customer Care Numbers
+This operation is used to check which customer care numbers have been set.
+Required scope:
+create:mobile-orders
+Rate limits: steady - 60 requests/minute, burst - 5 requests/second
+Callbacks - International Roaming Welcome ALPHA
+Attributes
+Please note that these callbacks are sent to your callback server(s). Please see the Callbacks section above for information about the
+callback registration process.
+CALLBACK (POST) - Roaming Welcome (add a travel pack)
+Sent to an end user when they first attach to a roaming network in a destination with eligibility status: "YES".
+They will need to add a travel pack to use their service.
+CALLBACK (POST) - Roaming Welcome (no voice/mms/data)
+Sent to an end user when they first attach to a roaming network in a destination with elegibility status: "MT SMS only".
+Voice calls, MMS, data, and sending SMS will be unavailable. They may be able to receive SMS. This will be at no charge.
+Callbacks - Included Value Plans Data Usage Threshold ALPHA
+Attributes
+CALLBACK (POST) - PlanData50PercentUsed
+CALLBACK (POST) - PlanData85PercentUsed
+CALLBACK (POST) - PlanData100PercentUsed
+Callbacks - Included Value Plans MMS Usage Threshold ALPHA
+Attributes
+CALLBACK (POST) - PlanMms50PercentUsed
+CALLBACK (POST) - PlanMms85PercentUsed
+CALLBACK (POST) - PlanMms100PercentUsed
+Callbacks - Data Pack Usage Threshold ALPHA
+Attributes
+CALLBACK (POST) - DataPack50PercentUsed
+CALLBACK (POST) - DataPack85PercentUsed
+CALLBACK (POST) - DataPack100PercentUsed
+Callbacks - IDD Pack Usage Threshold ALPHA
+Attributes
+CALLBACK (POST) - IddPack50PercentUsed
+CALLBACK (POST) - IddPack85PercentUsed
+CALLBACK (POST) - IddPack100PercentUsed
+Callbacks - Data Bank Usage Threshold ALPHA
+Attributes
+Sent when data bank falls to 20GB, 10GB, 1GB, and 0GB
+CALLBACK (POST) - DataBankRemainingData
+Callbacks - Data Only International Roaming Pack Usage Threshold ALPHA
+Attributes
+CALLBACK (POST) - DataOnlyTravelPackNew
+Note that unlike the other callbacks in this section, the New Pack callback only contains the remaining balance (which would be identical to the allowance)
+CALLBACK (POST) - DataOnlyTravelPack50PercentUsed
+CALLBACK (POST) - DataOnlyTravelPack85PercentUsed
+CALLBACK (POST) - DataOnlyTravelPack100PercentUsed
+Note that unlike the 50% and 85% callbacks, the 100% callback does not contain the
+planName
+Callbacks - International Roaming Pack Usage Threshold ALPHA
+Attributes
+CALLBACK (POST) - TravelPackVoice50PercentUsed
+CALLBACK (POST) - TravelPackVoice85PercentUsed
+CALLBACK (POST) - TravelPackVoice100PercentUsed
+Note that unlike the 50% and 85% callbacks, the 100% callback only contains planAllowance
+CALLBACK (POST) - TravelPackSms50PercentUsed
+CALLBACK (POST) - TravelPackSms85PercentUsed
+CALLBACK (POST) - TravelPackSms100PercentUsed
+Note that unlike the 50% and 85% callbacks, the 100% callback does not contain the remaining balance (which would be 0)
+CALLBACK (POST) - TravelPackData50PercentUsed
+CALLBACK (POST) - TravelPackData85PercentUsed
+CALLBACK (POST) - TravelPackData100PercentUsed
+Note that unlike the 50% and 85% callbacks, the 100% callback only contains planAllowance
+Callbacks - PAYG Usage Threshold ALPHA
+Attributes
+CALLBACK (POST) - Payg50PercentUsed
+CALLBACK (POST) - Payg85PercentUsed
+CALLBACK (POST) - Payg100PercentUsed
+Callbacks - International Roaming Excess Usage PAYG ALPHA
+Attributes
+CALLBACK (POST) - RoamingPaygExcessUsage
+Callbacks - Fraud Notifications ALPHA
+Attributes
+CALLBACK (POST) - FraudInternationalVoiceCounter1500MinLimit85PercentUsed
+International voice (IDD) counter with limit set to 1,500 minutes minutes 85% depleted
+CALLBACK (POST) - FraudInternationalVoiceCounter1500MinLimit100PercentUsed
+International voice (IDD) counter with limit set to 1,500 minutes minutes 100% depleted
+CALLBACK (POST) - FraudDomesticVoiceCounter1440MinLimit85PercentUsed
+Domestic voice counter with limit set to 1,440 minutes minutes 85% depleted
+CALLBACK (POST) - FraudDomesticVoiceCounter1440MinLimit100PercentUsed
+Domestic voice counter with limit set to 1,440 minutes minutes 100% depleted
+CALLBACK (POST) - FraudInternationalSmsCounter300SmsLimit85PercentUsed
+International SMS counter with limit set to 300 events SMS 85% depleted
+CALLBACK (POST) - FraudInternationalSmsCounter300SmsLimit100PercentUsed
+International SMS counter with limit set to 300 events SMS 100% depleted
+CALLBACK (POST) - FraudDomesticSmsCounter300SmsLimit85PercentUsed
+Domestic SMS counter with limit set to 1000 events SMS 85% depleted
+CALLBACK (POST) - FraudDomesticSmsCounter300SmsLimit100PercentUsed
+Domestic SMS counter with limit set to 1000 events SMS 100% depleted
+Callbacks - Port Out ALPHA
+Attributes
+Please note that these callbacks are sent to your callback server(s). Please see the Callbacks section above for information about the
+callback registration process.
+CALLBACK (POST) - PortOutPortNotification (initial port out notification)
+CALLBACK (POST) - PortOutPortCutoverNotification (port out is proceeding)
+CALLBACK (POST) - PortOutBroadcastPortCutoverNotification (port out has completed)
+Product Order Qualifications
+Check product connect order feasibility
+Attributes
+This endpoint can be used to qualify NBN Connect orders (with a few exceptions). Other service types are not currently supported.
+Please note that nhas (HFC) order qualifications are not currently possible.
+Churn (service transfer) order qualifications for any service type are also not allowed.
+Product Order Qualifications use exactly the same format as Connect Orders.
+Required scope:
+create:product-orders
+POST - Example FTTP SC2 (feasible with appointment required)
+POST - Example FTTP SC3 (feasible)
+POST - Example Fixed Wireless SC5 (feasible with appointment required)
+POST - Example FTTN SC13 (feasible)
+POST - Example FTTC SC33 (feasible with appointment required)
+POST - Example FTTC SC34 (feasible, delayed)
+Product Orders
+Please note that order status values and descriptions have been moved inside the responses (as the
+status
+enum)
+Product Order Callback Values
+These are listed roughly in chronological order.
+eventType
+notificationType
+Note
+ProductOrderStateChangeNotification
+NBNAcknowledged
+The order has been submitted to NBN and is awaiting validation
+ProductOrderCreationNotification
+OrderAccepted
+The order has been successfully validated and is accepted by NBN
+ProductOrderStateChangeNotification
+OrderRejected
+The order has failed validation. We will review the order and resubmit it after correcting the issue.
+ProductOrderStateChangeNotification
+DispatchDetailsRequired
+Delivery details are required to send a device to the end user (e.g. sending an NTD to an SC23 location)
+ProductOrderStateChangeNotification
+InstallFeeConfirmationRequired
+The order will generate a subsequent install fee. You must approve it for the order to continue:
+https://virtutel.docs.apiary.io/#reference/product-orders/update-a-connect-order/patch
+ProductOrderStateChangeNotification
+DevelopmentChargeConfirmationRequired
+The order will generate a New Development Charge. You must approve it for the order to continue:
+https://virtutel.docs.apiary.io/#reference/product-orders/update-a-connect-order/patch
+ProductOrderStateChangeNotification
+FibreUpgradeConfirmationRequired
+Fibre upgrade orders are subject to penalties if the service is disconnected or the speed downgraded within the first 12 months. You must accept liability for these charges to continue the order:
+https://virtutel.docs.apiary.io/#reference/product-orders/update-a-connect-order/patch
+ProductOrderStateChangeNotification
+AppointmentRequired
+An appointment is required for the order to continue. See
+https://virtutel.docs.apiary.io/#reference/appointments
+ProductOrderStateChangeNotification
+AppointmentRescheduleRequired
+The appointment needs to be rescheduled. Normally this is because the work couldn't be completed in the original appointment window. See
+https://virtutel.docs.apiary.io/#reference/appointments/retrieve-or-modify-existing-appointment/patch
+ProductOrderAttributeValueChangeNotification
+AppointmentRescheduled
+The appointment has been rescheduled and the order can continue
+ProductOrderAttributeValueChangeNotification
+DeliveryInTransit
+NBN has sent out the NTD/NCD requested in the order
+ProductOrderAttributeValueChangeNotification
+InformationRequiredReminder
+NBN is waiting for more information to progress the order. Normally we will resolve this, but we may need to contact you for additional information
+ProductOrderAttributeValueChangeNotification
+MigrationCutoverFailed
+ProductOrderAttributeValueChangeNotification
+MigrationCutoverInProgress
+ProductOrderAttributeValueChangeNotification
+MoreTimeAccepted
+Request for more time to complete an action has been accepted by
+ProductOrderAttributeValueChangeNotification
+MoreTimeRejected
+Request for more time to complete an action has been rejected
+ProductOrderAttributeValueChangeNotification
+OrderAmendAccepted
+Additional order data has been provided to NBN and been accepted, (e.g. an appointment)
+ProductOrderAttributeValueChangeNotification
+OrderAmendRejected
+Additional order data has been provided to NBN and been rejected. Normally this is because another amendment is in progress. We will assess the order
+ProductOrderAttributeValueChangeNotification
+OrderCommentAddedNBN
+NBN has added a comment to the order
+ProductOrderAttributeValueChangeNotification
+OrderCommentAddedRSP
+We have added a comment to the order
+ProductOrderAttributeValueChangeNotification
+PlannedRemediationDate
+Planned remediation date for the network activity has been determined or updated. As of 2024-04-11, these will contain the
+plannedRemediationDate
+key (inside the
+event
+object). This will be the planned remediation date as a string in YYYY-MM-DD format if it's available, otherwise it will be null.
+ProductOrderStateChangeNotification
+PortInRejected
+Mobile port-in request has been rejected by the losing carrier (both for ARN and DOB). Please use the PATCH method below to correct them, then the order will continue
+ProductOrderStateChangeNotification
+DeviceDetailsRequired
+Additional details are required for the order to progress, (e.g. HFC MAC address required). We will assess the order
+ProductOrderStateChangeNotification
+DeviceOnlineRequired
+NBN is waiting for the NTD/NCD/modem to come online
+ProductOrderStateChangeNotification
+ManualInterventionRequired
+The order is in a state that requires manual intervention from the Virtutel team
+ProductOrderStateChangeNotification
+WaitingToBeProcessed
+Sent after ManualInterventionRequired. The VT team has rectified the issue and the order is waiting for the next processing cycle
+ProductOrderStateChangeNotification
+NBNActionCompleted
+NBN has completed the required action and the order can continue
+ProductOrderStateChangeNotification
+NBNActionRequired
+NBN needs to complete some action before the order can continue (e.g. network augmentation)
+ProductOrderStateChangeNotification
+RSPActionCompleted
+NBN has acknowledged you've performed the required action and the order can proceed
+ProductOrderStateChangeNotification
+RSPActionRequired
+You need to complete some action for the order to proceed, (e.g. have the end user connect a device). Once this is complete you can request that NBN continue the order:
+https://virtutel.docs.apiary.io/#reference/product-orders/resume-a-connect-order/patch
+ProductOrderServiceTestCompleted
+ServiceTestCompleted
+NBN has detected data flow (or has skipped the service test because it's not necessary)
+ProductOrderAttributeValueChangeNotification
+ServiceTestCompleted
+NBN has detected data flow (or has skipped the service test because it's not necessary)
+ProductOrderAttributeValueChangeNotification
+ServiceDisconnected
+Disconnect orders only. NBN has disconnected the service
+ProductOrderStateChangeNotification
+ManuallyCancelled
+We have determined that the order cannot continue and have marked it for cancellation
+ProductOrderRemoveNotification
+OrderCancelled
+The order has been cancelled by NBN. This is usually because it cannot be completed. We will assess the order
+ProductOrderStateChangeNotification
+OrderCompleted
+Order has been completed on NBN's end, but still needs to be processed into our billing system
+ProductOrderStateChangeNotification
+VTOrderCancelled
+We have cancelled the order in our system. This is the final notification for an unsuccessful order
+ProductOrderStateChangeNotification
+VTOrderCompleted
+The order is fully complete and has been processed into the VT billing system. This is the final notification for a successful order
+Connect Order
+Attributes
+POST - Submit a Connect Order
+This is used to create a new service or churn an existing service from another provider.
+Required scope:
+create:product-orders
+Optional scope:
+create:mobile-orders
+(required for mobile orders)
+GET - Fetch a single Connect Order
+Required scope:
+read:product-orders
+GET - Fetch an FTTB Order with MDF Patch Information
+Required scope:
+read:product-orders
+PATCH - Update a Connect Order
+Note: all of the request attributes are optional, but you must supply at least one of them.
+Note: when you request a replacement NCD/NTD with
+replacementDevice
+and
+dispatchDetails
+,
+you'll get an HTTP200 response if the initial checks pass but you'll have to wait for an
+OrderAmendAccepted
+or
+OrderAmendRejected
+callback to know if your request was successful.
+Required scope:
+update:product-orders
+PATCH - Resume a Connect Order
+This is used to notify NBN that you have completed an action so the order can progress.
+Example scenario where this endpoint would be used:
+You receive an
+RSPActionRequired
+callback with the reason
+Awaiting Device installation
+You inform the end user that they need to connect their NTD/NCD
+End user connects the NTD/NCD
+You PATCH to this endpoint to let NBN know the order can proceed
+Required scope:
+update:product-orders
+Modify Speed Order
+Attributes
+POST - Submit a Speed Modification Order
+Create a speed modification order for an existing NBN service.
+Required scope:
+create:product-orders
+GET - Fetch a Speed Modification Order
+Required scope:
+read:product-orders
+Modify DSL Stability Profile Order
+Attributes
+POST - Submit a DSL Stability Profile Modification Order
+Create a DSL Stability Profile modification order for an existing FTTB/FTTN service.
+Required scope:
+create:product-orders
+GET - Fetch a DSL Stability Profile Modification Order
+Required scope:
+read:product-orders
+Modify Service Restoration SLA Order
+Attributes
+POST - Submit a Service Restoration SLA Modification Order
+Create a Service Restoration SLA modification order for an existing service.
+Required scope:
+create:product-orders
+GET - Fetch a Service Restoration SLA Modification Order
+Required scope:
+read:product-orders
+Modify Mobile Plan Order ALPHA
+Attributes
+POST - Submit a Mobile Plan Change Order
+Change the plan of an existing mobile service.
+Note that plan changes are applied at the end of each month. You can check the effective date when you GET the resulting order.
+Required scopes:
+create:product-orders
+create:mobile-orders
+GET - Fetch a Mobile Plan Change Order
+Required scope:
+read:product-orders
+Disconnect Order
+Attributes
+POST - Submit a Disconnect Order
+This is used to cancel an active service, (normally at the request of the end user,
+e.g. when they're moving out of a house).
+Required scope:
+create:product-orders
+GET - Fetch a Disconnect Order
+Required scope:
+read:product-orders
+Fetch Multiple Orders
+Attributes
+GET
+Please note that Connect, Modify, and Disconnect orders will return different structures (with some common elements like vtOrderId).
+This endpoint is paginated.
+Required scope:
+read:product-orders
+Appointments
+The easiest way to determine if your order will require an appointment, (and which demandType to request), is to
+run a
+feasibility check
+Appointment Callback Values
+eventType
+notificationType
+Note
+AppointmentAttributeChange
+NBNInvestigationRequired
+AppointmentAttributeValueChangeNotification
+AppointmentBooked
+AppointmentAttributeValueChangeNotification
+AppointmentRescheduleRequired
+AppointmentAttributeValueChangeNotification
+AppointmentRescheduled
+AppointmentAttributeValueChangeNotification
+CompletionTimeExtended
+AppointmentAttributeValueChangeNotification
+NBNInvestigationRequired
+AppointmentAttributeValueChangeNotification
+TechOnSite
+AppointmentAttributeValueChangeNotification
+UpdateContactDetails
+AppointmentCreationNotification
+AppointmentCreated
+AppointmentRemoveNotification
+AppointmentCancelled
+AppointmentStateChangeNotification
+AppointmentBooked
+AppointmentStateChangeNotification
+AppointmentCompleted
+AppointmentStateChangeNotification
+AppointmentIncomplete
+AppointmentStateChangeNotification
+AppointmentRescheduleRequired
+AppointmentStateChangeNotification
+CompletionTimeExtended
+AppointmentStateChangeNotification
+TechOnSite
+Get available time slots
+Attributes
+GET
+It's typically possible to query for available time slots up to 90 days from the date when the request is made.
+If time slots are found that match the query terms and some of them fall within a Major Service Disruption (MSD) zone, then the response will contain the code "MSD-IN-AREA". Only time slots outside the MSD zone will be returned in the response.
+A maximum of 25 time slots will be returned.
+Required scope:
+create:appointments
+Reserve an appointment
+Attributes
+POST
+Required scope:
+create:appointments
+Please note that this first requires you to get a
+timeslot
+and create a
+product order
+.
+Appointments are only allowed for orders in the
+NBN_APPOINTMENT_REQUIRED
+or
+APPOINTMENT_REQUIRED
+states.
+The appointment is will be added to the order if it's successfully reserved
+Please note that certain characters (e.g. the apostrophe) can cause problems in NBN's appointment reservation system. Only ascii letters, numbers, spaces, commas, dots (.), hyphens (-), forward slashes (/), at symbols (@), plus signs (+), underscores (_), and parentheses are allowed in strings
+Retrieve or modify existing appointment
+Attributes
+GET - Fetch an Existing Appointment
+Get existing appointment
+Required scope:
+read:appointments
+PATCH - Reschedule an appointment
+Please note that you cannot reschedule an appointment and update end user contacts in the same request.
+Required scope:
+update:appointments
+PATCH - Update End User Contacts
+Please note that you cannot update end user contacts and reschedule an appointment in the same request.
+If you want to remove a contact from an appointment, simply omit it from the endUserContact array.
+Required scope:
+update:appointments
+DELETE - Cancel in-flight appointment
+Required scope:
+delete:appointments
+Services
+Services Callback Values
+eventType
+notificationType
+Note
+ProductAttributeValueChangeNotification
+ProductInstanceUpdated
+Sent when NBN updates something to do with a service (e.g. changing UNI-D port on an NTD because the old port was faulty
+ProductRemoveNotification
+ProductInstanceDisconnected
+Service has been disconnected, (usually because it’s been churned to another provider)
+Get Service from VT Service ID
+Attributes
+GET
+Required scope:
+read:services
+Get Service from Supplier Service ID
+Attributes
+GET
+Required scope:
+read:services
+Get All Services or Search for Services Containing a Specific String
+Attributes
+GET
+Note that the results from this endpoint are paginated
+Required scope:
+read:services
+CVC Entitlements
+Request CVC Entitlements
+Attributes
+GET
+Please note that these figures are from a specific snapshot in time and should only be used as a guide.
+Required scope:
+read:cvc-entitlements
+Service Health Checks
+Service Health Callback Values
+eventType
+notificationType
+Note
+ServiceHealthStateChangeNotification
+ServiceHealthAccepted
+Service health request has been accepted and the report is being compiled
+ServiceHealthStateChangeNotification
+ServiceHealthCompleted
+Service health report has been completed and is available to GET
+Request NBN Service Health
+Attributes
+POST
+The service health information will be compiled and you will be sent a ServiceHealthCompleted callback when it's done.
+Please note that FTTC and FTTP health checks are still in the trial phase so they may not behave as expected.
+Please note that you cannot run Service Health Checks on Enterprise Ethernet services.
+[Sandbox only] NBN isn't allowing service health checks via their staging (sandbox) API at the moment so callbacks and responses will be simulated. This does not apply to the production API.
+Required scope:
+create:service-health-checks
+View service health report
+Attributes
+GET
+Please note that this will only return the health report after you've POSTed a request using the endpoint above
+and received a ServiceHealthCompleted callback.
+Please also note that the responses for different service types will vary slightly.
+Required scope:
+read:service-health-checks
+Example Service Health Callbacks
+Attributes
+Note that the roles are reversed in this section, (i.e. our machine will POST the callback to your server).
+FTTB HEALTH COMPLETED CALLBACK
+FTTC HEALTH COMPLETED CALLBACK
+FTTN HEALTH COMPLETED CALLBACK
+HFC HEALTH COMPLETED CALLBACK
+FTTP HEALTH COMPLETED CALLBACK
+FIXED WIRELESS HEALTH COMPLETED CALLBACK
+Service Tests
+Service Test Callback Values
+eventType
+event.notificationType
+event.status
+Notes
+ServiceTestStateChangeNotification
+TestAccepted
+Accepted
+Not sent for all test types. Test request has been accepted and will be run soon
+ServiceTestStateChangeNotification
+TestInProgress
+InProgress
+Not sent for all test types. Test is currently running
+ServiceTestStateChangeNotification
+TestCompleted
+Completed
+Test has been completed. Please check
+event
+.
+serviceTest
+.
+serviceTestResults
+to see if it passed or failed
+ServiceTestStateChangeNotification
+TestCancelled
+Cancelled
+Test could not be completed, e.g. because a different test is already in progress
+ServiceTestStateChangeNotification
+TestRejected
+Rejected
+Test could not be initiated
+Request a Service Test
+Attributes
+POST
+Run diagnostic service tests.
+Please note that the results of a requested test will be sent to you in a callback.
+Required scope:
+create:service-tests
+Example Service Test Callbacks
+Attributes
+Note that the roles are reversed in this section, (i.e. our machine will POST the callback to your server).
+DPU PORT RESET COMPLETED CALLBACK
+DPU PORT STATUS COMPLETED CALLBACK
+DPU STATUS COMPLETED CALLBACK
+DYNAMIC LINE MANAGEMENT STATUS COMPLETED CALLBACK
+EE BTD STATUS COMPLETED CALLBACK
+EE LOOPBACK COMPLETED CALLBACK
+EE NPT STATISTICAL COMPLETED CALLBACK
+EE UNI-E PORT RESET COMPLETED CALLBACK
+EE UNI-E STATUS COMPLETED CALLBACK
+LINE QUALITY DIAGNOSTIC COMPLETED CALLBACK
+LINE STATE DIAGNOSTIC COMPLETED CALLBACK
+LOOPBACK COMPLETED CALLBACK
+NCD PORT RESET COMPLETED CALLBACK
+NCD RESET COMPLETED CALLBACK
+NCD UNI-D STATUS COMPLETED CALLBACK
+NTD RESET COMPLETED CALLBACK
+NHAS NTD STATUS COMPLETED CALLBACK
+NFAS NTD STATUS COMPLETED CALLBACK
+PORT RESET COMPLETED CALLBACK
+SINGLE END LINE TEST COMPLETED CALLBACK
+UNI-D STATUS COMPLETED CALLBACK
+WNTD RESET COMPLETED CALLBACK
+WNTD MEASURE COMPLETED CALLBACK
+Outages
+This endpoint deals with both types of NBN outage - Change Requests (planned outages), and Trouble Tickets (unplanned outages).
+There's only one kind of Change Request, but four types of Trouble Ticket:
+Infrastructure Restoration:
+raised for network related incidents (i.e. unplanned outages).
+Infrastructure Event:
+raised for battery alarms.
+Service Restoration:
+raised when an end user service is impacted (e.g. faulty connection or service degradation)
+Service Request:
+raised for any activity that is not end user service impacting such as for address inconsistency. Note that these usually don't contain product or service IDs, which means ownership of them can't be determined and they can't be made available to you.
+List NBN outages
+Attributes
+GET
+This endpoint is paginated.
+Required scope:
+read:outages
+Retrieve details for a specific outage
+Attributes
+Please note that NBN will not return details for Trouble Tickets after they're closed.
+GET - Change Request
+Change Requests all use the same schema
+GET - Infrastructure Restoration Trouble Ticket
+Infrastructure Restoration tickets are raised for network related incidents
+GET - Infrastructure Event Trouble Ticket
+Infrastructure Event tickets are raised for battery alarms
+GET - Service Restoration Trouble Ticket
+Service Restoration tickets are raised when an end user service is impacted
+GET - Service Request Trouble Ticket
+Raised for any activity that is not end user service impacting such as for address inconsistency. Note that these usually don't contain product or service IDs, which means you won't normally see them.
+Example Outage Callbacks
+Attributes
+Note that the roles are reversed in this section, (i.e. our machine will POST the callback to your server).
+ChangeRequestCreation Callback (ChangeScheduled)
+ChangeRequestAttributeValueChange Callback (ChangeWindowUpdated)
+ChangeRequestAttributeValueChange Callback (ChangeUpdated)
+ChangeRequestStateChange Callback (ChangeStarted)
+ChangeRequestStateChange Callback (AdditionalActivityRequired)
+ChangeRequestStateChange Callback (AdditionalActivityCompleted)
+ChangeRequestStateChange Callback (ChangeCompleted)
+ChangeRequestRemove Callback (ChangeCancelled)
+TroubleTicketAttributeValueChange Callback (AmendAccepted)
+TroubleTicketAttributeValueChange Callback (BatteryEventReminder)
+TroubleTicketAttributeValueChange Callback (ClearanceRejectionDeclined)
+TroubleTicketAttributeValueChange Callback (PlannedRemediationDate)
+TroubleTicketAttributeValueChange Callback (TicketUpdatedNBNCo)
+TroubleTicketCreate Callback (TroubleTicketAccepted)
+TroubleTicketCreate Callback (TroubleTicketCreated)
+TroubleTicketDelete Callback (TroubleTicketCancelled)
+TroubleTicketInformationRequired Callback (AdditionalInformationRequired)
+TroubleTicketInformationRequired Callback (AppointmentRequired)
+TroubleTicketInformationRequired Callback (AppointmentRescheduleRequired)
+TroubleTicketResolved Callback (TroubleTicketResolved)
+TroubleTicketStatusChange Callback (MonitoringCompleted)
+TroubleTicketStatusChange Callback (MonitoringStarted)
+TroubleTicketStatusChange Callback (NBNActionCompleted)
+TroubleTicketStatusChange Callback (NBNActionRequired)
+TroubleTicketStatusChange Callback (TroubleTicketClosed)
+TroubleTicketStatusChange Callback (TroubleTicketRejected)
+Demographics
+Retrieve Demographics by POI ID, Post Code, CSA ID, or State
+Attributes
+Note that AVC usage and CVC inclusions are only granular to the POI level, so those figures
+will not be included when you search for a post code.
+Note that the list of post codes will only be returned when the area requested is a POI or CSA ID.
+GET
+Required scope:
+read:demographics
+Tickets - Beta
+Please note that this endpoint is in beta and may be subject to changes before release.
+Create NBN missing address ticket
+Attributes
+POST
+This is used when a location is missing from NBN's database. It will create a ticket in our system, and further
+correspondence will be via the email addresses you provide.
+Please note that in the sandbox, tickets won't actually be created, but you will receive a simulated ticket ID.
+Required scope:
+create:tickets
+or
+all:tickets
+Out of Band Notifications
+This endpoint lets you manage contacts who will be notified about certain events.
+Currently only NBN outage notifications via SMS and email are supported, however other triggers and channels may be added later.
+Please note that while email notifications are free, SMS notifications will incur a monthly fee.
+End user contacts will be automatically removed if their service is churned away or disconnected.
+The text of outage notifications will vary based on the outage, but this is the general format of an end user notification:
+Hi <end_user_name>,
+nbn has scheduled a planned outage in your area. Your internet service at 123 Fake St may experience interruptions between the following times: 10/02/2023 10:00 AEST to 10/02/2023 13:00 AEST, 12/02/2023 10:00 AEST to 12/02/2023 14:30 AEST.
+Please contact us if you require more information.
+Regards,
+<rsp_name>
+This is the same notification, but for an RSP contact:
+Please be advised,
+nbn has announced a planned outage affecting the following services: VT0000001, VT0000002.
+Outage ID: CRQ000000000001.
+Planned start: 11/01/2023 05:00 AEST.
+Planned end: 13/02/2023 23:00 AEST.
+Interruptions are scheduled between the following times: 10/02/2023 10:00 AEST to 10/02/2023 13:00 AEST, 12/02/2023 10:00 AEST to 12/02/2023 14:30 AEST.
+This work is part of a Fixed Wireless network upgrade to increase capacity on the  Transmission Network (TX) to match the newly upgraded Radio Access Network (RAN).  This planned outage will align the TX which transmits traffic between multiple towers  to the nbn fibre access point. To avoid services being offline for several days, nbn will  break up the work and perform it overnight (Midnight-9am) and on weekends (6am-6pm Sat and Sun).  Depending on the extent of the upgrade, services will be disrupted by 1-2 outages of up  to 12 hours each. The process to upgrade this TX will span several days with only 2 of  these days being customer impacting. Depending on what tower the end-customers are connected  to in the network topology, they may experience further interruptions that will be  communicated via another CRQ.
+Regards,
+Virtutel
+Register New End User Contact
+Attributes
+POST
+End user contacts receive notifications about a single service.
+Only one end user contact can be registered for each Virtutel Service ID.
+Required scope:
+create:out-of-band-notifications:contacts
+Register New RSP Contact
+Attributes
+POST
+RSP contacts receive notifications about every service.
+Up to three RSP contacts are allowed.
+Required scope:
+create:out-of-band-notifications:contacts
+Fetch Multiple Contacts
+Attributes
+GET
+This endpoint is paginated.
+Required scope:
+read:out-of-band-notifications:contacts
+Fetch Single Contact
+Attributes
+GET
+Required scope:
+read:out-of-band-notifications:contacts
+Remove Contact
+Attributes
+DELETE
+Required scope:
+delete:out-of-band-notifications:contacts
+Invoices - Beta
+Please note that this endpoint is currently in beta. There may be breaking changes before it's released.
+List Invoice Summaries
+Attributes
+Note that these responses are paginated.
+Please note that in the sandbox environment, invoices will be dynamically generated so they may change over time.
+GET
+Required scope:
+read:invoices
+Rate limits: steady - 120 requests/minute, burst - 5 requests/second
+Fetch Detailed Invoice
+Attributes
+This is very similar to the summary response, however it contains all of the line items from the invoice.
+Please note that in the sandbox environment, invoices will be dynamically generated so they may change over time.
+GET
+Required scope:
+read:invoices
+Rate limits: steady - 120 requests/minute, burst - 5 requests/second
+AVC Utilisation - Beta
+This is currently in beta.
+There may be breaking changes before it's released.
+The sandbox data is currently randomly generated. The structures and formats match what you'd see in
+production, but the data itself is nonsensical and will change with each request.
+List Available Reports
+Attributes
+Retrieves a list of available reports.
+NBN will occasionally issue an updated report for a given day. When this happens, the old report will
+still be available, however there will be a new entry for the same reportDate with a more recent
+createdUtc
+timestamp.
+Results are sorted by createdDate in ascending order. This means that if NBN issues an updated report for a previous
+day, the
+reportDate
+s will not be in chronological order.
+These responses are paginated.
+In the sandbox environment, this data will be dynamically generated and may change over time.
+GET
+Required scope:
+read:avc-utilisation
+Rate limits: steady - 20 requests/minute, burst - 5 requests/second
+Fetch Records by Report ID as JSON
+Attributes
+Returns records for the given report ID.
+In the sandbox environment, this data will be dynamically generated and may change over time.
+GET
+Required scope:
+read:avc-utilisation
+Rate limits: steady - 10 requests/minute, burst - 2 requests/second
+Suspensions - Beta
+This is currently in beta.
+There may be breaking changes before it's released.
+Suspend a Service BETA
+Attributes
+POST - Suspend a Service
+Currently only Layer 3 NBN services can be suspended.
+Required scopes:
+all:suspensions
+Resume a Service BETA
+Attributes
+POST - Resume a Service
+This operation will unsuspend a previously suspended service
+Required scopes:
+all:suspensions
+Drop a Session BETA
+Attributes
+POST - Drop a Session
+This operation is used to drop a session without suspending the underlying service. This can be helpful when moving a service to a faster plan,
+rather than having the end user restart the equipment at their premises.
+Currently only Layer 3 NBN sessions can be dropped.
+Required scopes:
+all:suspensions
+Overview - Beta
+This is currently in beta.
+There may be breaking changes before it's released.
+Overview BETA
+Attributes
+GET - Fetch Overview
+One-Off Charges
+One-Off Charges BETA
+Attributes
+GET - Request One-Off-Charges for a Service
+This operation is used to request a list of the one-off charges generated by a given service.
+Required scope:
+read:services
+Rate limits: steady - 120 requests/minute, burst - 5 requests/second
+Switch between example and interactive console for customized API calls.
+Switch to Console
+No action selected
+You can try selecting ‘
+POST
+’ from the left column.
+Learn more about using the documentation.
+No action selected
+To try out Console, please select an action. E.g. select ‘
+POST
+’ from the left column.
+Learn more about using the documentation.

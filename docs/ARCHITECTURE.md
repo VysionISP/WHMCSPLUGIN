@@ -1,6 +1,8 @@
 # Virtutel NBN Provisioning Module for WHMCS — Architecture & Plan
 
-**Status:** Draft for agreement — no implementation yet.
+**Status:** Draft v2 — updated against the Virtutel Customer API documentation
+(Apiary export, July 2026). See `docs/virtutel-api-notes.txt` for the extracted
+doc text. No implementation yet.
 
 ## Overview
 
@@ -22,18 +24,85 @@ Core responsibilities:
 - Admin and client-area views of the real carrier state (AVC ID, technology
   type, speed tier, order history, appointments).
 
+## Virtutel API facts (from the official docs)
+
+These are confirmed behaviours of the Virtutel Customer API that the design
+below is built around:
+
+- **Authentication:** POST `client_id` + `client_secret` to the Access Tokens
+  endpoint to obtain a **Bearer token with a ~30-day lifetime**. Tokens must be
+  **cached and reused** in production, sent as
+  `Authorization: Bearer <token>` with `Accept`/`Content-Type:
+  application/json`.
+- **Environments:** Sandbox runs on port **8443**, Production on **443**.
+  Credentials, tokens, test data, and firewalls are completely separate per
+  environment. Both sides are firewalled — our server IPs must be registered
+  with Virtutel.
+- **Response envelope:** every response includes `vt_success` (bool),
+  `vt_short_error` (string), `vt_error_desc` (string) at the root.
+- **Scopes:** tokens carry scopes such as `read:service-qualifications`,
+  `create:product-orders`, `read:product-orders`, `update:product-orders`,
+  `create:appointments`, `read:services`, `create:callbacks`,
+  `all:suspensions`, etc. Certification grants production scopes per endpoint.
+- **Callbacks (webhooks):** JSON POSTs to up to five registered **HTTPS** URLs
+  (valid CA-signed cert required; sender is `mars.as24516.net`). **No HMAC
+  signing is provided** — a secret token may be embedded as a query parameter
+  in the registered URL. Non-2xx responses are retried several times, then the
+  callback is marked failed and never re-sent. A "send test callback" endpoint
+  exists.
+- **Callback envelope:** `eventUuid` (unique), `eventTime` (ISO8601),
+  `eventType`, and `event {id, notificationType, reason, ...}`. Documented
+  event families: product orders (e.g. `OrderAccepted`, `AppointmentRequired`,
+  `RSPActionRequired`, `OrderCompleted`, and terminal `VTOrderCompleted` /
+  `VTOrderCancelled`), appointments (`AppointmentBooked`,
+  `AppointmentCompleted`, ...), services (`ProductInstanceUpdated`,
+  `ProductInstanceDisconnected`), service health, service tests, and outages.
+- **Order lifecycle:** Connect / Modify Speed / Disconnect orders are
+  asynchronous with a rich state machine driven by callbacks. Orders can
+  require action mid-flight: appointments, install-fee or New Development
+  Charge confirmation (via PATCH), fibre-upgrade liability confirmation,
+  RSP actions ("resume order" PATCH after end-user plugs in equipment).
+- **Qualification:** address search (unstructured, structured, G-NAF,
+  coordinates, reverse LOC ID) resolves an **NBN Location ID**; Service
+  Qualification per LOC ID returns technology, **service class** (0–34),
+  available speed tiers, and site restrictions. Churn orders require the
+  existing service's **AVC ID** plus a customer authority date, validated via
+  Enhanced SQ (`serviceIDMatch`).
+- **Suspension:** dedicated Suspend/Resume endpoints exist but are **Beta and
+  Layer 3 services only** — WHMCS suspend/unsuspend must degrade gracefully
+  (e.g. flag for manual action) for Layer 2 services.
+- **Certification:** production access requires demonstrating every endpoint
+  we intend to use in sandbox, including registering a callback URL and
+  receiving at least one callback. **Product Orders and Appointments are
+  certified together** (an appointment-required order, e.g. FTTP SC2, must be
+  completed). This ordering constraint shapes the build steps below.
+- **Rate limits:** some endpoints publish steady/burst limits — the HTTP
+  client must honour HTTP 429-style backoff.
+
 ## Security requirements
 
 - All outbound calls TLS-only with certificate verification; no plaintext HTTP.
-- API credentials and webhook secret stored via WHMCS password-type config
-  fields (encrypted at rest by WHMCS). Never logged.
+- `client_id` / `client_secret` stored via WHMCS password-type config fields
+  (encrypted at rest by WHMCS). Never logged. Access tokens cached server-side
+  (30-day lifetime), refreshed proactively before expiry, never exposed to
+  templates or logs.
 - `logModuleCall` used for all API traffic with an explicit mask list
-  (API keys, tokens, signatures).
-- Inbound webhooks: HMAC signature verification **before** payload parsing,
-  timestamp check for replay protection, unique-event-id idempotency, and an
-  optional source IP allowlist.
-- Webhook endpoint returns quickly and never leaks internal errors in the
-  response body.
+  (`client_secret`, `access_token`, `Authorization`, callback URL token).
+- Inbound callbacks — Virtutel does not sign payloads, so defence layers are:
+  1. HTTPS-only endpoint with a valid CA-signed certificate (Virtutel
+     requirement — self-signed certs are rejected at registration).
+  2. A long random **shared-secret query token** embedded in the registered
+     callback URL (supported by Virtutel), compared with `hash_equals()`
+     before the payload is parsed. Rotatable from module config.
+  3. Optional source allowlist (callbacks originate from `mars.as24516.net`).
+  4. Strict schema validation of the payload; unknown `eventType`s are stored
+     but not acted on.
+  5. Replay/duplicate protection via unique `eventUuid` (DB unique key) and
+     an `eventTime` staleness check.
+- Callback endpoint responds 2xx fast (record first, process after) and never
+  leaks internal errors in the response body — Virtutel retries on non-2xx and
+  permanently drops the event after several failures, so a cron
+  reconciliation poll backstops missed events.
 
 ## Folder and file structure
 
@@ -49,29 +118,45 @@ modules/
         ├── hooks.php                 # WHMCS hooks (daily status-sync cron fallback)
         ├── whmcs.json                # module metadata
         ├── callback/
-        │   └── webhook.php           # public inbound webhook endpoint (thin:
-        │                             #   verify signature, record, dispatch)
+        │   └── webhook.php           # public HTTPS callback endpoint (thin:
+        │                             #   authenticate token, record, 200 fast,
+        │                             #   then dispatch)
         ├── lib/
         │   ├── Api/
         │   │   ├── HttpClient.php            # cURL/Guzzle wrapper: TLS, timeouts,
-        │   │   │                             #   retry w/ backoff, masked logging
-        │   │   ├── VirtutelClient.php        # SQ, order, modify, cease endpoints
+        │   │   │                             #   retry w/ backoff + rate-limit
+        │   │   │                             #   handling, vt_success envelope
+        │   │   │                             #   parsing, masked logging
+        │   │   ├── TokenStore.php            # cache/reuse 30-day bearer tokens,
+        │   │   │                             #   proactive refresh, per-environment
+        │   │   ├── VirtutelClient.php        # access tokens, address search, SQ,
+        │   │   │                             #   product orders, appointments,
+        │   │   │                             #   services, callbacks registration,
+        │   │   │                             #   suspensions (beta)
         │   │   └── ExternalApiClient.php     # the second external API
         │   ├── Service/
-        │   │   ├── QualificationService.php  # address / LOC-ID qualification
-        │   │   ├── ProvisioningService.php   # orchestrates order lifecycle
-        │   │   └── StatusMapper.php          # carrier status -> WHMCS status
+        │   │   ├── QualificationService.php  # address search -> LOC ID -> SQ,
+        │   │   │                             #   service class / speed validation
+        │   │   ├── ProvisioningService.php   # connect/modify/disconnect/churn
+        │   │   │                             #   order orchestration
+        │   │   ├── AppointmentService.php    # timeslots, reserve, reschedule
+        │   │   └── StatusMapper.php          # order status + notificationType ->
+        │   │                                 #   WHMCS service status
         │   ├── Webhook/
-        │   │   ├── SignatureVerifier.php     # HMAC + timestamp/replay checks
-        │   │   ├── WebhookDispatcher.php     # event type -> handler, idempotency
+        │   │   ├── CallbackAuthenticator.php # shared-secret URL token check
+        │   │   │                             #   (hash_equals), staleness check,
+        │   │   │                             #   optional source allowlist
+        │   │   ├── CallbackDispatcher.php    # eventUuid idempotency, route by
+        │   │   │                             #   eventType/notificationType
         │   │   └── Handlers/
-        │   │       ├── OrderStatusHandler.php
+        │   │       ├── OrderStatusHandler.php      # incl. action-required states
         │   │       ├── AppointmentHandler.php
-        │   │       └── ServiceStatusHandler.php
+        │   │       └── ServiceStatusHandler.php    # ProductInstanceUpdated /
+        │   │                                       #   ProductInstanceDisconnected
         │   ├── Repository/
         │   │   ├── ServiceRepository.php     # Capsule ORM over custom tables
         │   │   ├── OrderRepository.php
-        │   │   └── WebhookEventRepository.php
+        │   │   └── CallbackEventRepository.php
         │   └── Migrations.php                # create/upgrade custom tables
         ├── templates/
         │   ├── clientarea.tpl
@@ -98,18 +183,31 @@ Design choices:
 
 Custom tables prefixed `mod_virtutel_`, linked to WHMCS `tblhosting`.
 
+### `mod_virtutel_tokens` — cached API access tokens
+
+| Column | Notes |
+|---|---|
+| `id` | PK |
+| `environment` | sandbox / production, unique with `api_identity` |
+| `api_identity` | hash of client_id (supports credential rotation) |
+| `access_token` | encrypted at rest (WHMCS `encrypt()`) |
+| `expires_at` | refreshed proactively (e.g. at 80% of 30-day lifetime) |
+| `created_at` / `updated_at` | |
+
 ### `mod_virtutel_services` — 1:1 with a WHMCS service
 
 | Column | Notes |
 |---|---|
 | `id` | PK |
 | `whmcs_service_id` | FK -> `tblhosting.id`, unique |
-| `virtutel_service_id` | carrier-side service identifier |
-| `avc_id` | NBN AVC identifier once active |
+| `vt_service_id` | Virtutel service ID (e.g. VT0000001) |
+| `avc_id` | NBN AVC ID once active (needed for churn-away + modify) |
 | `nbn_location_id` | NBN LOC ID from qualification |
-| `technology_type` | FTTP / FTTN / FTTC / HFC / Fixed Wireless |
-| `speed_tier` | ordered bandwidth profile |
-| `carrier_status` | last known raw carrier status |
+| `technology_type` | FTTP(NFAS) / FTTN / FTTB / FTTC(NCAS) / HFC(NHAS) / FW / Satellite |
+| `service_class` | NBN service class 0–34 at order time |
+| `network_layer` | layer2 / layer3 — gates the beta Suspend/Resume endpoints |
+| `speed_tier` | Virtutel speed enumeration (e.g. TC4FWHF, 100/20) |
+| `carrier_status` | last known raw status from /services |
 | `external_ref` | identifier in the second external API |
 | `created_at` / `updated_at` | |
 
@@ -119,56 +217,102 @@ Custom tables prefixed `mod_virtutel_`, linked to WHMCS `tblhosting`.
 |---|---|
 | `id` | PK |
 | `service_id` | FK -> `mod_virtutel_services.id` |
-| `order_type` | connect / modify / cease |
-| `virtutel_order_id` | carrier order reference |
-| `status` | pending / in_progress / appointment_required / complete / failed |
-| `appointment_at` | nullable |
-| `request_payload` / `response_payload` | JSON, masked |
-| `completed_at`, `created_at`, `updated_at` | |
+| `order_type` | connect / churn / modify_speed / disconnect |
+| `vt_order_id` | Virtutel order ID (e.g. VTORD00000000001), unique |
+| `status` | raw Virtutel order status enum |
+| `whmcs_status` | mapped: pending / action_required / appointment_required / complete / cancelled |
+| `action_required` | nullable: install_fee / ndc / fibre_upgrade_liability / rsp_action / dispatch_details |
+| `request_payload` / `response_payload` | JSON, secrets masked |
+| `completed_at`, `created_at`, `updated_at` | terminal on VTOrderCompleted / VTOrderCancelled |
 
-### `mod_virtutel_webhook_events` — audit + idempotency
+### `mod_virtutel_appointments` — 1 order : N appointments
+
+Appointments have their own callback lifecycle and are mandatory for
+certification (Product Orders + Appointments are certified together).
 
 | Column | Notes |
 |---|---|
 | `id` | PK |
-| `event_id` | carrier's event ID, **unique** — duplicates become no-ops |
-| `event_type` | e.g. order.status_changed, service.dropout |
-| `order_id` | nullable FK -> `mod_virtutel_orders.id` |
-| `service_id` | nullable FK -> `mod_virtutel_services.id` |
+| `order_id` | FK -> `mod_virtutel_orders.id` |
+| `appointment_id` | carrier appointment reference |
+| `status` | created / booked / rescheduled / tech_on_site / completed / incomplete / cancelled |
+| `slot_start` / `slot_end` | reserved window |
+| `demand_type` | e.g. Standard Install / Additional Install |
+| `created_at` / `updated_at` | |
+
+### `mod_virtutel_callback_events` — audit + idempotency
+
+| Column | Notes |
+|---|---|
+| `id` | PK |
+| `event_uuid` | Virtutel `eventUuid`, **unique** — duplicate deliveries no-op |
+| `event_time` | Virtutel `eventTime` (ISO8601) |
+| `event_type` | e.g. ProductOrderStateChangeNotification |
+| `notification_type` | e.g. OrderCompleted, AppointmentRequired |
+| `vt_object_id` | `event.id` (order/service/appointment reference) |
+| `order_id` / `service_id` | nullable FKs, resolved at dispatch time |
 | `payload` | raw JSON |
-| `signature_valid` | bool |
+| `auth_ok` | bool — URL token matched |
 | `status` | received / processed / failed / skipped |
 | `processed_at`, `created_at` | |
 
-Relationships: `tblhosting 1—1 services 1—N orders 1—N webhook_events`
-(events may also attach directly to a service for non-order events).
+Relationships: `tblhosting 1—1 services 1—N orders 1—N appointments`,
+callbacks attach to orders, appointments, or services depending on event
+family.
 
-Status flow: webhook (or poll fallback) -> `StatusMapper` -> module tables ->
-WHMCS service status + notifications.
+Status flow: callback (or `/product-orders` poll fallback) -> `StatusMapper`
+-> module tables -> WHMCS service status + notifications, with
+"action required" states (install fee, NDC, fibre-upgrade liability,
+RSP action) surfaced to admins via ticket/todo rather than silently stalling.
 
 ## First 3 incremental steps
 
-1. **Skeleton + activation + secure config.** Scaffolding, `composer.json`,
-   `MetaData` / `ConfigOptions` (API URL, key, webhook secret as password
-   fields), `Migrations` creating the three tables, working `TestConnection`.
-   *Milestone: module installs, activates, authenticates.*
-2. **Outbound API layer + CreateAccount happy path.** `HttpClient`,
-   `VirtutelClient` (qualification + submit order), `ProvisioningService`
-   wired to `CreateAccount`; order stored, service left Pending awaiting async
-   completion. *Milestone: WHMCS order lodges a sandbox NBN order.*
-3. **Inbound webhooks + status lifecycle.** `webhook.php`, HMAC
-   `SignatureVerifier`, idempotent `WebhookDispatcher`, `OrderStatusHandler`
-   flipping the WHMCS service to Active and storing the AVC ID; cron-hook
-   poller as fallback for missed webhooks.
-   *Milestone: full async connect lifecycle end-to-end.*
+Ordered to line up with Virtutel's sandbox certification requirements (callback
+registration + one received callback is itself a certification item, and
+Product Orders certify together with Appointments).
 
-Steps 4–6 (after agreement): suspend/unsuspend/terminate, second external API
-integration, appointments + client-area/admin UI polish.
+1. **Skeleton + activation + auth.** Scaffolding, `composer.json`,
+   `MetaData` / `ConfigOptions` (environment sandbox/production, client_id,
+   client_secret, callback secret token as password fields), `Migrations`
+   creating the tables, `TokenStore` + `HttpClient` (vt_success envelope,
+   retries, rate-limit backoff, masked logging), working `TestConnection`
+   that generates/reuses an access token.
+   *Milestone: module installs, activates, and authenticates against the
+   sandbox (port 8443).*
+2. **Callback endpoint + qualification.** `webhook.php` with
+   `CallbackAuthenticator` (URL secret token) and `CallbackDispatcher`
+   (eventUuid idempotency, event stored then processed); register the URL via
+   the Callbacks endpoint and pass Virtutel's "send test callback"; address
+   search -> LOC ID -> Service Qualification service with service-class and
+   speed-tier validation, exposed to admins for pre-sales checks.
+   *Milestone: test callback received and stored; SQ works end-to-end —
+   callback certification achievable.*
+3. **Connect order lifecycle (incl. appointments).** `ProvisioningService`
+   wired to WHMCS `CreateAccount` (new connect + churn variants),
+   `OrderStatusHandler` walking the full callback state machine
+   (action-required states surfaced to admins), `AppointmentService`
+   (timeslots / reserve / reschedule) since FTTP SC2-style orders require it,
+   AVC ID + VT service ID stored on completion (`VTOrderCompleted` -> WHMCS
+   Active), cron poll of `/product-orders` as missed-callback backstop.
+   *Milestone: appointment-required sandbox order completes end-to-end —
+   Product Orders + Appointments certification achievable.*
+
+Later steps (agreed direction, not yet scheduled): disconnect on
+`TerminateAccount`; speed-modify on package change; suspend/resume via the
+beta Layer 3 endpoints with manual-fallback for Layer 2; the second external
+API integration; client-area status page; outage + service-health surfacing.
 
 ## Open questions
 
-1. Virtutel API auth scheme (API key header vs token) and sandbox availability.
-2. Identity and role of the second external API (aggregator, porting/IPND,
-   AAA/RADIUS?) — determines where it sits in the flow.
-3. Whether Virtutel signs webhooks (HMAC header); if not, fall back to IP
-   allowlist + shared-secret URL token.
+1. **Second external API** — still unidentified. What system is it, and what
+   role does it play (RADIUS/AAA, IPND, billing, something else)?
+2. **Callback hostname** — Virtutel requires the callback hostname to be
+   registered with them and served over HTTPS with a CA-signed cert. Which
+   domain will the WHMCS instance expose for this?
+3. **Scope of phase 1 products** — NBN residential connect/churn only, or do
+   Enterprise Ethernet / Fixed Wireless high speed tiers / mobile need to be
+   in scope from the start? (The mobile endpoints are largely ALPHA.)
+4. **Exact request/response schemas** — the Apiary export only captured the
+   overview page, not the per-endpoint pages with URI paths and full JSON
+   schemas. We'll need those pages (or sandbox access) when implementation
+   starts; the architecture does not depend on them.
