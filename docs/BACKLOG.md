@@ -83,6 +83,8 @@ once scoped. Nothing here is committed scope until agreed.
 
 - RADIUS platform = **FreeRADIUS** (SQL backend). Module config will hold
   connection settings + CoA target, each with a Test Connection action.
+- **Self-service signup confirmed**, including NTD/UNI-D port selection
+  where needed — full flow design in `docs/SIGNUP-FLOW.md`.
 
 ## Open questions (gating)
 
@@ -99,3 +101,16 @@ once scoped. Nothing here is committed scope until agreed.
    Pro-rata?
 6. **IP addressing**: static IP add-ons via RADIUS (Framed-IP-Address) in
    scope? CGNAT vs public dynamic by default?
+7. **Port selection UX**: auto-pick the first free UNI-D port with a
+   dropdown only when there's a real choice (recommended), or always show
+   the picker? Expose FTTP `ntdType` (1-port vs 4-port NTD) as a customer
+   option or default it?
+8. **Copper-pair locations**: collect the existing phone number (FNN) at
+   checkout for POTS Interconnect matching, or auto-select a pair?
+9. **Appointment booking**: customer self-serve timeslot picker in the
+   client area (recommended) or staff-booked by phone?
+10. **Mid-order charges policy**: install fees / New Development Charges —
+    auto-approve under a threshold, invoice the customer first, or staff
+    review each?
+11. **Payment timing**: take payment before lodging the order (recommended,
+    with refund on infeasible/cancelled) or lodge first?

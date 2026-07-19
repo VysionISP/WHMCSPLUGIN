@@ -9,6 +9,10 @@ back into WHMCS.
 
 - `docs/ARCHITECTURE.md` — agreed architecture: folder layout, data models,
   security model, build phases. Keep it updated when the design changes.
+- `docs/SIGNUP-FLOW.md` — self-service checkout design: address → SQ →
+  churn/new-connection branching, per-technology NTD/UNI-D port and copper
+  pair selection, feasibility gate, appointment self-booking.
+- `docs/BACKLOG.md` — live list of answered decisions and open questions.
 - `docs/virtutel-api-notes.txt` — full extracted text of the official Virtutel
   Customer API documentation (Apiary, July 2026). **This is the authoritative
   API reference in this repo.** Search it before guessing any API behaviour.
