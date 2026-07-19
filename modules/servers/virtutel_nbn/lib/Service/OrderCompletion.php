@@ -24,6 +24,18 @@ class OrderCompletion
             return;
         }
 
+        // Non-connect orders have their own completion semantics.
+        if ($order->order_type === 'modify_speed') {
+            $this->completeSpeedChange($order, $service);
+
+            return;
+        }
+        if ($order->order_type === 'disconnect') {
+            $this->completeDisconnect($order, $service);
+
+            return;
+        }
+
         $avcId = '';
         $vtServiceId = '';
         try {
@@ -86,7 +98,81 @@ class OrderCompletion
             ));
         }
 
-        // Step 4: RadiusProvisioner->provision($avcId, $service->speed_tier) goes here.
+        // AAA: the customer's session authorises against this entry the
+        // moment they plug in.
+        if ($avcId !== '' && !empty($service->speed_tier)) {
+            try {
+                (new LifecycleService())->provisionRadius($avcId, (string) $service->speed_tier);
+            } catch (\Throwable $e) {
+                if (function_exists('localAPI')) {
+                    localAPI('AddTodoItem', [
+                        'date' => date('Y-m-d'),
+                        'title' => 'Virtutel NBN: RADIUS provisioning FAILED',
+                        'description' => sprintf(
+                            'AVC %s (service #%d) is active carrier-side but could not be provisioned in FreeRADIUS: %s',
+                            $avcId,
+                            $service->whmcs_service_id,
+                            $e->getMessage()
+                        ),
+                        'status' => 'Pending',
+                        'duedate' => date('Y-m-d'),
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function completeSpeedChange(object $order, object $service): void
+    {
+        $payload = json_decode((string) ($order->request_payload ?? ''), true);
+        $newSpeed = (string) ($payload['service']['nbn']['speed'] ?? '');
+        if ($newSpeed === '') {
+            return;
+        }
+
+        Capsule::table('mod_virtutel_services')->where('id', $service->id)->update([
+            'speed_tier' => $newSpeed,
+            'network_layer' => str_starts_with($newSpeed, 'L3') ? 'layer3' : 'layer2',
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (!empty($service->avc_id)) {
+            try {
+                (new LifecycleService())->applyRadiusSpeed((string) $service->avc_id, $newSpeed);
+            } catch (\Throwable $e) {
+                if (function_exists('logActivity')) {
+                    logActivity(sprintf(
+                        'Virtutel NBN: speed change %s completed carrier-side but RADIUS update failed: %s',
+                        $order->vt_order_id,
+                        $e->getMessage()
+                    ));
+                }
+            }
+        }
+
+        if (function_exists('logActivity')) {
+            logActivity(sprintf(
+                'Virtutel NBN: speed change complete for service #%d — now %s',
+                $service->whmcs_service_id,
+                $newSpeed
+            ));
+        }
+    }
+
+    private function completeDisconnect(object $order, object $service): void
+    {
+        Capsule::table('mod_virtutel_services')->where('id', $service->id)->update([
+            'carrier_status' => 'disconnected',
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if (function_exists('logActivity')) {
+            logActivity(sprintf(
+                'Virtutel NBN: disconnect order %s complete — service #%d fully disconnected carrier-side',
+                $order->vt_order_id,
+                $service->whmcs_service_id
+            ));
+        }
     }
 
     /** @param object $order row from mod_virtutel_orders */

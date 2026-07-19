@@ -186,26 +186,63 @@ function virtutel_nbn_CreateAccount(array $params): string
 
 function virtutel_nbn_SuspendAccount(array $params): string
 {
-    // RADIUS-side suspension (build step 4).
-    return 'Suspension is not implemented yet (build step 4)';
+    try {
+        Migrations::ensure();
+        (new WHMCS\Module\Server\VirtutelNbn\Service\LifecycleService())
+            ->suspend((int) $params['serviceid']);
+
+        return 'success';
+    } catch (\Throwable $e) {
+        return $e->getMessage();
+    }
 }
 
 function virtutel_nbn_UnsuspendAccount(array $params): string
 {
-    // RADIUS-side unsuspension (build step 4).
-    return 'Unsuspension is not implemented yet (build step 4)';
+    try {
+        Migrations::ensure();
+        (new WHMCS\Module\Server\VirtutelNbn\Service\LifecycleService())
+            ->unsuspend((int) $params['serviceid']);
+
+        return 'success';
+    } catch (\Throwable $e) {
+        return $e->getMessage();
+    }
 }
 
 function virtutel_nbn_TerminateAccount(array $params): string
 {
-    // Disconnect order + RADIUS removal (build step 4).
-    return 'Termination is not implemented yet (build step 4)';
+    try {
+        Migrations::ensure();
+        (new WHMCS\Module\Server\VirtutelNbn\Service\LifecycleService())
+            ->terminate(VirtutelClient::fromModuleParams($params), (int) $params['serviceid']);
+
+        return 'success';
+    } catch (\Throwable $e) {
+        return $e->getMessage();
+    }
 }
 
 function virtutel_nbn_ChangePackage(array $params): string
 {
-    // Modify Speed order + RADIUS attribute update (build step 4).
-    return 'Package changes are not implemented yet (build step 4)';
+    try {
+        Migrations::ensure();
+
+        $newSpeed = trim((string) (
+            ($params['configoptions']['Speed Tier'] ?? '')
+                ?: ($params['configoption1'] ?? '')
+        ));
+        if ($newSpeed === '') {
+            return 'No speed tier configured on the new package';
+        }
+
+        (new WHMCS\Module\Server\VirtutelNbn\Service\LifecycleService())
+            ->changeSpeed(VirtutelClient::fromModuleParams($params), (int) $params['serviceid'], $newSpeed);
+
+        return 'success';
+    } catch (\Throwable $e) {
+        return $e->getMessage();
+    }
 }
 
 /**

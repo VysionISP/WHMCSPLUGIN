@@ -36,6 +36,79 @@ function virtutel_nbn_admin_config(): array
                 'Description' => 'Enables address autocomplete on the customer qualification page. '
                     . 'Restrict the key to your domains and the Maps JavaScript + Places APIs.',
             ],
+            'radius_db_host' => [
+                'FriendlyName' => 'FreeRADIUS DB Host',
+                'Type' => 'text',
+                'Size' => '30',
+                'Description' => 'MySQL host of the FreeRADIUS SQL backend.',
+            ],
+            'radius_db_port' => [
+                'FriendlyName' => 'FreeRADIUS DB Port',
+                'Type' => 'text',
+                'Size' => '6',
+                'Default' => '3306',
+            ],
+            'radius_db_name' => [
+                'FriendlyName' => 'FreeRADIUS DB Name',
+                'Type' => 'text',
+                'Size' => '20',
+                'Default' => 'radius',
+            ],
+            'radius_db_user' => [
+                'FriendlyName' => 'FreeRADIUS DB Username',
+                'Type' => 'text',
+                'Size' => '20',
+            ],
+            'radius_db_pass' => [
+                'FriendlyName' => 'FreeRADIUS DB Password',
+                'Type' => 'password',
+                'Size' => '30',
+            ],
+            'radius_default_group' => [
+                'FriendlyName' => 'Active Group',
+                'Type' => 'text',
+                'Size' => '20',
+                'Default' => 'nbn-active',
+                'Description' => 'radusergroup group for active services.',
+            ],
+            'radius_suspend_group' => [
+                'FriendlyName' => 'Suspended Group',
+                'Type' => 'text',
+                'Size' => '20',
+                'Default' => 'nbn-suspended',
+                'Description' => 'Group applied on suspension (walled garden or reject — defined in FreeRADIUS).',
+            ],
+            'radius_rate_attr' => [
+                'FriendlyName' => 'Rate Limit Attribute',
+                'Type' => 'text',
+                'Size' => '30',
+                'Default' => 'Mikrotik-Rate-Limit',
+                'Description' => 'radreply attribute carrying the speed profile.',
+            ],
+            'radius_rate_format' => [
+                'FriendlyName' => 'Rate Limit Format',
+                'Type' => 'text',
+                'Size' => '30',
+                'Default' => '{up}M/{down}M',
+                'Description' => 'Placeholders: {down} {up} in Mbps, {down_k} {up_k} in Kbps.',
+            ],
+            'coa_host' => [
+                'FriendlyName' => 'CoA Target (BNG IP)',
+                'Type' => 'text',
+                'Size' => '30',
+                'Description' => 'Where Disconnect-Requests are sent to drop live sessions.',
+            ],
+            'coa_port' => [
+                'FriendlyName' => 'CoA Port',
+                'Type' => 'text',
+                'Size' => '6',
+                'Default' => '3799',
+            ],
+            'coa_secret' => [
+                'FriendlyName' => 'CoA Shared Secret',
+                'Type' => 'password',
+                'Size' => '30',
+            ],
         ],
     ];
 }
@@ -84,6 +157,45 @@ function virtutel_nbn_admin_output(array $vars): void
 
         return;
     }
+
+    // FreeRADIUS connectivity test.
+    if (isset($_POST['vt_test_radius'])) {
+        echo '<h3>FreeRADIUS Test</h3>';
+        try {
+            $config = WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::load();
+            if (!WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::isConfigured($config)) {
+                echo '<div class="alert alert-warning">FreeRADIUS settings are not configured yet (Configure button above).</div>';
+            } else {
+                $radius = new WHMCS\Module\Server\VirtutelNbn\Radius\FreeRadiusSqlProvisioner($config);
+                $health = $radius->healthCheck();
+                echo '<div class="alert alert-success">Database connection OK.</div>';
+                if ($health['missing_tables'] !== []) {
+                    echo '<div class="alert alert-warning">Missing tables: '
+                        . $e(implode(', ', $health['missing_tables'])) . '</div>';
+                }
+                if ($config['coa_host'] !== '') {
+                    $acked = null;
+                    $responded = (new WHMCS\Module\Server\VirtutelNbn\Radius\CoaClient(
+                        $config['coa_host'],
+                        (int) $config['coa_port'],
+                        $config['coa_secret']
+                    ))->disconnect('VT-COA-TEST-NONEXISTENT', $acked);
+                    echo $responded
+                        ? '<div class="alert alert-success">CoA target responded ('
+                            . ($acked ? 'ACK' : 'NAK — expected for a test user') . ') — reachability and shared secret OK.</div>'
+                        : '<div class="alert alert-danger">No response from the CoA target — check BNG IP, port, firewall, and shared secret.</div>';
+                } else {
+                    echo '<div class="alert alert-info">No CoA target configured — session disconnects will be skipped.</div>';
+                }
+            }
+        } catch (\Throwable $ex) {
+            echo '<div class="alert alert-danger">RADIUS test failed: ' . $e($ex->getMessage()) . '</div>';
+        }
+    }
+
+    echo '<form method="post" action="' . $self . '" style="margin-bottom:18px">'
+        . '<button type="submit" name="vt_test_radius" value="1" class="btn btn-default">Test FreeRADIUS Connection</button>'
+        . '</form>';
 
     // Search / qualify forms.
     echo '<form method="post" action="' . $self . '" class="form-inline" style="margin-bottom:10px">'
