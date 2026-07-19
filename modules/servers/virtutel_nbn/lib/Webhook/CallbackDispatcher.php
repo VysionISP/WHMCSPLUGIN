@@ -49,6 +49,17 @@ class CallbackDispatcher
             };
 
             $status = $handled ? 'processed' : 'skipped';
+
+            if ($envelope->family() === 'other' && function_exists('logActivity')) {
+                // Test callbacks and not-yet-handled families (service
+                // health, outages, ...) — visible in the Activity Log.
+                logActivity(sprintf(
+                    'Virtutel NBN: callback received and stored (%s / %s, uuid %s)',
+                    $envelope->eventType !== '' ? $envelope->eventType : 'unknown type',
+                    $envelope->notificationType !== '' ? $envelope->notificationType : 'unknown notification',
+                    $envelope->eventUuid
+                ));
+            }
         } catch (\Throwable $e) {
             $this->markEvent($envelope->eventUuid, 'failed');
             if (function_exists('logActivity')) {

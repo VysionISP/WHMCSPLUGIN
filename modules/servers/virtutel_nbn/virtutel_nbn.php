@@ -87,6 +87,41 @@ function virtutel_nbn_TestConnection(array $params): array
             ];
         }
 
+        // Full round-trip: have Virtutel POST a test callback to our endpoint
+        // and confirm it was received and stored. Proves DNS, vhost, TLS,
+        // token auth, and event persistence in one go (and satisfies the
+        // received-callback certification requirement).
+        try {
+            $lastEventId = (int) (WHMCS\Database\Capsule::table('mod_virtutel_callback_events')->max('id') ?? 0);
+            $registrar->sendTest();
+
+            $received = false;
+            for ($i = 0; $i < 5 && !$received; $i++) {
+                sleep(1);
+                $received = WHMCS\Database\Capsule::table('mod_virtutel_callback_events')
+                    ->where('id', '>', $lastEventId)
+                    ->exists();
+            }
+
+            if (!$received) {
+                return [
+                    'success' => false,
+                    'error' => 'Virtutel accepted and sent a test callback, but no event was '
+                        . 'recorded in this WHMCS database — check that the callback domain '
+                        . 'serves THIS WHMCS installation (vhost/docroot) and try again.',
+                ];
+            }
+
+            logActivity('Virtutel NBN: test callback received and stored — full callback loop verified');
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => 'API auth and callback registration OK, but the test callback failed: '
+                    . $e->getMessage()
+                    . ' — check the callback URL is reachable over HTTPS with a valid certificate.',
+            ];
+        }
+
         return ['success' => true, 'error' => ''];
     } catch (\Throwable $e) {
         $message = $e->getMessage();
