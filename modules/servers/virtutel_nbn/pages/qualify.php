@@ -56,6 +56,7 @@ header('Content-Type: text/html; charset=utf-8');
   .status { display:inline-block; padding:5px 12px; border-radius:999px; color:#fff;
             font-size:13px; font-weight:600; letter-spacing:.3px; }
   .status.connect_now { background:var(--ok); }
+  .status.transfer_ready { background:var(--ok); }
   .status.device_shipped { background:var(--ok); }
   .status.appointment { background:var(--warn); }
   .status.nbn_work { background:var(--warn); }
@@ -69,6 +70,14 @@ header('Content-Type: text/html; charset=utf-8');
           border-radius:8px; font-size:14px; }
   .error { margin-top:16px; padding:12px 14px; background:#fdecea; border:1px solid #f3b6b0;
            border-radius:8px; color:var(--bad); }
+  .churn { margin-top:18px; padding:16px; background:#f4f8ff; border:1px solid #c9d8f6; border-radius:10px; }
+  .churn h3 { margin:0 0 6px; font-size:16px; }
+  .churn p { margin:0 0 10px; color:var(--muted); font-size:14px; line-height:1.5; }
+  .churn .row { display:flex; gap:8px; }
+  .churn input[type=text] { flex:1; font-size:15px; padding:10px 12px; border:1px solid #c8cfdb; border-radius:8px; }
+  .churn label.consent { display:flex; gap:8px; align-items:flex-start; font-size:13px; color:var(--muted);
+                          margin:10px 0 0; line-height:1.45; }
+  .churn .cherr { color:var(--bad); font-size:14px; margin-top:8px; }
   .spin { color:var(--muted); margin-top:16px; }
   .again { margin-top:18px; background:none; border:0; color:var(--brand); cursor:pointer;
            font-size:14px; text-decoration:underline; padding:0; }
@@ -178,9 +187,11 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
     });
   };
 
-  function qualify(locId, label) {
+  function qualify(locId, label, avcId) {
     show('<p class="spin">Checking what’s available at ' + esc(label) + '&hellip;</p>');
-    post({action: 'qualify', locId: locId}).then(function (res) {
+    var req = {action: 'qualify', locId: locId};
+    if (avcId) { req.avcId = avcId; }
+    post(req).then(function (res) {
       if (!res.ok) { return fail(res.body.error || 'Check failed.'); }
       var q = res.body;
       var html = '<div class="card">'
@@ -201,8 +212,44 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
       if (q.newDevelopmentCharge) {
         html += '<div class="note">This address is in a new development area — NBN’s one-off New Development Charge may apply.</div>';
       }
+
+      // Transfer (churn) path: offer whenever the site is orderable and the
+      // transfer hasn't already been validated.
+      var churnFailed = q.churn && !q.churn.matched;
+      if (q.readiness.code !== 'not_available' && q.readiness.code !== 'transfer_ready') {
+        html += '<div class="churn"><h3>Already have NBN at this address?</h3>'
+          + '<p>Switching from another provider? Transfers are done remotely — '
+          + (q.hasExistingService ? 'and since the NBN equipment here is already in use, this is usually the fastest way to connect. ' : '')
+          + 'Grab the <strong>AVC ID</strong> from your current provider (it looks like AVC123456789012 — '
+          + 'check their portal, app, or a recent invoice; the last 5 digits are enough).</p>'
+          + '<div class="row"><input type="text" id="avcInput" maxlength="15" placeholder="AVC123456789012 or last 5 digits"'
+          + (churnFailed ? ' value="' + esc(q.churn.attempted || '') + '"' : '') + '>'
+          + '<button type="button" class="btn" id="avcBtn">Check transfer</button></div>'
+          + '<label class="consent"><input type="checkbox" id="avcConsent"> I’m the account holder (or authorised by them) '
+          + 'and I authorise this provider to transfer the service at this address from my current provider.</label>'
+          + (churnFailed ? '<div class="cherr">' + esc(q.churn.error) + '</div>' : '')
+          + '</div>';
+      }
+
       html += '<button type="button" class="again" onclick="location.reload()">Check a different address</button></div>';
       show(html);
+
+      var avcBtn = document.getElementById('avcBtn');
+      if (avcBtn) {
+        avcBtn.addEventListener('click', function () {
+          var avc = document.getElementById('avcInput').value.trim().toUpperCase();
+          var consent = document.getElementById('avcConsent').checked;
+          if (!/^(AVC\d{12}|\d{5})$/.test(avc)) {
+            document.getElementById('avcInput').style.borderColor = '#c0392b';
+            return;
+          }
+          if (!consent) {
+            document.getElementById('avcConsent').parentNode.style.color = '#c0392b';
+            return;
+          }
+          qualify(locId, label, avc);
+        });
+      }
     }).catch(function () { fail('Something went wrong — please try again.'); });
   }
 })();

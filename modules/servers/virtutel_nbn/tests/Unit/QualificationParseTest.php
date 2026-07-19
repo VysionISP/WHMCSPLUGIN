@@ -84,6 +84,31 @@ class QualificationParseTest extends TestCase
         $this->assertTrue(QualificationService::parseQualification($sq)['fibre_upgrade_available']);
     }
 
+    public function testFindChurnMatchOnPort(): void
+    {
+        $sq = $this->fttpSc3();
+        $sq['siteRestriction']['supportingResource'][0]['uniPortD'][0]['serviceIDMatch'] = true;
+
+        $parsed = QualificationService::parseQualification($sq);
+        $this->assertSame(
+            ['ntdId' => 'NTD999100158242', 'uniDPortId' => '1-UNI-D1'],
+            QualificationService::findChurnMatch($parsed)
+        );
+    }
+
+    public function testFindChurnMatchNoneAndRestrictionError(): void
+    {
+        $sq = $this->fttpSc3();
+        $sq['siteRestriction']['siteRestrictionError'] = [
+            'code' => 'RJ002005',
+            'message' => 'The provided AVC exists at a different location: 89012',
+        ];
+
+        $parsed = QualificationService::parseQualification($sq);
+        $this->assertNull(QualificationService::findChurnMatch($parsed));
+        $this->assertSame('RJ002005', $parsed['restriction_error']['code']);
+    }
+
     public function testCopperPairChurnMatch(): void
     {
         $sq = $this->fttpSc3();

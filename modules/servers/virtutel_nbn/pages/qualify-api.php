@@ -98,7 +98,41 @@ try {
             $respond(422, ['error' => 'Invalid location reference.']);
         }
 
-        $q = $service->qualify($locId);
+        // Optional churn validation: full AVC ID or its last 5 digits, with
+        // the customer's transfer authorisation implied by submitting it
+        // (authority date = today).
+        $avcId = strtoupper(trim((string) ($input['avcId'] ?? '')));
+        $sqParams = [];
+        if ($avcId !== '') {
+            if (!preg_match('/^(AVC\d{12}|\d{5})$/', $avcId)) {
+                $respond(422, ['error' => 'AVC IDs look like AVC123456789012 (or just the last 5 digits).']);
+            }
+            $sqParams = ['serviceID' => $avcId, 'customerAuthorityDate' => date('Y-m-d')];
+        }
+
+        $q = $service->qualify($locId, $sqParams);
+
+        $churn = null;
+        if ($avcId !== '') {
+            $match = QualificationService::findChurnMatch($q);
+            if ($match !== null) {
+                $churn = ['matched' => true, 'attempted' => $avcId];
+            } else {
+                $reasons = [
+                    'RJ002003' => 'We couldn\'t find an active service with that AVC ID. Double-check it with your current provider.',
+                    'RJ002004' => 'That service appears to have recently been disconnected, so there\'s nothing to transfer — you can order a new connection instead.',
+                    'RJ002005' => 'That AVC ID belongs to a different address. Check the ID, or search for the address it\'s connected at.',
+                    'RJ002006' => 'That AVC ID was recently disconnected at a different address — you can order a new connection here instead.',
+                ];
+                $code = $q['restriction_error']['code'] ?? '';
+                $churn = [
+                    'matched' => false,
+                    'attempted' => $avcId,
+                    'error' => $reasons[$code]
+                        ?? 'We couldn\'t match that AVC ID to a service at this address. Check the ID with your current provider, or continue with a new connection.',
+                ];
+            }
+        }
 
         $freePorts = 0;
         foreach ($q['ntds'] as $ntd) {
@@ -114,15 +148,29 @@ try {
             'nsas' => 'NBN Satellite',
         ];
 
+        $readiness = ConnectReadiness::assess($q);
+        if ($churn !== null && $churn['matched']) {
+            // Validated transfer: the existing port/pair carries over, so no
+            // technician is needed regardless of port availability.
+            $readiness = [
+                'code' => 'transfer_ready',
+                'label' => 'Ready to transfer',
+                'description' => 'We\'ve matched your current service at this address. Transfers are done remotely '
+                    . '— no technician visit, and your connection typically switches over within a day.',
+            ];
+        }
+
         $respond(200, [
             'locId' => $q['location_id'],
             'technology' => $technologyNames[$q['service_type']]
                 ?? ('NBN ' . ($q['technology'] !== '' ? $q['technology'] : 'Fixed Line')),
             'serviceClass' => $q['service_class'],
-            'readiness' => ConnectReadiness::assess($q),
+            'readiness' => $readiness,
             'tiers' => SpeedTier::customerTiers($q['speeds']),
             'newDevelopmentCharge' => $q['new_development_charge'],
             'freePorts' => $q['ntds'] !== [] ? $freePorts : null,
+            'churn' => $churn,
+            'hasExistingService' => $q['ntds'] !== [] && $freePorts === 0,
         ]);
     }
 

@@ -90,7 +90,35 @@ class QualificationService
             'copper_pairs' => self::parseCopperPairs($site['supportingResource'] ?? []),
             'notes' => array_values((array) ($site['notes'] ?? [])),
             'poi_id' => (string) ($site['supportingRelatedSiteBoundaries']['poiId'] ?? ''),
+            'restriction_error' => isset($site['siteRestrictionError']['code']) ? [
+                'code' => (string) $site['siteRestrictionError']['code'],
+                'message' => (string) ($site['siteRestrictionError']['message'] ?? ''),
+            ] : null,
         ];
+    }
+
+    /**
+     * Locate the UNI-D port or copper pair flagged serviceIDMatch by an
+     * Enhanced (churn validation) SQ. Null when nothing matched.
+     *
+     * @return array{ntdId?: string, uniDPortId?: string, copperPairId?: string}|null
+     */
+    public static function findChurnMatch(array $parsed): ?array
+    {
+        foreach ($parsed['ntds'] as $ntd) {
+            foreach ($ntd['ports'] as $port) {
+                if ($port['service_id_match']) {
+                    return ['ntdId' => $ntd['id'], 'uniDPortId' => $port['id']];
+                }
+            }
+        }
+        foreach ($parsed['copper_pairs'] as $pair) {
+            if ($pair['service_id_match']) {
+                return ['copperPairId' => $pair['id']];
+            }
+        }
+
+        return null;
     }
 
     /**
