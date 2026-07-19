@@ -44,13 +44,19 @@ class QualificationService
      */
     public function qualify(string $locationId, array $params = []): array
     {
+        return $this->qualifyWithRaw($locationId, $params)['parsed'];
+    }
+
+    /** @return array{parsed: array, raw: array} */
+    public function qualifyWithRaw(string $locationId, array $params = []): array
+    {
         $response = $this->client->request(
             'GET',
             VirtutelClient::PATH_SERVICE_QUALIFICATIONS . '/' . rawurlencode($locationId),
             ['action' => 'ServiceQualification', 'query' => $params]
         );
 
-        return self::parseQualification($response->data);
+        return ['parsed' => self::parseQualification($response->data), 'raw' => $response->data];
     }
 
     /**
