@@ -209,12 +209,37 @@ try {
             }
         }
 
+        // Optional customer port choice: only when connecting new onto an
+        // existing NTD with more than one free port (churn matches pick the
+        // port automatically; single free port = nothing to choose).
+        $portOptions = [];
+        if ($readiness['code'] === 'connect_now') {
+            foreach ($q['ntds'] as $ntdIndex => $ntd) {
+                foreach ($ntd['ports'] as $port) {
+                    if (!$port['free']) {
+                        continue;
+                    }
+                    $portNumber = preg_match('/D(\d+)$/', $port['id'], $m) ? $m[1] : $port['id'];
+                    $portOptions[] = [
+                        'ntdId' => $ntd['id'],
+                        'portId' => $port['id'],
+                        'label' => 'UNI-D port ' . $portNumber
+                            . (count($q['ntds']) > 1 ? ' (NBN box ' . ($ntdIndex + 1) . ')' : ''),
+                    ];
+                }
+            }
+            if (count($portOptions) < 2) {
+                $portOptions = []; // no real choice -> no picker
+            }
+        }
+
         $respond(200, [
             'locId' => $q['location_id'],
             'technology' => $technologyNames[$q['service_type']]
                 ?? ('NBN ' . ($q['technology'] !== '' ? $q['technology'] : 'Fixed Line')),
             'serviceClass' => $q['service_class'],
             'readiness' => $readiness,
+            'portOptions' => $portOptions,
             'tiers' => SpeedTier::customerTiers($q['speeds']),
             'plans' => $plans,
             'newDevelopmentCharge' => $q['new_development_charge'],

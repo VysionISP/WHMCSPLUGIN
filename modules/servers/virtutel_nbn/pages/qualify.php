@@ -207,6 +207,17 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         + '<div style="color:#667;font-size:13px">' + esc(label) + '</div>'
         + '<p class="desc">' + esc(q.readiness.description) + '</p>';
 
+      if (q.portOptions && q.portOptions.length) {
+        html += '<div style="margin-top:14px"><label style="font-size:14px;color:#667">'
+          + 'NBN box port <span style="color:#99a">(optional — we\'ll pick a free one for you)</span><br>'
+          + '<select id="portSelect" style="margin-top:6px;padding:8px 10px;border:1px solid #c8cfdb;border-radius:8px;font-size:15px">'
+          + '<option value="">Choose for me (recommended)</option>';
+        q.portOptions.forEach(function (p) {
+          html += '<option value="' + esc(p.ntdId) + '|' + esc(p.portId) + '">' + esc(p.label) + '</option>';
+        });
+        html += '</select></label></div>';
+      }
+
       if (q.plans && q.plans.length && q.readiness.code !== 'not_available') {
         html += '<div class="plans">';
         q.plans.forEach(function (p) {
@@ -251,6 +262,22 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
 
       html += '<button type="button" class="again" onclick="location.reload()">Check a different address</button></div>';
       show(html);
+
+      // Port choice rides along on the order links.
+      var portSelect = document.getElementById('portSelect');
+      if (portSelect) {
+        portSelect.addEventListener('change', function () {
+          var parts = portSelect.value ? portSelect.value.split('|') : null;
+          out.querySelectorAll('.plan a.btn').forEach(function (a) {
+            var url = a.getAttribute('href')
+              .replace(/&vt_ntd=[^&]*/g, '').replace(/&vt_port=[^&]*/g, '');
+            if (parts) {
+              url += '&vt_ntd=' + encodeURIComponent(parts[0]) + '&vt_port=' + encodeURIComponent(parts[1]);
+            }
+            a.setAttribute('href', url);
+          });
+        });
+      }
 
       var avcBtn = document.getElementById('avcBtn');
       if (avcBtn) {

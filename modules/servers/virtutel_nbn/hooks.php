@@ -175,6 +175,14 @@ add_hook('ClientAreaPageCart', 1, function () {
         $signup['Authority Date'] = date('Y-m-d');
     }
 
+    // Optional customer port choice from the qualification page.
+    $ntd = strtoupper(trim((string) ($_GET['vt_ntd'] ?? '')));
+    $port = strtoupper(trim((string) ($_GET['vt_port'] ?? '')));
+    if (preg_match('/^NTD[0-9A-Z]{6,20}$/', $ntd) && preg_match('/^[0-9A-Z][0-9A-Z-]{0,19}$/', $port)) {
+        $signup['NTD ID'] = $ntd;
+        $signup['UNI-D Port'] = $port;
+    }
+
     $_SESSION['virtutel_nbn_signup'] = $signup;
 });
 

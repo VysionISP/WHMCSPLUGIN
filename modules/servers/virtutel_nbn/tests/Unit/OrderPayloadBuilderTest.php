@@ -140,4 +140,49 @@ class OrderPayloadBuilderTest extends TestCase
         );
         $this->assertSame(['ntdId' => 'NTDX', 'uniDPortId' => '1-UNI-D4'], $selection);
     }
+
+    public function testDeviceSelectionValidExplicitPortKept(): void
+    {
+        $qualification = [
+            'ntds' => [[
+                'id' => 'NTD1',
+                'ports' => [
+                    ['id' => '1-UNI-D2', 'status' => 'Free', 'free' => true, 'service_id_match' => false],
+                    ['id' => '1-UNI-D3', 'status' => 'Free', 'free' => true, 'service_id_match' => false],
+                ],
+                'speed_tiers_supported' => [],
+            ]],
+            'copper_pairs' => [],
+        ];
+
+        $selection = ProvisioningService::selectDevice(
+            $qualification,
+            ['ntdId' => 'NTD1', 'uniDPortId' => '1-UNI-D3'],
+            false
+        );
+        $this->assertSame('1-UNI-D3', $selection['uniDPortId']);
+    }
+
+    public function testDeviceSelectionStaleExplicitPortFallsBackToAutoPick(): void
+    {
+        $qualification = [
+            'ntds' => [[
+                'id' => 'NTD1',
+                'ports' => [
+                    ['id' => '1-UNI-D2', 'status' => 'Used', 'free' => false, 'service_id_match' => false],
+                    ['id' => '1-UNI-D3', 'status' => 'Free', 'free' => true, 'service_id_match' => false],
+                ],
+                'speed_tiers_supported' => [],
+            ]],
+            'copper_pairs' => [],
+        ];
+
+        // Customer picked D2 at qualification time but it's been taken since.
+        $selection = ProvisioningService::selectDevice(
+            $qualification,
+            ['ntdId' => 'NTD1', 'uniDPortId' => '1-UNI-D2'],
+            false
+        );
+        $this->assertSame(['ntdId' => 'NTD1', 'uniDPortId' => '1-UNI-D3'], $selection);
+    }
 }

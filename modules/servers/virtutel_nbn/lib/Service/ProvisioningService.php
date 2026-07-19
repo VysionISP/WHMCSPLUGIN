@@ -142,6 +142,23 @@ class ProvisioningService
             }
         }
 
+        // An explicit port choice must still be free in the fresh SQ —
+        // a stale pick (taken since qualification) falls back to auto-pick.
+        if (isset($selection['uniDPortId']) && $qualification['ntds'] !== []) {
+            $stillFree = false;
+            foreach ($qualification['ntds'] as $ntd) {
+                foreach ($ntd['ports'] as $port) {
+                    if (strcasecmp($port['id'], $selection['uniDPortId']) === 0) {
+                        $stillFree = $port['free'];
+                        break 2;
+                    }
+                }
+            }
+            if (!$stillFree) {
+                unset($selection['uniDPortId'], $selection['ntdId']);
+            }
+        }
+
         if (!isset($selection['uniDPortId'])) {
             foreach ($qualification['ntds'] as $ntd) {
                 foreach ($ntd['ports'] as $port) {
