@@ -13,7 +13,7 @@ use WHMCS\Database\Capsule;
  */
 class Migrations
 {
-    public const SCHEMA_VERSION = 1;
+    public const SCHEMA_VERSION = 2;
 
     private static bool $checkedThisRequest = false;
 
@@ -44,11 +44,27 @@ class Migrations
         if ($current < 1) {
             self::migrateToV1($schema);
         }
+        if ($current < 2) {
+            self::migrateToV2($schema);
+        }
 
         Capsule::table('mod_virtutel_settings')->updateOrInsert(
             ['name' => 'schema_version'],
             ['value' => (string) self::SCHEMA_VERSION, 'updated_at' => date('Y-m-d H:i:s')]
         );
+    }
+
+    /** Per-IP rate limiting for the public qualification endpoint. */
+    private static function migrateToV2($schema): void
+    {
+        if (!$schema->hasTable('mod_virtutel_ratelimit')) {
+            $schema->create('mod_virtutel_ratelimit', function ($table) {
+                $table->string('ip', 45);
+                $table->unsignedInteger('bucket'); // unix time / window
+                $table->unsignedInteger('hits')->default(0);
+                $table->primary(['ip', 'bucket']);
+            });
+        }
     }
 
     private static function migrateToV1($schema): void
