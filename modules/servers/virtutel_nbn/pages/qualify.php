@@ -66,6 +66,12 @@ header('Content-Type: text/html; charset=utf-8');
   .tiers { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
   .tier { background:#eef3fd; color:var(--brand); border:1px solid #c9d8f6; border-radius:8px;
           padding:8px 14px; font-weight:600; font-size:15px; }
+  .plans { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-top:18px; }
+  .plan { border:1px solid #dde3ee; border-radius:10px; padding:16px; text-align:center; background:#fbfcff; }
+  .plan .pname { font-weight:700; margin-bottom:2px; }
+  .plan .pspeed { color:var(--muted); font-size:13px; margin-bottom:8px; }
+  .plan .pprice { font-size:19px; font-weight:700; color:var(--brand); margin-bottom:12px; }
+  .plan a.btn { display:inline-block; text-decoration:none; padding:9px 18px; font-size:15px; }
   .note { margin-top:14px; padding:10px 14px; background:#fff7e8; border:1px solid #f0d9a8;
           border-radius:8px; font-size:14px; }
   .error { margin-top:16px; padding:12px 14px; background:#fdecea; border:1px solid #f3b6b0;
@@ -200,7 +206,18 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         + '<div style="color:#667;font-size:13px">' + esc(label) + '</div>'
         + '<p class="desc">' + esc(q.readiness.description) + '</p>';
 
-      if (q.tiers && q.tiers.length) {
+      if (q.plans && q.plans.length && q.readiness.code !== 'not_available') {
+        html += '<div class="plans">';
+        q.plans.forEach(function (p) {
+          html += '<div class="plan">'
+            + '<div class="pname">' + esc(p.name) + '</div>'
+            + '<div class="pspeed">' + esc(p.speedLabel) + '</div>'
+            + '<div class="pprice">' + esc(p.price) + '</div>'
+            + '<a class="btn" href="' + esc(p.orderUrl) + '">Order now</a>'
+            + '</div>';
+        });
+        html += '</div>';
+      } else if (q.tiers && q.tiers.length) {
         html += '<div class="tiers">';
         q.tiers.forEach(function (t) { html += '<span class="tier">' + esc(t.label) + '</span>'; });
         html += '</div>';

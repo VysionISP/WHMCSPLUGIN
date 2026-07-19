@@ -148,6 +148,52 @@ try {
             'nsas' => 'NBN Satellite',
         ];
 
+        // WHMCS products on this module whose configured speed enum is
+        // orderable here become the plan cards, with live pricing.
+        $plans = [];
+        if ($q['speeds'] !== []) {
+            try {
+                $currency = \WHMCS\Database\Capsule::table('tblcurrencies')
+                    ->orderByDesc('default')->orderBy('id')->first();
+                $systemUrl = rtrim((string) (\WHMCS\Database\Capsule::table('tblconfiguration')
+                    ->where('setting', 'SystemURL')->value('value') ?? ''), '/');
+
+                $products = \WHMCS\Database\Capsule::table('tblproducts')
+                    ->where('servertype', 'virtutel_nbn')
+                    ->where('hidden', 0)
+                    ->get(['id', 'name', 'configoption1']);
+
+                foreach ($products as $product) {
+                    $enum = trim((string) $product->configoption1);
+                    if ($enum === '' || !in_array($enum, $q['speeds'], true)) {
+                        continue;
+                    }
+                    $tier = SpeedTier::describe($enum);
+                    $monthly = $currency ? \WHMCS\Database\Capsule::table('tblpricing')
+                        ->where('type', 'product')->where('currency', $currency->id)
+                        ->where('relid', $product->id)->value('monthly') : null;
+                    if ($monthly === null || (float) $monthly < 0) {
+                        continue;
+                    }
+
+                    $plans[] = [
+                        'name' => (string) $product->name,
+                        'speedLabel' => $tier['label'] ?? $enum,
+                        'down' => $tier['down'] ?? 0,
+                        'price' => ($currency->prefix ?? '$') . number_format((float) $monthly, 2)
+                            . ($currency->suffix ? ' ' . $currency->suffix : '') . '/mo',
+                        'orderUrl' => $systemUrl . '/cart.php?a=add&pid=' . (int) $product->id
+                            . '&vt_locid=' . rawurlencode($q['location_id'])
+                            . ($churn !== null && $churn['matched']
+                                ? '&vt_avc=' . rawurlencode($avcId) : ''),
+                    ];
+                }
+                usort($plans, fn ($a, $b) => $a['down'] <=> $b['down']);
+            } catch (\Throwable $e) {
+                $plans = []; // pricing lookup must never break qualification
+            }
+        }
+
         $readiness = ConnectReadiness::assess($q);
         if ($churn !== null && $churn['matched']) {
             // Validated transfer: the existing port/pair carries over, so no
@@ -167,6 +213,7 @@ try {
             'serviceClass' => $q['service_class'],
             'readiness' => $readiness,
             'tiers' => SpeedTier::customerTiers($q['speeds']),
+            'plans' => $plans,
             'newDevelopmentCharge' => $q['new_development_charge'],
             'freePorts' => $q['ntds'] !== [] ? $freePorts : null,
             'churn' => $churn,

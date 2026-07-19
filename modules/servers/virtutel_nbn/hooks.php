@@ -13,6 +13,7 @@ use WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory;
 use WHMCS\Module\Server\VirtutelNbn\Api\VirtutelClient;
 use WHMCS\Module\Server\VirtutelNbn\Migrations;
 use WHMCS\Module\Server\VirtutelNbn\Service\CallbackRegistrar;
+use WHMCS\Module\Server\VirtutelNbn\Service\CustomFields;
 use WHMCS\Module\Server\VirtutelNbn\Service\OrderCompletion;
 use WHMCS\Module\Server\VirtutelNbn\Service\StatusMapper;
 
@@ -151,5 +152,66 @@ add_hook('AfterCronJob', 1, function () {
         }
     } catch (\Throwable $e) {
         logActivity('Virtutel NBN: order poll sweep failed: ' . $e->getMessage());
+    }
+});
+
+/**
+ * Checkout hand-off from the qualification page: the "Order now" links carry
+ * vt_locid (and vt_avc for validated transfers) into the cart. Capture them
+ * in the session on any cart page load...
+ */
+add_hook('ClientAreaPageCart', 1, function () {
+    $locId = strtoupper(trim((string) ($_GET['vt_locid'] ?? '')));
+    if (!preg_match('/^LOC\d{9,15}$/', $locId)) {
+        return;
+    }
+
+    $signup = ['Location ID' => $locId];
+
+    $avc = strtoupper(trim((string) ($_GET['vt_avc'] ?? '')));
+    if (preg_match('/^(AVC\d{12}|\d{5})$/', $avc)) {
+        $signup['Churn AVC'] = $avc;
+        // The customer authorised the transfer on the qualification page.
+        $signup['Authority Date'] = date('Y-m-d');
+    }
+
+    $_SESSION['virtutel_nbn_signup'] = $signup;
+});
+
+/**
+ * ...then write them onto the ordered service's (admin-only) custom fields
+ * at checkout, where CreateAccount picks them up to lodge the NBN order.
+ */
+add_hook('AfterShoppingCartCheckout', 1, function ($vars) {
+    $signup = $_SESSION['virtutel_nbn_signup'] ?? null;
+    if (!is_array($signup) || $signup === []) {
+        return;
+    }
+
+    try {
+        $serviceIds = array_filter(array_map('intval', (array) ($vars['ServiceIDs'] ?? [])));
+        foreach ($serviceIds as $serviceId) {
+            $productId = (int) (Capsule::table('tblhosting')
+                ->where('id', $serviceId)->value('packageid') ?? 0);
+            $isOurs = $productId > 0 && Capsule::table('tblproducts')
+                ->where('id', $productId)
+                ->where('servertype', 'virtutel_nbn')
+                ->exists();
+            if (!$isOurs) {
+                continue;
+            }
+
+            CustomFields::writeServiceValues($serviceId, $signup);
+            logActivity(sprintf(
+                'Virtutel NBN: checkout captured qualification for service #%d (%s%s)',
+                $serviceId,
+                $signup['Location ID'],
+                isset($signup['Churn AVC']) ? ', transfer ' . $signup['Churn AVC'] : ''
+            ));
+        }
+    } catch (\Throwable $e) {
+        logActivity('Virtutel NBN: checkout hand-off failed: ' . $e->getMessage());
+    } finally {
+        unset($_SESSION['virtutel_nbn_signup']);
     }
 });
