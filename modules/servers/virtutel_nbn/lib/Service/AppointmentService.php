@@ -91,13 +91,16 @@ class AppointmentService
 
     public static function slotLabel(string $start, string $end): string
     {
-        $startTs = strtotime($start);
-        $endTs = strtotime($end);
-        if ($startTs === false || $endTs === false) {
+        try {
+            // Render in the slot's own timezone (NBN sends the premises-local
+            // offset) — never convert to the server timezone.
+            $startDt = new \DateTimeImmutable($start);
+            $endDt = new \DateTimeImmutable($end);
+        } catch (\Exception $e) {
             return $start;
         }
 
-        return date('D j M Y, g:ia', $startTs) . ' – ' . date('g:ia', $endTs);
+        return $startDt->format('D j M Y, g:ia') . ' – ' . $endDt->format('g:ia');
     }
 
     /** Validate a customer-submitted slot payload. */
