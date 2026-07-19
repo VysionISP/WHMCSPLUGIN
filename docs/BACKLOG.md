@@ -107,5 +107,6 @@ once scoped. Nothing here is committed scope until agreed.
    Pro-rata?
 5. **Copper-pair locations**: collect the existing phone number (FNN) at
    checkout for POTS Interconnect matching, or auto-select a pair?
-6. **Exact API endpoint paths**: confirm against sandbox during step 1
-   (Apiary export lacked per-endpoint pages).
+6. ~~Exact API endpoint paths~~ — RESOLVED: full Apiary export in
+   `docs/api/` confirms every URI, base URL
+   (https://mars.as24516.net/api/v1/), and request/response schema.

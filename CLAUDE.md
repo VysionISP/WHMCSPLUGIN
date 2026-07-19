@@ -13,16 +13,46 @@ back into WHMCS.
   churn/new-connection branching, per-technology NTD/UNI-D port and copper
   pair selection, feasibility gate, appointment self-booking.
 - `docs/BACKLOG.md` — live list of answered decisions and open questions.
-- `docs/virtutel-api-notes.txt` — full extracted text of the official Virtutel
-  Customer API documentation (Apiary, July 2026). **This is the authoritative
-  API reference in this repo.** Search it before guessing any API behaviour.
-- `docs/virtutel-api-apiary-original.html` — lossless original of the Apiary
-  doc page the notes were extracted from.
+- `docs/api/` — **the complete official API documentation** (full Apiary
+  export, July 2026): `Virtutel_Customer_API_FULL.md` (everything in one
+  file), `01..21_*.md` (one per resource group, with URIs, parameters, and
+  full request/response JSON examples), and `_raw_apiary_export.json` (the
+  canonical machine-readable export). **This is the authoritative API
+  reference — search it before guessing any API behaviour.**
+- `docs/virtutel-api-notes.txt` — extracted overview text (superseded by
+  docs/api/ but kept for quick grep).
 
-Known gap: the Apiary export contains the overview page only. Exact per-
-endpoint URI paths and full JSON request/response schemas were on sub-pages
-not captured in the export — confirm against sandbox or updated docs before
-hardcoding paths (one confirmed path: `GET /api/v1/service-qualifications/{locId}`).
+### Confirmed base URLs & endpoint paths (from the raw export)
+
+- **Production base: `https://mars.as24516.net/api/v1/`** (port 443).
+  Sandbox: same host, **port 8443**. All paths below are relative to
+  `/api/v1`.
+- `POST /oauth/tokens` — body `{client_id, client_secret,
+  audience: "mars.as24516.net", grant_type: "client_credentials"}` →
+  `{access_token, expires_in, scope, token_type: "Bearer"}` (example
+  expires_in 604800 = 7 days; treat expires_in as authoritative).
+- `POST /locations` — address search; body key selects mode: `unstructured`,
+  `structured`, `GNAF`, `coordinates`, or `locationId` (reverse lookup).
+- `GET /service-qualifications/{locationId}` — params `customerAuthorityDate`,
+  `serviceID` (churn validation), `POTSInterconnect`, `productType`
+  (NFAS fibre-upgrade / EEAS).
+- `POST|GET /callbacks/urls`, `DELETE /callbacks/urls/{id}`,
+  `POST /callbacks/tests/{id}` — registration IDs look like CRI000000000001.
+- `POST /product-order-qualifications?orderType=connect` — feasibility.
+- `POST /product-orders?orderType=connect|modify|disconnect`;
+  `GET /product-orders/{vtOrderId}` (`includeMdfPatch`, `legacySpeedEnums`);
+  `PATCH /product-orders/{vtOrderId}` (update/approve);
+  `PATCH /product-orders/{vtOrderId}?resume` (resume after RSP action);
+  `GET /product-orders?status&page&limit&inFlightOnly` (poll backstop).
+- `GET /appointments/timeslots?locationId&appointmentId&demandType&...`;
+  `POST /appointments` (reserve); `GET|PATCH|DELETE /appointments/{appointmentId}`.
+- `GET /services?vtServiceId=` | `?supplierServiceId=` | `?searchString&page&limit&status`.
+- `POST /suspensions` (suspend/resume/drop-session — Layer 3 beta only).
+- Connect order body shape: `{locationId, custData{business, customerName,
+  orderRef}, contactData{firstName, lastName, phoneNumber, emailAddress},
+  service{nbn{nfas{uniDPortId, ntdId}, speed, churn{type: "Service
+  Transfer", customerAuthorityDate, serviceIDToTransfer}}}, notes}` —
+  per-technology keys (nfas/ncas/nhas/nwas) vary; see docs/api/07.
 
 ## Virtutel API — key facts (memorise)
 

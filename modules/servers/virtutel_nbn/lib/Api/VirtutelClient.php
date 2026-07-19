@@ -13,17 +13,24 @@ namespace WHMCS\Module\Server\VirtutelNbn\Api;
 class VirtutelClient
 {
     /**
-     * Endpoint paths. The Apiary export only captured the overview page, so
-     * paths not confirmed there are marked TBC and must be verified against
-     * the sandbox before certification. Confirmed in the docs:
-     * /api/v1/service-qualifications/{locId}.
+     * Endpoint paths, confirmed against the full Apiary export
+     * (docs/api/). All are relative to the /api/v1 base, which is part of
+     * the base URL. Production base: https://mars.as24516.net/api/v1/
      */
-    public const PATH_ACCESS_TOKENS = '/api/v1/access-tokens'; // TBC
-    public const PATH_SERVICE_QUALIFICATIONS = '/api/v1/service-qualifications';
-    public const PATH_CALLBACKS = '/api/v1/callbacks'; // TBC
-    public const PATH_SERVICES = '/api/v1/services'; // TBC
-    public const PATH_PRODUCT_ORDERS = '/api/v1/product-orders'; // TBC
+    public const PATH_ACCESS_TOKENS = '/oauth/tokens';
+    public const PATH_LOCATIONS = '/locations';
+    public const PATH_SERVICE_QUALIFICATIONS = '/service-qualifications';
+    public const PATH_CALLBACK_URLS = '/callbacks/urls';
+    public const PATH_CALLBACK_TESTS = '/callbacks/tests';
+    public const PATH_PRODUCT_ORDER_QUALIFICATIONS = '/product-order-qualifications';
+    public const PATH_PRODUCT_ORDERS = '/product-orders';
+    public const PATH_APPOINTMENTS = '/appointments';
+    public const PATH_APPOINTMENT_TIMESLOTS = '/appointments/timeslots';
+    public const PATH_SERVICES = '/services';
+    public const PATH_SUSPENSIONS = '/suspensions';
 
+    public const DEFAULT_HOST = 'mars.as24516.net';
+    public const API_BASE_PATH = '/api/v1';
     public const SANDBOX_PORT = 8443;
     public const PRODUCTION_PORT = 443;
 
@@ -52,7 +59,7 @@ class VirtutelClient
     {
         $host = trim((string) (($params['serverhostname'] ?? '') ?: ($params['serverip'] ?? '')));
         if ($host === '') {
-            throw new ApiException('No API hostname configured on the server record');
+            $host = self::DEFAULT_HOST;
         }
 
         $port = (int) ($params['serverport'] ?? 0);
@@ -67,7 +74,7 @@ class VirtutelClient
         }
 
         $environment = $port === self::SANDBOX_PORT ? 'sandbox' : 'production';
-        $baseUrl = 'https://' . $host . ':' . $port;
+        $baseUrl = 'https://' . $host . ':' . $port . self::API_BASE_PATH;
 
         return new self($baseUrl, $clientId, $clientSecret, $environment);
     }
@@ -125,6 +132,8 @@ class VirtutelClient
             'json' => [
                 'client_id' => $this->clientId,
                 'client_secret' => $this->clientSecret,
+                'audience' => self::DEFAULT_HOST,
+                'grant_type' => 'client_credentials',
             ],
         ]);
 

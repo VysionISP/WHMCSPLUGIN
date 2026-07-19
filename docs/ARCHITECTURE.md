@@ -328,7 +328,6 @@ See `docs/BACKLOG.md` for the live list. Still open:
 2. **Callback hostname** — Virtutel requires the callback hostname to be
    registered with them and served over HTTPS with a CA-signed cert. Which
    domain will the WHMCS instance expose for this?
-3. **Exact request/response schemas** — the Apiary export only captured the
-   overview page, not the per-endpoint pages with URI paths and full JSON
-   schemas. Confirm against sandbox when implementation starts; the
-   architecture does not depend on them.
+3. ~~Exact request/response schemas~~ — RESOLVED: the full Apiary export
+   now lives in `docs/api/` with every URI and JSON schema. Production base
+   URL is `https://mars.as24516.net/api/v1/` (sandbox: port 8443).
