@@ -228,9 +228,8 @@ try {
                     ];
                 }
             }
-            if (count($portOptions) < 2) {
-                $portOptions = []; // no real choice -> no picker
-            }
+            // A single option is informational (which port you'll get);
+            // the page only renders a picker when there's a real choice.
         }
 
         $respond(200, [

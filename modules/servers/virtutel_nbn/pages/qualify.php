@@ -207,7 +207,7 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         + '<div style="color:#667;font-size:13px">' + esc(label) + '</div>'
         + '<p class="desc">' + esc(q.readiness.description) + '</p>';
 
-      if (q.portOptions && q.portOptions.length) {
+      if (q.portOptions && q.portOptions.length > 1) {
         html += '<div style="margin-top:14px"><label style="font-size:14px;color:#667">'
           + 'NBN box port <span style="color:#99a">(optional — we\'ll pick a free one for you)</span><br>'
           + '<select id="portSelect" style="margin-top:6px;padding:8px 10px;border:1px solid #c8cfdb;border-radius:8px;font-size:15px">'
@@ -216,6 +216,9 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
           html += '<option value="' + esc(p.ntdId) + '|' + esc(p.portId) + '">' + esc(p.label) + '</option>';
         });
         html += '</select></label></div>';
+      } else if (q.portOptions && q.portOptions.length === 1) {
+        html += '<p class="desc">Your service will connect on <strong>' + esc(q.portOptions[0].label)
+          + '</strong> — the only spare port on the NBN equipment at this address.</p>';
       }
 
       if (q.plans && q.plans.length && q.readiness.code !== 'not_available') {
