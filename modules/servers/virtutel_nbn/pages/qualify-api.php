@@ -135,9 +135,10 @@ try {
         }
 
         $freePorts = 0;
+        $usedPorts = 0;
         foreach ($q['ntds'] as $ntd) {
             foreach ($ntd['ports'] as $port) {
-                $freePorts += $port['free'] ? 1 : 0;
+                $port['free'] ? $freePorts++ : $usedPorts++;
             }
         }
 
@@ -243,6 +244,7 @@ try {
             'plans' => $plans,
             'newDevelopmentCharge' => $q['new_development_charge'],
             'freePorts' => $q['ntds'] !== [] ? $freePorts : null,
+            'usedPorts' => $q['ntds'] !== [] ? $usedPorts : null,
             'churn' => $churn,
             'hasExistingService' => $q['ntds'] !== [] && $freePorts === 0,
         ]);

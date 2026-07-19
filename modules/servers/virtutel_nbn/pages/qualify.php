@@ -220,6 +220,12 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         html += '<p class="desc">Your service will connect on <strong>' + esc(q.portOptions[0].label)
           + '</strong> — the only spare port on the NBN equipment at this address.</p>';
       }
+      if (q.usedPorts > 0 && q.readiness.code === 'connect_now') {
+        html += '<p class="desc" style="font-size:13px">' + q.usedPorts + ' port'
+          + (q.usedPorts === 1 ? ' is' : 's are') + ' already carrying an active service. '
+          + 'If one of those is <em>your</em> current connection and you want to keep using that port, '
+          + 'don\'t order a new connection — transfer it with your AVC ID below instead.</p>';
+      }
 
       if (q.plans && q.plans.length && q.readiness.code !== 'not_available') {
         html += '<div class="plans">';
