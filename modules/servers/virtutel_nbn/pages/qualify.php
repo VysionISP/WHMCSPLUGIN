@@ -276,10 +276,17 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
       }
 
       // Transfer (churn) path: offer whenever the site is orderable and the
-      // transfer hasn't already been validated.
+      // transfer hasn't already been validated. Collapsed to a one-line link
+      // when a clean new connection is the primary path; expanded when the
+      // equipment is full or a transfer attempt failed.
       var churnFailed = q.churn && !q.churn.matched;
+      var churnExpanded = churnFailed || q.readiness.code === 'existing_service';
       if (q.readiness.code !== 'not_available' && q.readiness.code !== 'transfer_ready') {
-        html += '<div class="churn"><h3>Already have NBN at this address?</h3>'
+        if (!churnExpanded) {
+          html += '<p style="margin:16px 0 0"><button type="button" id="churnToggle" class="again" style="margin:0">'
+            + 'Switching from another provider? Transfer your existing service instead &rarr;</button></p>';
+        }
+        html += '<div class="churn"' + (churnExpanded ? '' : ' style="display:none"') + '><h3>Already have NBN at this address?</h3>'
           + '<p>Switching from another provider? Transfers are done remotely — '
           + (q.hasExistingService ? 'and since the NBN equipment here is already in use, this is usually the fastest way to connect. ' : '')
           + 'Grab the <strong>AVC ID</strong> from your current provider (it looks like AVC123456789012 — '
@@ -307,6 +314,21 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
             url += '&vt_ntd=' + encodeURIComponent(ntd) + '&vt_port=' + encodeURIComponent(port);
           }
           a.setAttribute('href', url);
+        });
+      }
+
+      // Collapsed transfer box expands on demand.
+      var churnToggle = document.getElementById('churnToggle');
+      function expandChurn() {
+        var box = out.querySelector('.churn');
+        if (box) { box.style.display = 'block'; }
+        if (churnToggle) { churnToggle.parentNode.style.display = 'none'; }
+        return box;
+      }
+      if (churnToggle) {
+        churnToggle.addEventListener('click', function () {
+          var box = expandChurn();
+          if (box) { box.scrollIntoView({behavior: 'smooth', block: 'center'}); }
         });
       }
 
@@ -355,6 +377,7 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
                   + 'match it to this port automatically.';
               }
               if (churnBox) {
+                expandChurn();
                 churnBox.classList.add('attention');
                 churnBox.scrollIntoView({behavior: 'smooth', block: 'center'});
                 var avcInput = document.getElementById('avcInput');
