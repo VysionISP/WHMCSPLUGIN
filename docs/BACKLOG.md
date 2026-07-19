@@ -69,26 +69,33 @@ once scoped. Nothing here is committed scope until agreed.
 - Suspension policy: Layer 3 -> API suspend/resume; Layer 2 -> ticket for
   manual action (or optional integration with external AAA — see below).
 
+## Answered (2026-07-19, Lockie)
+
+- Second external system = **RADIUS/AAA** — all services are Layer 2 IPoE,
+  identified by AVC ID (Option 82). Suspend/terminate/speed enforcement are
+  RADIUS-side (profile change + CoA/DM); Virtutel L3 suspension API unused.
+- WHMCS **8.13.2**.
+- Sandbox AND production credentials in hand.
+- **Self-service qualification** at checkout; **residential only** phase 1.
+- **Go-live import required**: map existing Virtutel services (GET /services)
+  to existing WHMCS services — auto-match by address / known IDs, admin
+  review screen for the rest, RADIUS consistency diff.
+
+- RADIUS platform = **FreeRADIUS** (SQL backend). Module config will hold
+  connection settings + CoA target, each with a Test Connection action.
+
 ## Open questions (gating)
 
-1. **Second external API — what is it?** If Virtutel supplies Layer 2, we
-   need our own BNG/AAA (RADIUS) provisioning — is that what the external
-   API is? Name/vendor + docs needed. Determines suspend/terminate flow.
-2. **Layer 2 or Layer 3 services (or both)?** Gates suspension approach,
-   AAA needs, and which speed enums (L3TC4... vs TC4...) we order.
-3. **WHMCS version + PHP version + hosting** for the module (affects
-   Capsule/Smarty targets), and **which public domain** hosts the callback
-   URL (must be registered with Virtutel, CA-signed cert, reachable from
-   mars.as24516.net).
-4. **Checkout flow**: full self-serve qualification at checkout from day 1,
-   or staff-driven ordering first (simpler MVP)?
-5. **Who approves chargeable events** (install fee / NDC / fibre upgrade
+1. **BNG vendor/model** (Mikrotik, Cisco, Juniper, Nokia?) — determines
+   rate-limit attribute format (e.g. Mikrotik-Rate-Limit vs Cisco policing
+   AVPairs) and CoA/Disconnect support details.
+2. **Walled garden or hard reject on suspension?** (Redirect to a pay page
+   vs no session.)
+3. **Callback public domain** for the WHMCS instance (must be registered
+   with Virtutel, CA-signed cert, reachable from mars.as24516.net).
+4. **Who approves chargeable events** (install fee / NDC / fibre upgrade
    liability)? Auto-approve threshold?
-6. **Billing start policy**: bill from order date or from activation date?
+5. **Billing start policy**: bill from order date or from activation date?
    Pro-rata?
-7. **Phase 1 product scope**: residential NBN connect + churn only?
-   Enterprise Ethernet, FW high-speed tiers, satellite, mobile later?
-8. **Existing Virtutel services** to import into WHMCS at go-live, or
-   greenfield?
-9. Do we have **sandbox credentials + test data document** yet (API Licence
-   Agreement signed)? Needed early in step 1 to confirm endpoint paths.
+6. **IP addressing**: static IP add-ons via RADIUS (Framed-IP-Address) in
+   scope? CGNAT vs public dynamic by default?

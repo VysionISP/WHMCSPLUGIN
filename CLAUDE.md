@@ -123,14 +123,39 @@ hardcoding paths (one confirmed path: `GET /api/v1/service-qualifications/{locId
 - Only order against LOC IDs from the issued test data; run fresh SQ first
   (sandbox data is shared and mutable).
 
+## Decided requirements (from Lockie)
+
+- **WHMCS 8.13.2** (PHP 8.1/8.2 era). Target current Capsule/Smarty APIs.
+- **All services are Layer 2 IPoE.** The second external system is the
+  **RADIUS/AAA server**: subscribers are identified by AVC ID (DHCP
+  Option 82 circuit ID), not PPPoE credentials. On `VTOrderCompleted`,
+  provision the RADIUS entry keyed on AVC ID with speed-profile attributes.
+- **Suspend/unsuspend/terminate are RADIUS-side operations** (profile swap /
+  entry removal + CoA/Disconnect-Message to drop live sessions). Virtutel's
+  beta suspension API is Layer-3-only and NOT used.
+- Speed changes are two-sided: Virtutel Modify Speed order, then on
+  completion update RADIUS attributes + CoA.
+- **Self-service qualification at checkout**, residential NBN only (no EE,
+  mobile, or satellite in phase 1).
+- **Go-live import required**: pull all existing services via GET /services,
+  auto-match to WHMCS services (address, known AVC/service IDs), admin
+  review screen for ambiguous matches, diff against RADIUS for consistency.
+- Sandbox AND production credentials are already in hand.
+
 ## Project conventions
 
 - Module name/namespace: `virtutel_nbn` under `modules/servers/virtutel_nbn/`.
 - Thin WHMCS entrypoint (`virtutel_nbn.php`); all logic in testable `lib/`
   classes; DB via WHMCS Capsule; custom tables prefixed `mod_virtutel_`.
-- Secrets (client_secret, tokens, callback token) only in WHMCS
-  password-type config fields / encrypted columns; always mask them in
+- Secrets (client_secret, tokens, callback token, RADIUS credentials) only in
+  WHMCS password-type config fields / encrypted columns; always mask them in
   `logModuleCall`.
 - Development branch: `claude/nbn-provisioning-api-design-h7fjjt`.
-- A second external API will also be integrated (identity TBC by Lockie) —
-  keep `ExternalApiClient` isolated behind its own interface.
+- RADIUS platform is **FreeRADIUS** with the SQL backend: provisioning writes
+  `radcheck`/`radreply`/`radusergroup` rows keyed on AVC ID; sessions in
+  `radacct`. Module config carries FreeRADIUS DB settings (host/port/db/user/
+  password) plus CoA target (BNG IP + secret), each with its own Test
+  Connection. Keep it behind the `RadiusProvisioner` interface anyway.
+- Still to confirm: BNG vendor (rate-limit attribute format, e.g.
+  Mikrotik-Rate-Limit vs Cisco AVPairs) and walled-garden vs hard-reject on
+  suspension.

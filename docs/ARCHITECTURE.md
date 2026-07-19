@@ -133,7 +133,9 @@ modules/
         │   │   │                             #   product orders, appointments,
         │   │   │                             #   services, callbacks registration,
         │   │   │                             #   suspensions (beta)
-        │   │   └── ExternalApiClient.php     # the second external API
+        │   │   └── RadiusProvisioner.php     # AAA provisioning behind an
+        │   │                                 #   interface: AVC-ID-keyed entry,
+        │   │                                 #   speed attrs, CoA/DM on change
         │   ├── Service/
         │   │   ├── QualificationService.php  # address search -> LOC ID -> SQ,
         │   │   │                             #   service class / speed validation
@@ -297,22 +299,36 @@ Product Orders certify together with Appointments).
    *Milestone: appointment-required sandbox order completes end-to-end —
    Product Orders + Appointments certification achievable.*
 
-Later steps (agreed direction, not yet scheduled): disconnect on
-`TerminateAccount`; speed-modify on package change; suspend/resume via the
-beta Layer 3 endpoints with manual-fallback for Layer 2; the second external
-API integration; client-area status page; outage + service-health surfacing.
+Later steps (agreed direction, not yet scheduled):
+
+4. **RADIUS integration.** All services are Layer 2 IPoE identified by AVC ID
+   (DHCP Option 82). On `VTOrderCompleted`: create the RADIUS entry (AVC ID
+   key + speed-profile attributes). `SuspendAccount`/`UnsuspendAccount`/
+   `TerminateAccount` act on RADIUS (profile swap or removal + CoA/Disconnect
+   to drop live sessions) — Virtutel's beta L3 suspension API is not used.
+   Speed changes: Virtutel Modify Speed order, then RADIUS attribute update
+   + CoA on completion.
+5. **Go-live import & mapping tool.** Pull all existing services via
+   `GET /services`, auto-match to WHMCS services by address and known
+   AVC/service IDs, admin review screen for ambiguous/unmatched entries,
+   RADIUS-vs-Virtutel consistency diff. Linked services get full callback
+   handling.
+6. Self-serve checkout qualification widget (residential only), client-area
+   status page, outage + service-health surfacing, disconnect flow polish.
 
 ## Open questions
 
-1. **Second external API** — still unidentified. What system is it, and what
-   role does it play (RADIUS/AAA, IPND, billing, something else)?
+Resolved so far: external system = RADIUS/AAA (Layer 2 IPoE, AVC-ID keyed);
+WHMCS 8.13.2; sandbox + production credentials in hand; self-service
+qualification; residential-only phase 1; go-live import required.
+See `docs/BACKLOG.md` for the live list. Still open:
+
+1. **BNG vendor** — RADIUS platform is FreeRADIUS (SQL backend, confirmed);
+   the BNG model drives rate-limit attribute format and CoA support.
 2. **Callback hostname** — Virtutel requires the callback hostname to be
    registered with them and served over HTTPS with a CA-signed cert. Which
    domain will the WHMCS instance expose for this?
-3. **Scope of phase 1 products** — NBN residential connect/churn only, or do
-   Enterprise Ethernet / Fixed Wireless high speed tiers / mobile need to be
-   in scope from the start? (The mobile endpoints are largely ALPHA.)
-4. **Exact request/response schemas** — the Apiary export only captured the
+3. **Exact request/response schemas** — the Apiary export only captured the
    overview page, not the per-endpoint pages with URI paths and full JSON
-   schemas. We'll need those pages (or sandbox access) when implementation
-   starts; the architecture does not depend on them.
+   schemas. Confirm against sandbox when implementation starts; the
+   architecture does not depend on them.
