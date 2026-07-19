@@ -258,11 +258,12 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
       if (q.plans && q.plans.length && q.readiness.code !== 'not_available') {
         html += '<div class="plans">';
         q.plans.forEach(function (p) {
+          var orderUrl = p.orderUrl + '&vt_addr=' + encodeURIComponent(label);
           html += '<div class="plan">'
             + '<div class="pname">' + esc(p.name) + '</div>'
             + '<div class="pspeed">' + esc(p.speedLabel) + '</div>'
             + '<div class="pprice">' + esc(p.price) + '</div>'
-            + '<a class="btn" href="' + esc(p.orderUrl) + '">Order now</a>'
+            + '<a class="btn" href="' + esc(orderUrl) + '">Order now</a>'
             + '</div>';
         });
         html += '</div>';

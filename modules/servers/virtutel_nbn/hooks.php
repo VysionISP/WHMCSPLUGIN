@@ -183,6 +183,13 @@ add_hook('ClientAreaPageCart', 1, function () {
         $signup['UNI-D Port'] = $port;
     }
 
+    // Display-only: the qualified address label for the cart banner. Not a
+    // custom field (CustomFields only writes its known field names).
+    $addr = trim(preg_replace('/[^\PC ]/u', '', strip_tags((string) ($_GET['vt_addr'] ?? ''))) ?? '');
+    if ($addr !== '') {
+        $signup['Address'] = mb_substr($addr, 0, 120);
+    }
+
     $_SESSION['virtutel_nbn_signup'] = $signup;
 });
 
@@ -222,4 +229,40 @@ add_hook('AfterShoppingCartCheckout', 1, function ($vars) {
     } finally {
         unset($_SESSION['virtutel_nbn_signup']);
     }
+});
+
+/**
+ * Reassure the customer on cart pages that their qualification carried
+ * over: a banner naming the address (and transfer/port choice) attached to
+ * the order.
+ */
+add_hook('ClientAreaHeadOutput', 1, function ($vars) {
+    if (($vars['filename'] ?? '') !== 'cart') {
+        return '';
+    }
+    $signup = $_SESSION['virtutel_nbn_signup'] ?? null;
+    if (!is_array($signup) || empty($signup['Location ID'])) {
+        return '';
+    }
+
+    $parts = [];
+    $parts[] = 'Connecting at: ' . (($signup['Address'] ?? '') !== ''
+        ? $signup['Address']
+        : 'NBN location ' . $signup['Location ID']);
+    if (!empty($signup['Churn AVC'])) {
+        $parts[] = 'transferring your existing service (' . $signup['Churn AVC'] . ')';
+    } elseif (!empty($signup['UNI-D Port'])) {
+        $parts[] = 'on port ' . $signup['UNI-D Port'];
+    }
+    $text = implode(' — ', $parts) . '. Your NBN connection details are attached to this order automatically.';
+
+    $json = json_encode('✓ ' . $text, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+
+    return "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "var d=document.createElement('div');"
+        . "d.style.cssText='background:#e7f6ec;border:1px solid #b7e3c6;color:#177a43;"
+        . "padding:10px 16px;border-radius:8px;margin:12px auto;max-width:1100px;font-size:14px;';"
+        . "d.textContent={$json};"
+        . "var m=document.querySelector('#main-body')||document.querySelector('.main-content')||document.body;"
+        . "m.insertBefore(d,m.firstChild);});</script>";
 });
