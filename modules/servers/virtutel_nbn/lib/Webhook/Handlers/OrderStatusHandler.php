@@ -3,6 +3,7 @@
 namespace WHMCS\Module\Server\VirtutelNbn\Webhook\Handlers;
 
 use WHMCS\Database\Capsule;
+use WHMCS\Module\Server\VirtutelNbn\Service\OrderCompletion;
 use WHMCS\Module\Server\VirtutelNbn\Service\StatusMapper;
 use WHMCS\Module\Server\VirtutelNbn\Webhook\CallbackEnvelope;
 
@@ -65,6 +66,13 @@ class OrderStatusHandler
 
         if ($state === StatusMapper::ACTION_REQUIRED) {
             $this->raiseActionTodo($order, $notification, $envelope->reason);
+        }
+
+        $completion = new OrderCompletion();
+        if (StatusMapper::isTerminalSuccess($notification)) {
+            $completion->complete($order);
+        } elseif (StatusMapper::isTerminalFailure($notification)) {
+            $completion->cancelled($order, $envelope->reason);
         }
 
         return true;

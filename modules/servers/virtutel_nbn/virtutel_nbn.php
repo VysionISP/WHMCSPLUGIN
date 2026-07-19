@@ -162,8 +162,23 @@ function virtutel_nbn_CreateAccount(array $params): string
     try {
         Migrations::ensure();
 
-        // Step 3 of the build plan: ProvisioningService::createService().
-        return 'Provisioning is not implemented yet (build step 3)';
+        $client = VirtutelClient::fromModuleParams($params);
+        $vtOrderId = (new WHMCS\Module\Server\VirtutelNbn\Service\ProvisioningService($client))
+            ->createService($params);
+
+        // NBN orders complete asynchronously: hold the service in Pending
+        // until the VTOrderCompleted callback activates it.
+        localAPI('UpdateClientProduct', [
+            'serviceid' => (int) $params['serviceid'],
+            'status' => 'Pending',
+        ]);
+        logActivity(sprintf(
+            'Virtutel NBN: connect order %s lodged for service #%d (Pending until VTOrderCompleted)',
+            $vtOrderId,
+            (int) $params['serviceid']
+        ));
+
+        return 'success';
     } catch (\Throwable $e) {
         return $e->getMessage();
     }

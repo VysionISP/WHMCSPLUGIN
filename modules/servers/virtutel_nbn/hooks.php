@@ -9,9 +9,12 @@
  */
 
 use WHMCS\Database\Capsule;
+use WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory;
 use WHMCS\Module\Server\VirtutelNbn\Api\VirtutelClient;
 use WHMCS\Module\Server\VirtutelNbn\Migrations;
 use WHMCS\Module\Server\VirtutelNbn\Service\CallbackRegistrar;
+use WHMCS\Module\Server\VirtutelNbn\Service\OrderCompletion;
+use WHMCS\Module\Server\VirtutelNbn\Service\StatusMapper;
 
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
@@ -71,5 +74,82 @@ add_hook('DailyCronJob', 1, function () {
         }
     } catch (\Throwable $e) {
         logActivity('Virtutel NBN: daily token maintenance failed: ' . $e->getMessage());
+    }
+});
+
+/**
+ * Poll backstop for missed callbacks: Virtutel permanently drops a callback
+ * after several failed deliveries, so in-flight orders are re-checked
+ * against GET /product-orders/{id} on every WHMCS cron tick (throttled to
+ * one sweep per hour).
+ */
+add_hook('AfterCronJob', 1, function () {
+    try {
+        Migrations::ensure();
+
+        $lastRun = (int) (WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get('order_poll_last_run', '0'));
+        if (time() - $lastRun < 3600) {
+            return;
+        }
+        WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set('order_poll_last_run', (string) time());
+
+        $inFlight = Capsule::table('mod_virtutel_orders')
+            ->whereIn('whmcs_status', ['pending', 'in_progress', 'action_required'])
+            ->whereNotNull('vt_order_id')
+            ->orderBy('id')
+            ->limit(100)
+            ->get();
+
+        foreach ($inFlight as $order) {
+            try {
+                $service = Capsule::table('mod_virtutel_services')->where('id', $order->service_id)->first();
+                if (!$service) {
+                    continue;
+                }
+                $client = ClientFactory::forWhmcsService((int) $service->whmcs_service_id);
+                $details = $client->request(
+                    'GET',
+                    VirtutelClient::PATH_PRODUCT_ORDERS . '/' . rawurlencode((string) $order->vt_order_id),
+                    ['action' => 'PollOrder']
+                );
+
+                $rawStatus = (string) $details->get('status', '');
+                if ($rawStatus === '' || $rawStatus === $order->status) {
+                    continue;
+                }
+
+                Capsule::table('mod_virtutel_orders')->where('id', $order->id)->update([
+                    'status' => substr($rawStatus, 0, 64),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+
+                $completion = new OrderCompletion();
+                if ($rawStatus === 'VT_ORDER_COMPLETED') {
+                    Capsule::table('mod_virtutel_orders')->where('id', $order->id)->update([
+                        'whmcs_status' => StatusMapper::COMPLETE,
+                        'completed_at' => date('Y-m-d H:i:s'),
+                    ]);
+                    $completion->complete($order);
+                    logActivity(sprintf(
+                        'Virtutel NBN: poll backstop detected completed order %s (callback missed?)',
+                        $order->vt_order_id
+                    ));
+                } elseif ($rawStatus === 'VT_ORDER_CANCELLED') {
+                    Capsule::table('mod_virtutel_orders')->where('id', $order->id)->update([
+                        'whmcs_status' => StatusMapper::CANCELLED,
+                        'completed_at' => date('Y-m-d H:i:s'),
+                    ]);
+                    $completion->cancelled($order, 'detected via poll backstop');
+                }
+            } catch (\Throwable $e) {
+                logActivity(sprintf(
+                    'Virtutel NBN: order poll failed for %s: %s',
+                    $order->vt_order_id,
+                    $e->getMessage()
+                ));
+            }
+        }
+    } catch (\Throwable $e) {
+        logActivity('Virtutel NBN: order poll sweep failed: ' . $e->getMessage());
     }
 });
