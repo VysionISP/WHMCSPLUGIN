@@ -50,8 +50,10 @@ add_hook('DailyCronJob', 1, function () {
                 }
 
                 // Keep the callback URL registration in place (idempotent).
+                // The Access Hash field on the server record carries the
+                // callback base URL (e.g. https://backend.korvix.co).
                 try {
-                    (new CallbackRegistrar($client))->ensureRegistered();
+                    (new CallbackRegistrar($client, (string) $server->accesshash))->ensureRegistered();
                 } catch (\Throwable $e) {
                     logActivity(sprintf(
                         'Virtutel NBN: callback registration check failed for server "%s": %s',

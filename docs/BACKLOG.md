@@ -101,8 +101,11 @@ once scoped. Nothing here is committed scope until agreed.
    AVPairs) and CoA/Disconnect support details.
 2. **Walled garden or hard reject on suspension?** (Redirect to a pay page
    vs no session.)
-3. **Callback public domain** for the WHMCS instance (must be registered
-   with Virtutel, CA-signed cert, reachable from mars.as24516.net).
+3. ~~Callback public domain~~ — RESOLVED: `backend.korvix.co`, pointed at
+   the WHMCS server. Configured in the server record's Access Hash field
+   (`https://backend.korvix.co`); the web server must serve the WHMCS
+   docroot for that hostname with a valid CA-signed cert, and the hostname
+   must be registered with Virtutel.
 4. **Billing start policy**: bill from order date or from activation date?
    Pro-rata?
 5. **Copper-pair locations**: collect the existing phone number (FNN) at

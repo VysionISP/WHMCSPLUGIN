@@ -69,6 +69,24 @@ function virtutel_nbn_TestConnection(array $params): array
         $client = VirtutelClient::fromModuleParams($params);
         $client->ensureAccessToken();
 
+        // Auth works — also make sure our callback URL is registered so the
+        // asynchronous order flow can function. The Access Hash field on the
+        // server record carries the callback base URL (e.g.
+        // https://backend.korvix.co).
+        try {
+            $registrar = new WHMCS\Module\Server\VirtutelNbn\Service\CallbackRegistrar(
+                $client,
+                (string) ($params['serveraccesshash'] ?? '')
+            );
+            $registrar->ensureRegistered();
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => 'API authentication OK, but callback registration failed: '
+                    . $e->getMessage(),
+            ];
+        }
+
         return ['success' => true, 'error' => ''];
     } catch (\Throwable $e) {
         $message = $e->getMessage();

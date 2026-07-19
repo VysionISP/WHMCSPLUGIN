@@ -174,7 +174,12 @@ back into WHMCS.
 - **Go-live import required**: pull all existing services via GET /services,
   auto-match to WHMCS services (address, known AVC/service IDs), admin
   review screen for ambiguous matches, diff against RADIUS for consistency.
-- Sandbox AND production credentials are already in hand.
+- Sandbox AND production credentials are already in hand. Production auth
+  verified working via WHMCS TestConnection (2026-07-19).
+- **Callback domain: `backend.korvix.co`** (points at the WHMCS server).
+  Admins put `https://backend.korvix.co` in the server record's Access
+  Hash field; CallbackRegistrar uses it as the callback base URL
+  (fallback: stored setting, then SystemURL).
 
 ## Project conventions
 
