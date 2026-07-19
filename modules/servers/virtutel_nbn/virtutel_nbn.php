@@ -78,7 +78,18 @@ function virtutel_nbn_TestConnection(array $params): array
                 $client,
                 (string) ($params['serveraccesshash'] ?? '')
             );
-            $registrar->ensureRegistered();
+            $registrationId = $registrar->ensureRegistered();
+
+            $registeredUrl = (string) WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
+                'callback_registered_url',
+                ''
+            );
+            logActivity(sprintf(
+                'Virtutel NBN: Test Connection OK — environment: %s, callback registration ID: %s, URL: %s',
+                $client->getEnvironment(),
+                $registrationId !== '' ? $registrationId : '(none returned)',
+                preg_replace('/token=[0-9a-f]{8}\K[0-9a-f]+/', '…', $registeredUrl)
+            ));
         } catch (\Throwable $e) {
             return [
                 'success' => false,
