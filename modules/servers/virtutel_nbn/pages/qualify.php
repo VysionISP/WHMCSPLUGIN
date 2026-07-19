@@ -11,6 +11,18 @@
 
 require_once __DIR__ . '/../../../../init.php';
 
+// Google Places key from the addon settings (Addons -> Virtutel NBN Tools
+// -> Configure). Empty key = plain text search fallback.
+$placesKey = '';
+try {
+    $placesKey = (string) (WHMCS\Database\Capsule::table('tbladdonmodules')
+        ->where('module', 'virtutel_nbn_admin')
+        ->where('setting', 'google_places_key')
+        ->value('value') ?? '');
+} catch (\Throwable $e) {
+    // table missing pre-activation — fall back silently
+}
+
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <!DOCTYPE html>
@@ -76,6 +88,7 @@ header('Content-Type: text/html; charset=utf-8');
 </div>
 
 <script>
+var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
 (function () {
   var api = 'qualify-api.php';
   var out = document.getElementById('out');
@@ -98,28 +111,72 @@ header('Content-Type: text/html; charset=utf-8');
   function show(html) { out.innerHTML = html; }
   function fail(msg) { show('<div class="error">' + esc(msg) + '</div>'); }
 
+  function renderMatches(res, fallbackLabel) {
+    btn.disabled = false;
+    if (!res.ok) { return fail(res.body.error || 'Search failed.'); }
+    var m = res.body.matches || [];
+    if (!m.length) { return fail('We couldn’t find that address in the NBN database. Try adding your suburb and postcode, or contact us and we’ll check manually.'); }
+    if (m.length === 1) { return qualify(m[0].locId, m[0].address || fallbackLabel); }
+    var html = '<p class="spin">Select your exact address / unit:</p><ul class="matches">';
+    m.forEach(function (row) {
+      html += '<li><button type="button" data-loc="' + esc(row.locId) + '">' + esc(row.address) + '</button></li>';
+    });
+    html += '</ul>';
+    show(html);
+    out.querySelectorAll('button[data-loc]').forEach(function (b) {
+      b.addEventListener('click', function () { qualify(b.getAttribute('data-loc'), b.textContent); });
+    });
+  }
+
+  function searchByText(address) {
+    btn.disabled = true;
+    show('<p class="spin">Searching the NBN address database&hellip;</p>');
+    post({action: 'search', address: address})
+      .then(function (res) { renderMatches(res, address); })
+      .catch(function () { btn.disabled = false; fail('Something went wrong — please try again.'); });
+  }
+
+  function searchByCoords(lat, lng, label) {
+    btn.disabled = true;
+    show('<p class="spin">Matching your address in the NBN database&hellip;</p>');
+    post({action: 'search', lat: lat, lng: lng})
+      .then(function (res) { renderMatches(res, label); })
+      .catch(function () { btn.disabled = false; fail('Something went wrong — please try again.'); });
+  }
+
   document.getElementById('searchForm').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var address = document.getElementById('address').value.trim();
     if (address.length < 8) { return; }
-    btn.disabled = true;
-    show('<p class="spin">Searching the NBN address database&hellip;</p>');
-    post({action: 'search', address: address}).then(function (res) {
-      btn.disabled = false;
-      if (!res.ok) { return fail(res.body.error || 'Search failed.'); }
-      var m = res.body.matches || [];
-      if (!m.length) { return fail('We couldn’t find that address in the NBN database. Try adding your suburb and postcode, or contact us and we’ll check manually.'); }
-      var html = '<ul class="matches">';
-      m.forEach(function (row) {
-        html += '<li><button type="button" data-loc="' + esc(row.locId) + '">' + esc(row.address) + '</button></li>';
-      });
-      html += '</ul>';
-      show(html);
-      out.querySelectorAll('button[data-loc]').forEach(function (b) {
-        b.addEventListener('click', function () { qualify(b.getAttribute('data-loc'), b.textContent); });
-      });
-    }).catch(function () { btn.disabled = false; fail('Something went wrong — please try again.'); });
+    searchByText(address);
   });
+
+  // Google Places autocomplete: pick address -> lat/lng -> NBN coordinate
+  // search (exact premises incl. units, no address-string guesswork).
+  window.vtInitPlaces = function () {
+    var input = document.getElementById('address');
+    var ac = new google.maps.places.Autocomplete(input, {
+      componentRestrictions: {country: 'au'},
+      types: ['address'],
+      fields: ['geometry', 'formatted_address']
+    });
+    ac.addListener('place_changed', function () {
+      var place = ac.getPlace();
+      if (place && place.geometry && place.geometry.location) {
+        searchByCoords(
+          place.geometry.location.lat(),
+          place.geometry.location.lng(),
+          place.formatted_address || input.value
+        );
+      }
+    });
+    // Stop Enter from submitting the form while the dropdown is open.
+    input.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' && document.querySelector('.pac-container:not([style*="display: none"])')) {
+        ev.preventDefault();
+      }
+    });
+  };
 
   function qualify(locId, label) {
     show('<p class="spin">Checking what’s available at ' + esc(label) + '&hellip;</p>');
@@ -150,5 +207,10 @@ header('Content-Type: text/html; charset=utf-8');
   }
 })();
 </script>
+<?php if ($placesKey !== ''): ?>
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key=<?php echo htmlspecialchars(rawurlencode($placesKey), ENT_QUOTES); ?>&libraries=places&region=AU&callback=vtInitPlaces">
+</script>
+<?php endif; ?>
 </body>
 </html>

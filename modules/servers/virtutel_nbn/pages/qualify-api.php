@@ -56,14 +56,30 @@ try {
     $action = (string) ($input['action'] ?? '');
 
     if ($action === 'search') {
-        $address = trim((string) ($input['address'] ?? ''));
-        if (strlen($address) < 8) {
-            $respond(422, ['error' => 'Please enter your full street address.']);
+        $lat = $input['lat'] ?? null;
+        $lng = $input['lng'] ?? null;
+
+        if (is_numeric($lat) && is_numeric($lng)) {
+            // Preferred path: Google Places picked the address; NBN's
+            // coordinate search returns the exact premises (incl. units).
+            $lat = (float) $lat;
+            $lng = (float) $lng;
+            if ($lat < -44.5 || $lat > -9.0 || $lng < 112.0 || $lng > 154.5) {
+                $respond(422, ['error' => 'That location is outside Australia.']);
+            }
+            $search = ['coordinates' => [
+                'latitude' => (string) $lat,
+                'longitude' => (string) $lng,
+            ]];
+        } else {
+            $address = trim((string) ($input['address'] ?? ''));
+            if (strlen($address) < 8) {
+                $respond(422, ['error' => 'Please enter your full street address.']);
+            }
+            $search = ['unstructured' => ['address' => strtoupper($address), 'fuzzy' => true]];
         }
 
-        $results = $service->searchAddress([
-            'unstructured' => ['address' => strtoupper($address), 'fuzzy' => true],
-        ]);
+        $results = $service->searchAddress($search);
 
         $matches = [];
         foreach (array_slice($results, 0, 10) as $row) {

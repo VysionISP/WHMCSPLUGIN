@@ -27,7 +27,16 @@ function virtutel_nbn_admin_config(): array
         'name' => 'Virtutel NBN Tools',
         'description' => 'Qualification lookups (technology, service class, speed tiers, NTD ports) against the Virtutel Customer API.',
         'author' => 'Vysion',
-        'version' => '1.0',
+        'version' => '1.1',
+        'fields' => [
+            'google_places_key' => [
+                'FriendlyName' => 'Google Places API Key',
+                'Type' => 'password',
+                'Size' => '50',
+                'Description' => 'Enables address autocomplete on the customer qualification page. '
+                    . 'Restrict the key to your domains and the Maps JavaScript + Places APIs.',
+            ],
+        ],
     ];
 }
 
