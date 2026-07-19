@@ -11,6 +11,7 @@
 use WHMCS\Database\Capsule;
 use WHMCS\Module\Server\VirtutelNbn\Api\VirtutelClient;
 use WHMCS\Module\Server\VirtutelNbn\Migrations;
+use WHMCS\Module\Server\VirtutelNbn\Service\CallbackRegistrar;
 
 if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
@@ -45,6 +46,17 @@ add_hook('DailyCronJob', 1, function () {
                         'Virtutel NBN: refreshed %s API access token for server "%s"',
                         $client->getEnvironment(),
                         $server->name
+                    ));
+                }
+
+                // Keep the callback URL registration in place (idempotent).
+                try {
+                    (new CallbackRegistrar($client))->ensureRegistered();
+                } catch (\Throwable $e) {
+                    logActivity(sprintf(
+                        'Virtutel NBN: callback registration check failed for server "%s": %s',
+                        $server->name,
+                        $e->getMessage()
                     ));
                 }
             } catch (\Throwable $e) {
