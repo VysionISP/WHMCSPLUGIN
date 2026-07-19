@@ -210,27 +210,31 @@ try {
             }
         }
 
-        // Optional customer port choice: only when connecting new onto an
-        // existing NTD with more than one free port (churn matches pick the
-        // port automatically; single free port = nothing to choose).
-        $portOptions = [];
-        if ($readiness['code'] === 'connect_now') {
+        // Full port map for the visual selector: every UNI-D port at the
+        // address with its live status. Free ports are orderable directly;
+        // used ports route into the transfer (AVC) flow.
+        $portMap = [];
+        if (in_array($readiness['code'], ['connect_now', 'existing_service'], true)) {
             foreach ($q['ntds'] as $ntdIndex => $ntd) {
+                $ports = [];
                 foreach ($ntd['ports'] as $port) {
-                    if (!$port['free']) {
-                        continue;
-                    }
                     $portNumber = preg_match('/D(\d+)$/', $port['id'], $m) ? $m[1] : $port['id'];
-                    $portOptions[] = [
+                    $ports[] = [
                         'ntdId' => $ntd['id'],
                         'portId' => $port['id'],
-                        'label' => 'UNI-D port ' . $portNumber
-                            . (count($q['ntds']) > 1 ? ' (NBN box ' . ($ntdIndex + 1) . ')' : ''),
+                        'label' => 'UNI-D ' . $portNumber,
+                        'free' => $port['free'],
+                    ];
+                }
+                if ($ports !== []) {
+                    $portMap[] = [
+                        'label' => count($q['ntds']) > 1
+                            ? 'NBN connection box ' . ($ntdIndex + 1)
+                            : 'NBN connection box',
+                        'ports' => $ports,
                     ];
                 }
             }
-            // A single option is informational (which port you'll get);
-            // the page only renders a picker when there's a real choice.
         }
 
         $respond(200, [
@@ -239,7 +243,7 @@ try {
                 ?? ('NBN ' . ($q['technology'] !== '' ? $q['technology'] : 'Fixed Line')),
             'serviceClass' => $q['service_class'],
             'readiness' => $readiness,
-            'portOptions' => $portOptions,
+            'portMap' => $portMap,
             'tiers' => SpeedTier::customerTiers($q['speeds']),
             'plans' => $plans,
             'newDevelopmentCharge' => $q['new_development_charge'],

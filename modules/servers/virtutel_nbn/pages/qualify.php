@@ -77,7 +77,22 @@ header('Content-Type: text/html; charset=utf-8');
           border-radius:8px; font-size:14px; }
   .error { margin-top:16px; padding:12px 14px; background:#fdecea; border:1px solid #f3b6b0;
            border-radius:8px; color:var(--bad); }
+  .portmode { display:flex; gap:8px; margin-top:16px; }
+  .modebtn { padding:8px 14px; font-size:14px; border-radius:8px; border:1px solid #c8cfdb;
+             background:#fff; color:var(--muted); cursor:pointer; }
+  .modebtn.active { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .portbox { margin-top:12px; padding:14px; border:1px solid #dde3ee; border-radius:10px; background:#fbfcff; }
+  .portboxlabel { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;
+                  letter-spacing:.5px; margin-bottom:10px; }
+  .portrow { display:flex; flex-wrap:wrap; gap:10px; }
+  .portbtn { min-width:86px; padding:10px 8px; border-radius:8px; cursor:pointer; text-align:center;
+             font-weight:700; font-size:14px; border:2px solid transparent; }
+  .portbtn .portstate { display:block; font-weight:400; font-size:11px; margin-top:3px; }
+  .portbtn.free { background:#e7f6ec; color:#177a43; border-color:#b7e3c6; }
+  .portbtn.used { background:#fdf1e0; color:#a3690e; border-color:#f0d9a8; }
+  .portbtn.selected { border-color:var(--brand); box-shadow:0 0 0 2px rgba(26,95,208,.25); }
   .churn { margin-top:18px; padding:16px; background:#f4f8ff; border:1px solid #c9d8f6; border-radius:10px; }
+  .churn.attention { border-color:var(--brand); box-shadow:0 0 0 2px rgba(26,95,208,.2); }
   .churn h3 { margin:0 0 6px; font-size:16px; }
   .churn p { margin:0 0 10px; color:var(--muted); font-size:14px; line-height:1.5; }
   .churn .row { display:flex; gap:8px; }
@@ -207,24 +222,37 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         + '<div style="color:#667;font-size:13px">' + esc(label) + '</div>'
         + '<p class="desc">' + esc(q.readiness.description) + '</p>';
 
-      if (q.portOptions && q.portOptions.length > 1) {
-        html += '<div style="margin-top:14px"><label style="font-size:14px;color:#667">'
-          + 'NBN box port <span style="color:#99a">(optional — we\'ll pick a free one for you)</span><br>'
-          + '<select id="portSelect" style="margin-top:6px;padding:8px 10px;border:1px solid #c8cfdb;border-radius:8px;font-size:15px">'
-          + '<option value="">Choose for me (recommended)</option>';
-        q.portOptions.forEach(function (p) {
-          html += '<option value="' + esc(p.ntdId) + '|' + esc(p.portId) + '">' + esc(p.label) + '</option>';
+      var hasPortMap = q.portMap && q.portMap.length > 0;
+      if (hasPortMap) {
+        var totalPorts = 0;
+        q.portMap.forEach(function (b) { totalPorts += b.ports.length; });
+        var anyFree = (q.freePorts || 0) > 0;
+
+        html += '<div style="margin-top:16px">'
+          + '<p class="desc" style="margin:0">' + (q.freePorts || 0) + ' of ' + totalPorts
+          + ' ports available on the NBN equipment at this address.</p>';
+
+        if (anyFree) {
+          html += '<div class="portmode">'
+            + '<button type="button" id="modeAuto" class="modebtn active">Auto-select port (recommended)</button>'
+            + '<button type="button" id="modeManual" class="modebtn">Choose port manually</button>'
+            + '</div>';
+        }
+
+        html += '<div id="portDiagram" style="' + (anyFree ? 'display:none;' : '') + 'margin-top:4px">';
+        q.portMap.forEach(function (box) {
+          html += '<div class="portbox"><div class="portboxlabel">' + esc(box.label) + '</div><div class="portrow">';
+          box.ports.forEach(function (p) {
+            html += '<button type="button" class="portbtn ' + (p.free ? 'free' : 'used') + '"'
+              + ' data-free="' + (p.free ? '1' : '0') + '"'
+              + ' data-ntd="' + esc(p.ntdId) + '" data-port="' + esc(p.portId) + '">'
+              + esc(p.label)
+              + '<span class="portstate">' + (p.free ? 'Available' : 'In use') + '</span>'
+              + '</button>';
+          });
+          html += '</div></div>';
         });
-        html += '</select></label></div>';
-      } else if (q.portOptions && q.portOptions.length === 1) {
-        html += '<p class="desc">Your service will connect on <strong>' + esc(q.portOptions[0].label)
-          + '</strong> — the only spare port on the NBN equipment at this address.</p>';
-      }
-      if (q.usedPorts > 0 && q.readiness.code === 'connect_now') {
-        html += '<p class="desc" style="font-size:13px">' + q.usedPorts + ' port'
-          + (q.usedPorts === 1 ? ' is' : 's are') + ' already carrying an active service. '
-          + 'If one of those is <em>your</em> current connection and you want to keep using that port, '
-          + 'don\'t order a new connection — transfer it with your AVC ID below instead.</p>';
+        html += '<div id="portHint" class="desc" style="font-size:13px"></div></div></div>';
       }
 
       if (q.plans && q.plans.length && q.readiness.code !== 'not_available') {
@@ -242,10 +270,6 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         html += '<div class="tiers">';
         q.tiers.forEach(function (t) { html += '<span class="tier">' + esc(t.label) + '</span>'; });
         html += '</div>';
-      }
-      if (q.freePorts !== null && q.freePorts !== undefined && q.readiness.code === 'connect_now') {
-        html += '<p class="desc">' + q.freePorts + ' spare port' + (q.freePorts === 1 ? '' : 's')
-          + ' on the NBN equipment already installed at this address.</p>';
       }
       if (q.newDevelopmentCharge) {
         html += '<div class="note">This address is in a new development area — NBN’s one-off New Development Charge may apply.</div>';
@@ -272,18 +296,71 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
       html += '<button type="button" class="again" onclick="location.reload()">Check a different address</button></div>';
       show(html);
 
-      // Port choice rides along on the order links.
-      var portSelect = document.getElementById('portSelect');
-      if (portSelect) {
-        portSelect.addEventListener('change', function () {
-          var parts = portSelect.value ? portSelect.value.split('|') : null;
-          out.querySelectorAll('.plan a.btn').forEach(function (a) {
-            var url = a.getAttribute('href')
-              .replace(/&vt_ntd=[^&]*/g, '').replace(/&vt_port=[^&]*/g, '');
-            if (parts) {
-              url += '&vt_ntd=' + encodeURIComponent(parts[0]) + '&vt_port=' + encodeURIComponent(parts[1]);
+      // Port map interactions: green ports select for the order; orange
+      // ports steer into the transfer flow; the mode toggle returns to
+      // auto-pick. The chosen port rides along on the order links.
+      function updatePortParams(ntd, port) {
+        out.querySelectorAll('.plan a.btn').forEach(function (a) {
+          var url = a.getAttribute('href')
+            .replace(/&vt_ntd=[^&]*/g, '').replace(/&vt_port=[^&]*/g, '');
+          if (ntd && port) {
+            url += '&vt_ntd=' + encodeURIComponent(ntd) + '&vt_port=' + encodeURIComponent(port);
+          }
+          a.setAttribute('href', url);
+        });
+      }
+
+      var diagram = document.getElementById('portDiagram');
+      if (diagram) {
+        var hint = document.getElementById('portHint');
+        var modeAuto = document.getElementById('modeAuto');
+        var modeManual = document.getElementById('modeManual');
+        var churnBox = out.querySelector('.churn');
+
+        function clearSelection() {
+          diagram.querySelectorAll('.portbtn.selected').forEach(function (b) { b.classList.remove('selected'); });
+          updatePortParams(null, null);
+          if (hint) { hint.textContent = ''; }
+          if (churnBox) { churnBox.classList.remove('attention'); }
+        }
+
+        if (modeAuto && modeManual) {
+          modeManual.addEventListener('click', function () {
+            modeManual.classList.add('active'); modeAuto.classList.remove('active');
+            diagram.style.display = 'block';
+          });
+          modeAuto.addEventListener('click', function () {
+            modeAuto.classList.add('active'); modeManual.classList.remove('active');
+            diagram.style.display = 'none';
+            clearSelection();
+          });
+        }
+
+        diagram.querySelectorAll('.portbtn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (btn.getAttribute('data-free') === '1') {
+              clearSelection();
+              btn.classList.add('selected');
+              updatePortParams(btn.getAttribute('data-ntd'), btn.getAttribute('data-port'));
+              if (hint) {
+                hint.innerHTML = 'Your new connection will use <strong>'
+                  + esc(btn.firstChild.textContent || btn.textContent) + '</strong>.';
+              }
+            } else {
+              clearSelection();
+              btn.classList.add('selected');
+              if (hint) {
+                hint.innerHTML = 'That port is carrying an active service. To take it over, '
+                  + '<strong>transfer that service</strong> — enter its AVC ID below and we\'ll '
+                  + 'match it to this port automatically.';
+              }
+              if (churnBox) {
+                churnBox.classList.add('attention');
+                churnBox.scrollIntoView({behavior: 'smooth', block: 'center'});
+                var avcInput = document.getElementById('avcInput');
+                if (avcInput) { avcInput.focus(); }
+              }
             }
-            a.setAttribute('href', url);
           });
         });
       }
