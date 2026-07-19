@@ -258,7 +258,8 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
       if (q.plans && q.plans.length && q.readiness.code !== 'not_available') {
         html += '<div class="plans">';
         q.plans.forEach(function (p) {
-          var orderUrl = p.orderUrl + '&vt_addr=' + encodeURIComponent(label);
+          var orderUrl = p.orderUrl + '&vt_addr=' + encodeURIComponent(label)
+            + '&vt_tech=' + encodeURIComponent(q.technology);
           html += '<div class="plan">'
             + '<div class="pname">' + esc(p.name) + '</div>'
             + '<div class="pspeed">' + esc(p.speedLabel) + '</div>'

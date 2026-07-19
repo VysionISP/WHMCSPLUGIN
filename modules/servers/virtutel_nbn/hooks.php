@@ -183,11 +183,15 @@ add_hook('ClientAreaPageCart', 1, function () {
         $signup['UNI-D Port'] = $port;
     }
 
-    // Display-only: the qualified address label for the cart banner. Not a
-    // custom field (CustomFields only writes its known field names).
+    // Display-only extras for the cart card (not custom fields —
+    // CustomFields only writes its known field names).
     $addr = trim(preg_replace('/[^\PC ]/u', '', strip_tags((string) ($_GET['vt_addr'] ?? ''))) ?? '');
     if ($addr !== '') {
         $signup['Address'] = mb_substr($addr, 0, 120);
+    }
+    $tech = trim(preg_replace('/[^\PC ]/u', '', strip_tags((string) ($_GET['vt_tech'] ?? ''))) ?? '');
+    if ($tech !== '') {
+        $signup['Technology'] = mb_substr($tech, 0, 60);
     }
 
     $_SESSION['virtutel_nbn_signup'] = $signup;
@@ -245,24 +249,47 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
         return '';
     }
 
-    $parts = [];
-    $parts[] = 'Connecting at: ' . (($signup['Address'] ?? '') !== ''
-        ? $signup['Address']
-        : 'NBN location ' . $signup['Location ID']);
-    if (!empty($signup['Churn AVC'])) {
-        $parts[] = 'transferring your existing service (' . $signup['Churn AVC'] . ')';
-    } elseif (!empty($signup['UNI-D Port'])) {
-        $parts[] = 'on port ' . $signup['UNI-D Port'];
-    }
-    $text = implode(' — ', $parts) . '. Your NBN connection details are attached to this order automatically.';
+    $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
 
-    $json = json_encode('✓ ' . $text, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $rows = [];
+    $rows[] = ['Address', ($signup['Address'] ?? '') !== ''
+        ? $signup['Address']
+        : 'NBN location ' . $signup['Location ID']];
+    if (!empty($signup['Technology'])) {
+        $rows[] = ['Connection type', $signup['Technology']];
+    }
+    if (!empty($signup['Churn AVC'])) {
+        $rows[] = ['Connection method', 'Transfer of your existing service (' . $signup['Churn AVC']
+            . ') — done remotely, no technician visit'];
+    } elseif (!empty($signup['UNI-D Port'])) {
+        $rows[] = ['NBN box port', $signup['UNI-D Port'] . ' (your selection)'];
+    } else {
+        $rows[] = ['NBN box port', 'Auto-selected for you'];
+    }
+    $rows[] = ['NBN Location ID', $signup['Location ID']];
+
+    $rowsHtml = '';
+    foreach ($rows as [$label, $value]) {
+        $rowsHtml .= '<tr>'
+            . '<td style="padding:6px 14px 6px 0;color:#667;white-space:nowrap;vertical-align:top">' . $e($label) . '</td>'
+            . '<td style="padding:6px 0;font-weight:600">' . $e($value) . '</td>'
+            . '</tr>';
+    }
+
+    $card = '<div style="background:#f4f8ff;border:1px solid #c9d8f6;border-radius:10px;'
+        . 'padding:16px 20px;margin:12px auto 18px;max-width:1100px;font-size:14px">'
+        . '<div style="font-weight:700;font-size:15px;margin-bottom:6px;color:#1a5fd0">'
+        . '&#10003; Your NBN connection</div>'
+        . '<table style="border-collapse:collapse">' . $rowsHtml . '</table>'
+        . '<div style="color:#667;font-size:12px;margin-top:8px">These details are attached to your order '
+        . 'automatically &mdash; nothing more to fill in.</div>'
+        . '</div>';
+
+    $json = json_encode($card, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
     return "<script>document.addEventListener('DOMContentLoaded',function(){"
         . "var d=document.createElement('div');"
-        . "d.style.cssText='background:#e7f6ec;border:1px solid #b7e3c6;color:#177a43;"
-        . "padding:10px 16px;border-radius:8px;margin:12px auto;max-width:1100px;font-size:14px;';"
-        . "d.textContent={$json};"
+        . "d.innerHTML={$json};"
         . "var m=document.querySelector('#main-body')||document.querySelector('.main-content')||document.body;"
-        . "m.insertBefore(d,m.firstChild);});</script>";
+        . "m.insertBefore(d.firstChild,m.firstChild);});</script>";
 });
