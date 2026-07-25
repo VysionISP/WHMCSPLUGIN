@@ -218,10 +218,25 @@ hr { border-color: var(--kx-border); }
   color: var(--kx-text) !important;
   font-weight: 600 !important;
 }
-.card-footer, .panel-footer, .modal-footer {
+.card-footer, .panel-footer {
+  background: transparent !important;
+  border-top: 1px solid var(--kx-border) !important;
+}
+/* Empty/near-empty footers render as odd strips — remove them. */
+.card-footer:empty, .panel-footer:empty { display: none !important; }
+.modal-footer {
   background: var(--kx-surface-2) !important;
   border-top: 1px solid var(--kx-border) !important;
 }
+
+/* ---------- Rhythm: consistent gaps and breathing room ---------- */
+.card, .panel, .tile { margin-bottom: 24px !important; }
+.card .card, .panel .panel, td .card { margin-bottom: 0 !important; }
+.card-header, .panel-heading { padding: 14px 20px !important; }
+.card-body, .panel-body { padding: 20px 22px !important; }
+.list-group-item { padding: 13px 20px !important; }
+#main-body, .main-content { padding-top: 10px; }
+.header-lined { margin-bottom: 18px !important; padding-bottom: 12px !important; }
 .card:hover { border-color: #2f3d63 !important; }
 .list-group-item {
   background: var(--kx-surface) !important;
