@@ -417,9 +417,38 @@ input[type=tel], input[type=search] {
   border-color: rgba(77, 141, 255, .5) !important;
   box-shadow: var(--kx-glow) !important;
 }
-.products .product header, .products .product .product-pricing {
-  background: transparent !important;
+/* Everything inside a product card renders bright — names, prices,
+   descriptions — with inner slabs flattened into the card. */
+.products .product, .products .product * {
   color: var(--kx-text) !important;
+  opacity: 1 !important;
+}
+.products .product header, .products .product header *,
+.products .product .product-title, .products .product h3, .products .product h4 {
+  background: transparent !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  font-size: 19px !important;
+}
+.products .product .product-desc, .products .product p,
+.products .product small, .products .product .cycle {
+  color: var(--kx-muted) !important;
+  font-size: 13px !important;
+}
+.products .product footer, .products .product .product-pricing,
+.products .product .price-container, .products .product .pricing {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.products .product .price, .products .product .product-pricing .amt,
+.products .product .qty-container {
+  color: #fff !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+}
+.products .product .btn, .products .product a.btn {
+  color: #fff !important;
 }
 .order-summary, .summary-container, .view-cart .order-summary, .cart-body .card {
   background: var(--kx-surface) !important;
