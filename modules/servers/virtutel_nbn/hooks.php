@@ -426,6 +426,53 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         return '';
     }
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=16">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=17">'
         . '<meta name="color-scheme" content="dark">';
+});
+
+/**
+ * Address-first store flow: browsing a product group that contains
+ * Virtutel NBN products redirects to the qualification page — NBN plans
+ * are address-specific, so the address comes first and the qualify page
+ * then shows only the plans actually available there. Non-NBN groups are
+ * untouched.
+ */
+add_hook('ClientAreaPageCart', 2, function ($vars) {
+    if (($_GET['a'] ?? '') === 'add') {
+        return; // add-to-cart flow (from the qualify page) must pass through
+    }
+
+    $gid = (int) ($_REQUEST['gid'] ?? 0);
+    if ($gid === 0 && isset($vars['productGroup']) && is_object($vars['productGroup'])) {
+        $gid = (int) ($vars['productGroup']->id ?? 0);
+    }
+    if ($gid === 0 && preg_match('#/store/([^/?]+)#', (string) ($_SERVER['REQUEST_URI'] ?? ''), $m)) {
+        try {
+            $gid = (int) (Capsule::table('tblproductgroups')
+                ->where('slug', $m[1])->value('id') ?? 0);
+        } catch (\Throwable $e) {
+            $gid = 0;
+        }
+    }
+    if ($gid === 0) {
+        return;
+    }
+
+    try {
+        $isNbnGroup = Capsule::table('tblproducts')
+            ->where('gid', $gid)
+            ->where('servertype', 'virtutel_nbn')
+            ->where('hidden', 0)
+            ->exists();
+        if (!$isNbnGroup) {
+            return;
+        }
+
+        $systemUrl = rtrim((string) (Capsule::table('tblconfiguration')
+            ->where('setting', 'SystemURL')->value('value') ?? ''), '/');
+        header('Location: ' . $systemUrl . '/modules/servers/virtutel_nbn/pages/qualify.php', true, 302);
+        exit;
+    } catch (\Throwable $e) {
+        return; // never break the store on an internal error
+    }
 });
