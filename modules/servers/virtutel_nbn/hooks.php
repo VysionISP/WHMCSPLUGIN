@@ -222,26 +222,38 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
     if (($vars['filename'] ?? '') !== 'cart') {
         return '';
     }
+
+    // Everything is driven by whether the cart currently holds one of our
+    // products: no product -> no checker, no card, and any lingering
+    // qualification is cleared (e.g. the item was removed from the cart).
+    try {
+        $cartPids = array_values(array_filter(array_map(
+            fn ($p) => (int) ($p['pid'] ?? 0),
+            (array) ($_SESSION['cart']['products'] ?? [])
+        )));
+        $ours = $cartPids !== [] && Capsule::table('tblproducts')
+            ->whereIn('id', $cartPids)
+            ->where('servertype', 'virtutel_nbn')
+            ->exists();
+    } catch (\Throwable $e) {
+        $ours = false;
+    }
+
     $signup = $_SESSION['virtutel_nbn_signup'] ?? null;
+
+    if (!$ours) {
+        // Keep the capture only while an add-to-cart is actually in flight
+        // (pages/order.php stores it one request before the product lands).
+        if (is_array($signup) && ($_GET['a'] ?? '') !== 'add') {
+            unset($_SESSION['virtutel_nbn_signup']);
+        }
+
+        return '';
+    }
+
     if (!is_array($signup) || empty($signup['Location ID'])) {
-        // No qualification attached — if the cart holds one of our products
-        // (customer came straight through the store), show the inline
-        // address checker instead.
-        try {
-            $cartPids = array_values(array_filter(array_map(
-                fn ($p) => (int) ($p['pid'] ?? 0),
-                (array) ($_SESSION['cart']['products'] ?? [])
-            )));
-            $ours = $cartPids !== [] && Capsule::table('tblproducts')
-                ->whereIn('id', $cartPids)
-                ->where('servertype', 'virtutel_nbn')
-                ->exists();
-        } catch (\Throwable $e) {
-            $ours = false;
-        }
-        if (!$ours) {
-            return '';
-        }
+        // Product in cart but no qualification (customer came straight
+        // through the store) — show the inline address checker.
 
         $pidsJson = json_encode($cartPids);
         $base = '/modules/servers/virtutel_nbn/pages';
