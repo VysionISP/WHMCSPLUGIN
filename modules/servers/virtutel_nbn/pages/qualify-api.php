@@ -200,6 +200,7 @@ try {
                     }
 
                     $plans[] = [
+                        'pid' => (int) $product->id,
                         'name' => (string) $product->name,
                         'speedLabel' => $tier['label'] ?? $enum,
                         'down' => $tier['down'] ?? 0,

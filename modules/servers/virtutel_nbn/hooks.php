@@ -224,7 +224,99 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
     }
     $signup = $_SESSION['virtutel_nbn_signup'] ?? null;
     if (!is_array($signup) || empty($signup['Location ID'])) {
-        return '';
+        // No qualification attached — if the cart holds one of our products
+        // (customer came straight through the store), show the inline
+        // address checker instead.
+        try {
+            $cartPids = array_values(array_filter(array_map(
+                fn ($p) => (int) ($p['pid'] ?? 0),
+                (array) ($_SESSION['cart']['products'] ?? [])
+            )));
+            $ours = $cartPids !== [] && Capsule::table('tblproducts')
+                ->whereIn('id', $cartPids)
+                ->where('servertype', 'virtutel_nbn')
+                ->exists();
+        } catch (\Throwable $e) {
+            $ours = false;
+        }
+        if (!$ours) {
+            return '';
+        }
+
+        $pidsJson = json_encode($cartPids);
+        $base = '/modules/servers/virtutel_nbn/pages';
+
+        return <<<HTML
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'background:#fff7e8;border:1px solid #f0d9a8;border-radius:10px;padding:16px 20px;margin:12px auto 18px;max-width:1100px;font-size:14px';
+  wrap.innerHTML = '<div style="font-weight:700;font-size:15px;margin-bottom:4px;color:#a3690e">Check availability for your address</div>'
+    + '<div style="color:#667;margin-bottom:10px">NBN plans are address-specific &mdash; confirm yours before checkout.</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="vtqAddr" placeholder="Street address e.g. 5 Pruden Ct Stratford VIC 3862" style="flex:1;min-width:240px;padding:9px 12px;border:1px solid #c8cfdb;border-radius:8px;font-size:15px">'
+    + '<button type="button" id="vtqBtn" style="padding:9px 18px;border:0;border-radius:8px;background:#1a5fd0;color:#fff;font-size:15px;cursor:pointer">Check</button></div>'
+    + '<div id="vtqOut" style="margin-top:10px"></div>';
+  var m = document.querySelector('#main-body') || document.querySelector('.main-content') || document.body;
+  m.insertBefore(wrap, m.firstChild);
+
+  var cartPids = {$pidsJson};
+  var out = document.getElementById('vtqOut');
+
+  function post(data) {
+    return fetch('{$base}/qualify-api.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
+      .then(function (r) { return r.json().then(function (j) { return {ok: r.ok, body: j}; }); });
+  }
+  function note(text, bad) {
+    out.textContent = text;
+    out.style.color = bad ? '#c0392b' : '#667';
+  }
+
+  function qualify(locId, label) {
+    note('Checking ' + label + '…');
+    post({action: 'qualify', locId: locId}).then(function (res) {
+      if (!res.ok) { return note(res.body.error || 'Check failed.', true); }
+      var q = res.body;
+      var available = (q.plans || []).some(function (p) { return cartPids.indexOf(p.pid) !== -1; });
+      if (q.readiness && q.readiness.code === 'not_available') {
+        return note('NBN can\\'t be ordered at that address yet.', true);
+      }
+      if (!available) {
+        return note('The plan in your cart isn\\'t available at that address — use the availability checker to pick a plan that is.', true);
+      }
+      fetch('{$base}/order.php?ajax=1&vt_locid=' + encodeURIComponent(locId)
+          + '&vt_addr=' + encodeURIComponent(label)
+          + '&vt_tech=' + encodeURIComponent(q.technology || ''))
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j.ok) { note('Address confirmed — attaching your connection details…'); location.reload(); }
+          else { note('Could not attach the address — please try again.', true); }
+        });
+    });
+  }
+
+  document.getElementById('vtqBtn').addEventListener('click', function () {
+    var address = document.getElementById('vtqAddr').value.trim();
+    if (address.length < 8) { return note('Enter your full street address including suburb and postcode.', true); }
+    note('Searching the NBN address database…');
+    post({action: 'search', address: address}).then(function (res) {
+      if (!res.ok) { return note(res.body.error || 'Search failed.', true); }
+      var m = res.body.matches || [];
+      if (!m.length) { return note('No NBN match found — add your suburb and postcode, or contact us.', true); }
+      out.textContent = '';
+      out.style.color = '';
+      m.slice(0, 8).forEach(function (row) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = row.address;
+        b.style.cssText = 'display:block;width:100%;text-align:left;background:#fff;border:1px solid #dde3ee;border-radius:8px;padding:9px 12px;margin-bottom:6px;cursor:pointer;font-size:14px';
+        b.addEventListener('click', function () { qualify(row.locId, row.address); });
+        out.appendChild(b);
+      });
+    });
+  });
+});
+</script>
+HTML;
     }
 
     $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
@@ -270,4 +362,35 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
         . "d.innerHTML={$json};"
         . "var m=document.querySelector('#main-body')||document.querySelector('.main-content')||document.body;"
         . "m.insertBefore(d.firstChild,m.firstChild);});</script>";
+});
+
+/**
+ * Server-side gate: a Virtutel product cannot be checked out without a
+ * qualification attached — the inline checker or the qualify page must have
+ * confirmed the address first.
+ */
+add_hook('ShoppingCartValidateCheckout', 1, function () {
+    try {
+        $cartPids = array_values(array_filter(array_map(
+            fn ($p) => (int) ($p['pid'] ?? 0),
+            (array) ($_SESSION['cart']['products'] ?? [])
+        )));
+        if ($cartPids === []) {
+            return;
+        }
+        $ours = Capsule::table('tblproducts')
+            ->whereIn('id', $cartPids)
+            ->where('servertype', 'virtutel_nbn')
+            ->exists();
+        if (!$ours) {
+            return;
+        }
+
+        $signup = $_SESSION['virtutel_nbn_signup'] ?? null;
+        if (!is_array($signup) || empty($signup['Location ID'])) {
+            return ['Please confirm NBN availability for your address before checkout — use the address checker at the top of the cart page.'];
+        }
+    } catch (\Throwable $e) {
+        return; // never block checkout on an internal error
+    }
 });

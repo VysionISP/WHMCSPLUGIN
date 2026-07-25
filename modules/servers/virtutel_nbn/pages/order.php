@@ -31,6 +31,14 @@ if ($signup !== []) {
     }
 }
 
+// AJAX mode (inline cart qualifier): report the capture result as JSON
+// instead of redirecting.
+if (isset($_GET['ajax'])) {
+    header('Content-Type: application/json');
+    echo json_encode(['ok' => $signup !== []]);
+    exit;
+}
+
 $systemUrl = rtrim((string) (Capsule::table('tblconfiguration')
     ->where('setting', 'SystemURL')->value('value') ?? ''), '/');
 
