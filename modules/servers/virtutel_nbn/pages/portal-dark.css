@@ -1,206 +1,264 @@
 /**
- * Korvix Dark — dark skin for the WHMCS Twenty-One client theme.
- * Child theme: all templates inherit from twenty-one; this stylesheet
- * re-colours them. Also restyles the Virtutel NBN module widgets
- * (.vt-nbn-card / .vt-nbn-checker) injected on cart pages.
+ * Korvix Dark v2 — full visual overhaul for the WHMCS client area
+ * (Twenty-One template), injected via the module's Dark Portal Theme
+ * toggle. Modern hosting-SaaS aesthetic: gradient accents, glassy nav,
+ * rounded cards, pill buttons.
  */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 :root {
-  --kx-bg: #0f1420;
-  --kx-bg-deep: #0a0e18;
-  --kx-surface: #171e2e;
-  --kx-surface-2: #1e2739;
-  --kx-border: #2a3347;
-  --kx-text: #e6e9f2;
-  --kx-muted: #98a2b8;
+  --kx-bg: #0b101c;
+  --kx-bg-deep: #070b14;
+  --kx-surface: #131a2b;
+  --kx-surface-2: #1a2338;
+  --kx-surface-3: #222d47;
+  --kx-border: #263251;
+  --kx-text: #e8ecf6;
+  --kx-muted: #93a0bb;
   --kx-brand: #4d8dff;
+  --kx-brand-2: #7a5cff;
   --kx-brand-deep: #2f6fe0;
+  --kx-gradient: linear-gradient(135deg, #4d8dff 0%, #7a5cff 100%);
   --kx-green: #2fbf71;
   --kx-amber: #e2a336;
   --kx-red: #e2564a;
+  --kx-radius: 14px;
+  --kx-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  --kx-glow: 0 0 0 1px rgba(77, 141, 255, .25), 0 8px 30px rgba(77, 141, 255, .12);
 }
 
-/* ---------- Base ---------- */
+/* ---------- Base & typography ---------- */
 body {
   background: var(--kx-bg) !important;
+  background-image: radial-gradient(1200px 500px at 80% -10%, rgba(122, 92, 255, .10), transparent 60%),
+                    radial-gradient(900px 400px at 10% -10%, rgba(77, 141, 255, .10), transparent 60%) !important;
+  background-attachment: fixed !important;
   color: var(--kx-text) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+  letter-spacing: .01em;
 }
-h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6,
-legend, label, dt, .card-title {
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, legend, label, dt, .card-title {
   color: var(--kx-text) !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-weight: 700 !important;
 }
-p, li, dd, td, th, small, .small { color: inherit; }
-a { color: var(--kx-brand); }
-a:hover, a:focus { color: #78aaff; }
+a { color: var(--kx-brand); text-decoration: none; }
+a:hover, a:focus { color: #8ab2ff; }
 hr { border-color: var(--kx-border); }
-.text-muted, .text-secondary { color: var(--kx-muted) !important; }
+.text-muted, .text-secondary, small, .small { color: var(--kx-muted) !important; }
 .bg-white, .bg-light { background-color: var(--kx-surface) !important; }
 
-/* ---------- Header / nav / footer ---------- */
-#header, .header, .navbar, .navbar-light, .navbar-default,
-#main-menu, .logincontainer {
-  background-color: var(--kx-bg-deep) !important;
-  border-color: var(--kx-border) !important;
+/* ---------- Header / navigation: glassy sticky bar ---------- */
+#header, .header, .navbar, .navbar-light, .navbar-default, #main-menu {
+  background: rgba(7, 11, 20, .82) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 0 !important;
+  border-bottom: 1px solid var(--kx-border) !important;
+  box-shadow: none !important;
 }
-.navbar .navbar-nav .nav-link,
-.navbar .nav > li > a,
-#main-menu .nav > li > a {
+.navbar .navbar-nav .nav-link, .navbar .nav > li > a, #main-menu .nav > li > a {
   color: var(--kx-text) !important;
+  font-weight: 500 !important;
+  border-radius: 10px;
+  transition: background .15s ease;
 }
-.navbar .navbar-nav .nav-link:hover,
-#main-menu .nav > li > a:hover,
+.navbar .navbar-nav .nav-link:hover, #main-menu .nav > li > a:hover,
 #main-menu .nav > li.active > a {
   color: #fff !important;
-  background-color: var(--kx-surface-2) !important;
+  background: var(--kx-surface-2) !important;
 }
-.header-lined h1, .header-lined .breadcrumb { color: var(--kx-text) !important; }
+.header-lined h1 { font-weight: 800 !important; letter-spacing: -.02em; }
 .header-lined { border-color: var(--kx-border) !important; }
 .breadcrumb { background: transparent !important; }
 .breadcrumb .breadcrumb-item, .breadcrumb li, .breadcrumb a { color: var(--kx-muted) !important; }
+
+/* ---------- Footer ---------- */
 #footer, .footer, footer {
-  background-color: var(--kx-bg-deep) !important;
+  background: var(--kx-bg-deep) !important;
   color: var(--kx-muted) !important;
-  border-color: var(--kx-border) !important;
+  border-top: 1px solid var(--kx-border) !important;
 }
 #footer a, .footer a, footer a { color: var(--kx-muted) !important; }
+#footer a:hover, .footer a:hover { color: var(--kx-text) !important; }
 
-/* ---------- Cards / panels / wells ---------- */
-.card, .panel, .well, .tile, .list-group-item, .modal-content,
-.popover, .jumbotron, .accordion .card-header {
-  background-color: var(--kx-surface) !important;
-  border-color: var(--kx-border) !important;
+/* ---------- Cards / panels: rounded, soft-shadowed ---------- */
+.card, .panel, .well, .tile, .modal-content, .popover, .jumbotron {
+  background: var(--kx-surface) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: var(--kx-radius) !important;
+  box-shadow: var(--kx-shadow) !important;
   color: var(--kx-text) !important;
+  overflow: hidden;
 }
-.card-header, .panel-heading, .card-footer, .panel-footer, .modal-header, .modal-footer {
-  background-color: var(--kx-surface-2) !important;
+.card-header, .panel-heading, .modal-header {
+  background: var(--kx-surface-2) !important;
+  border-bottom: 1px solid var(--kx-border) !important;
+  color: var(--kx-text) !important;
+  font-weight: 600 !important;
+}
+.card-footer, .panel-footer, .modal-footer {
+  background: var(--kx-surface-2) !important;
+  border-top: 1px solid var(--kx-border) !important;
+}
+.card:hover { border-color: #2f3d63 !important; }
+.list-group-item {
+  background: var(--kx-surface) !important;
   border-color: var(--kx-border) !important;
   color: var(--kx-text) !important;
 }
 .list-group-item.active {
-  background-color: var(--kx-brand-deep) !important;
-  border-color: var(--kx-brand-deep) !important;
+  background: var(--kx-gradient) !important;
+  border-color: transparent !important;
   color: #fff !important;
 }
-.list-group-item-action:hover { background-color: var(--kx-surface-2) !important; }
+.list-group-item-action:hover { background: var(--kx-surface-2) !important; }
+
+/* ---------- Buttons: pills, gradient primary ---------- */
+.btn {
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+  letter-spacing: .01em;
+  transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary, .btn-success {
+  background: var(--kx-gradient) !important;
+  border: 0 !important;
+  color: #fff !important;
+  box-shadow: 0 6px 20px rgba(77, 141, 255, .35) !important;
+}
+.btn-primary:hover, .btn-success:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 8px 26px rgba(77, 141, 255, .45) !important;
+}
+.btn-default, .btn-light, .btn-secondary, .btn-outline-secondary, .btn-info {
+  background: var(--kx-surface-2) !important;
+  border: 1px solid var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.btn-default:hover, .btn-light:hover, .btn-secondary:hover, .btn-outline-secondary:hover {
+  background: var(--kx-surface-3) !important;
+  color: #fff !important;
+}
+.btn-danger { background: var(--kx-red) !important; border: 0 !important; }
+.btn-link { color: var(--kx-brand) !important; }
 
 /* ---------- Tables ---------- */
-.table { color: var(--kx-text) !important; }
-.table th, .table td { border-color: var(--kx-border) !important; }
+.table { color: var(--kx-text) !important; border-color: var(--kx-border) !important; }
+.table th, .table td { border-color: var(--kx-border) !important; vertical-align: middle; }
 .table thead th, .table thead td, table.dataTable thead th {
-  background-color: var(--kx-surface-2) !important;
-  color: var(--kx-text) !important;
+  background: var(--kx-surface-2) !important;
+  color: var(--kx-muted) !important;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: .08em;
   border-color: var(--kx-border) !important;
 }
-.table-striped tbody tr:nth-of-type(odd),
-.table-hover tbody tr:hover,
-table.dataTable tbody tr {
-  background-color: var(--kx-surface) !important;
-}
-.table-striped tbody tr:nth-of-type(even) { background-color: var(--kx-surface-2) !important; }
-.table-hover tbody tr:hover { background-color: #232e45 !important; }
-.dataTables_wrapper, .dataTables_info, .dataTables_filter, .dataTables_length {
-  color: var(--kx-muted) !important;
-}
+.table-striped tbody tr:nth-of-type(odd), table.dataTable tbody tr { background: var(--kx-surface) !important; }
+.table-striped tbody tr:nth-of-type(even) { background: var(--kx-surface-2) !important; }
+.table-hover tbody tr:hover { background: var(--kx-surface-3) !important; }
+.dataTables_wrapper, .dataTables_info, .dataTables_filter, .dataTables_length { color: var(--kx-muted) !important; }
 
 /* ---------- Forms ---------- */
 .form-control, .custom-select, select, textarea,
 input[type=text], input[type=email], input[type=password], input[type=number],
 input[type=tel], input[type=search] {
-  background-color: var(--kx-bg-deep) !important;
-  border-color: var(--kx-border) !important;
+  background: var(--kx-bg-deep) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 10px !important;
   color: var(--kx-text) !important;
 }
 .form-control:focus, .custom-select:focus {
   border-color: var(--kx-brand) !important;
-  box-shadow: 0 0 0 .2rem rgba(77, 141, 255, .25) !important;
+  box-shadow: 0 0 0 3px rgba(77, 141, 255, .22) !important;
 }
-.form-control::placeholder { color: #5f6b83 !important; }
-.form-control:disabled, .form-control[readonly] { background-color: var(--kx-surface-2) !important; }
+.form-control::placeholder { color: #566079 !important; }
+.form-control:disabled, .form-control[readonly] { background: var(--kx-surface-2) !important; }
 .input-group-text {
-  background-color: var(--kx-surface-2) !important;
+  background: var(--kx-surface-2) !important;
   border-color: var(--kx-border) !important;
   color: var(--kx-muted) !important;
 }
 .field-help-text, .form-text { color: var(--kx-muted) !important; }
 
-/* ---------- Buttons ---------- */
-.btn-default, .btn-light, .btn-secondary, .btn-outline-secondary {
-  background-color: var(--kx-surface-2) !important;
-  border-color: var(--kx-border) !important;
-  color: var(--kx-text) !important;
-}
-.btn-default:hover, .btn-light:hover, .btn-secondary:hover, .btn-outline-secondary:hover {
-  background-color: #253048 !important;
-  color: #fff !important;
-}
-.btn-primary { background-color: var(--kx-brand-deep) !important; border-color: var(--kx-brand-deep) !important; }
-.btn-primary:hover { background-color: var(--kx-brand) !important; border-color: var(--kx-brand) !important; }
-.btn-link { color: var(--kx-brand) !important; }
-
-/* ---------- Dropdowns / menus / tabs ---------- */
+/* ---------- Dropdowns / tabs / pagination ---------- */
 .dropdown-menu {
-  background-color: var(--kx-surface) !important;
-  border-color: var(--kx-border) !important;
+  background: var(--kx-surface) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--kx-shadow) !important;
 }
 .dropdown-item, .dropdown-menu > li > a { color: var(--kx-text) !important; }
-.dropdown-item:hover, .dropdown-menu > li > a:hover {
-  background-color: var(--kx-surface-2) !important;
-  color: #fff !important;
-}
+.dropdown-item:hover, .dropdown-menu > li > a:hover { background: var(--kx-surface-2) !important; color: #fff !important; }
 .dropdown-divider { border-color: var(--kx-border) !important; }
 .nav-tabs { border-color: var(--kx-border) !important; }
-.nav-tabs .nav-link { color: var(--kx-muted) !important; }
+.nav-tabs .nav-link { color: var(--kx-muted) !important; border: 0 !important; font-weight: 600; }
 .nav-tabs .nav-link.active {
-  background-color: var(--kx-surface) !important;
-  border-color: var(--kx-border) var(--kx-border) var(--kx-surface) !important;
-  color: var(--kx-text) !important;
+  background: transparent !important;
+  color: var(--kx-brand) !important;
+  border-bottom: 2px solid var(--kx-brand) !important;
+  border-radius: 0 !important;
 }
 .pagination .page-link {
-  background-color: var(--kx-surface) !important;
-  border-color: var(--kx-border) !important;
-  color: var(--kx-text) !important;
-}
-.pagination .page-item.active .page-link {
-  background-color: var(--kx-brand-deep) !important;
-  border-color: var(--kx-brand-deep) !important;
-}
-
-/* ---------- Alerts / badges ---------- */
-.alert-success { background: #12301f !important; border-color: #1d5c38 !important; color: #7fdcaa !important; }
-.alert-info { background: #122740 !important; border-color: #1d4c7c !important; color: #8dbdf3 !important; }
-.alert-warning { background: #372a10 !important; border-color: #6b531f !important; color: #ecc575 !important; }
-.alert-danger { background: #3a1512 !important; border-color: #722a24 !important; color: #f0968d !important; }
-.badge-secondary, .label-default { background-color: var(--kx-surface-2) !important; color: var(--kx-text) !important; }
-
-/* ---------- Home page / panels widgets ---------- */
-.tiles .tile .stat, .tiles .tile .title { color: var(--kx-text) !important; }
-.panel .panel-body, .card .card-body { color: var(--kx-text) !important; }
-.search-container, #searchBox, .home-shortcuts {
-  background-color: var(--kx-surface) !important;
-  border-color: var(--kx-border) !important;
-}
-.client-home-panels .card-header { background-color: var(--kx-surface-2) !important; }
-
-/* ---------- Order forms (standard_cart) ---------- */
-.view-cart .products .product, .products .product,
-.order-summary, .summary-container, .view-cart .order-summary,
-.sidebar-collapsed .card, .cart-body .card {
-  background-color: var(--kx-surface) !important;
-  border-color: var(--kx-border) !important;
-  color: var(--kx-text) !important;
-}
-.order-summary { color: var(--kx-text) !important; }
-.order-summary .summary-totals, .order-summary .promo-container { border-color: var(--kx-border) !important; }
-.view-cart .item, .review .item { background-color: var(--kx-surface) !important; border-color: var(--kx-border) !important; }
-.sub-heading span, .cart-body .sub-heading span {
-  background-color: var(--kx-bg) !important;
-  color: var(--kx-muted) !important;
-}
-
-/* ---------- Virtutel NBN injected widgets ---------- */
-.vt-nbn-card, .vt-nbn-checker {
   background: var(--kx-surface) !important;
   border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.pagination .page-item.active .page-link { background: var(--kx-gradient) !important; border-color: transparent !important; }
+
+/* ---------- Alerts / badges ---------- */
+.alert { border-radius: 12px !important; }
+.alert-success { background: #10271b !important; border-color: #1d5c38 !important; color: #7fdcaa !important; }
+.alert-info { background: #101f33 !important; border-color: #1d4c7c !important; color: #8dbdf3 !important; }
+.alert-warning { background: #2b220f !important; border-color: #6b531f !important; color: #ecc575 !important; }
+.alert-danger { background: #2d120f !important; border-color: #722a24 !important; color: #f0968d !important; }
+.badge, .label { border-radius: 999px !important; font-weight: 600 !important; }
+.badge-secondary, .label-default { background: var(--kx-surface-3) !important; color: var(--kx-text) !important; }
+
+/* ---------- Home page tiles ---------- */
+.tiles .tile, .client-home-panels .card { border-radius: var(--kx-radius) !important; }
+.tiles .tile .stat, .tiles .tile .title { color: var(--kx-text) !important; }
+.search-container, #searchBox, .home-shortcuts {
+  background: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+  border-radius: var(--kx-radius) !important;
+}
+
+/* ---------- Order form: products as pricing cards ---------- */
+.view-cart .products .product, .products .product {
+  background: var(--kx-surface) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: var(--kx-radius) !important;
+  box-shadow: var(--kx-shadow) !important;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.view-cart .products .product:hover, .products .product:hover {
+  transform: translateY(-3px);
+  border-color: rgba(77, 141, 255, .5) !important;
+  box-shadow: var(--kx-glow) !important;
+}
+.products .product header, .products .product .product-pricing {
+  background: transparent !important;
+  color: var(--kx-text) !important;
+}
+.order-summary, .summary-container, .view-cart .order-summary, .cart-body .card {
+  background: var(--kx-surface) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: var(--kx-radius) !important;
+  color: var(--kx-text) !important;
+}
+.order-summary .summary-totals, .order-summary .promo-container { border-color: var(--kx-border) !important; }
+.view-cart .item, .review .item { background: var(--kx-surface) !important; border-color: var(--kx-border) !important; }
+.sub-heading span, .cart-body .sub-heading span { background: var(--kx-bg) !important; color: var(--kx-muted) !important; }
+
+/* ---------- Virtutel NBN widgets ---------- */
+.vt-nbn-card, .vt-nbn-checker {
+  background: var(--kx-surface) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: var(--kx-radius) !important;
+  box-shadow: var(--kx-shadow) !important;
   color: var(--kx-text) !important;
 }
 .vt-nbn-card table td { color: var(--kx-text) !important; }
@@ -210,24 +268,26 @@ input[type=tel], input[type=search] {
 .vt-nbn-checker > div:first-child { color: var(--kx-amber) !important; }
 .vt-nbn-checker input {
   background: var(--kx-bg-deep) !important;
-  border-color: var(--kx-border) !important;
+  border: 1px solid var(--kx-border) !important;
   color: var(--kx-text) !important;
 }
 .vt-nbn-checker #vtqOut button {
   background: var(--kx-surface-2) !important;
-  border-color: var(--kx-border) !important;
+  border: 1px solid var(--kx-border) !important;
   color: var(--kx-text) !important;
 }
+.vt-nbn-checker button { border-radius: 999px; }
 
 /* ---------- Misc ---------- */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--kx-bg-deep); }
-::-webkit-scrollbar-thumb { background: var(--kx-border); border-radius: 5px; }
-.modal-backdrop { background-color: #000 !important; }
+::-webkit-scrollbar-thumb { background: var(--kx-surface-3); border-radius: 6px; }
+.modal-backdrop { background: #000 !important; }
 .close, .modal .close { color: var(--kx-text) !important; text-shadow: none; }
 code, pre {
-  background-color: var(--kx-bg-deep) !important;
+  background: var(--kx-bg-deep) !important;
   color: #9fc1ff !important;
   border-color: var(--kx-border) !important;
+  border-radius: 8px;
 }
 img.card-img-top { filter: brightness(.9); }
