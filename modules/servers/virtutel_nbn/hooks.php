@@ -407,3 +407,25 @@ add_hook('ShoppingCartValidateCheckout', 1, function () {
         return; // never block checkout on an internal error
     }
 });
+
+/**
+ * Dark portal skin: when enabled in the addon settings, overlay the Korvix
+ * dark stylesheet on every client area page. The Template stays Twenty-One
+ * — this is pure CSS, so it can never white-screen the site.
+ */
+add_hook('ClientAreaHeadOutput', 5, function () {
+    try {
+        $enabled = (string) (Capsule::table('tbladdonmodules')
+            ->where('module', 'virtutel_nbn_admin')
+            ->where('setting', 'portal_dark')
+            ->value('value') ?? '');
+        if ($enabled !== 'on' && $enabled !== '1' && $enabled !== 'yes') {
+            return '';
+        }
+    } catch (\Throwable $e) {
+        return '';
+    }
+
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=1">'
+        . '<meta name="color-scheme" content="dark">';
+});

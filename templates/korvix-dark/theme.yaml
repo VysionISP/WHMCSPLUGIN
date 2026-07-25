@@ -1,4 +1,5 @@
 name: "Korvix Dark"
+description: "Dark child theme of Twenty-One for the Korvix client portal"
 author: "Vysion"
-version: "1.0"
+version: "1.0.0"
 parent: "twenty-one"

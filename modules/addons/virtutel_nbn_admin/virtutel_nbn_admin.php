@@ -29,6 +29,11 @@ function virtutel_nbn_admin_config(): array
         'author' => 'Vysion',
         'version' => '1.1',
         'fields' => [
+            'portal_dark' => [
+                'FriendlyName' => 'Dark Portal Theme',
+                'Type' => 'yesno',
+                'Description' => 'Apply the Korvix dark skin over the client area (keeps the Twenty-One template).',
+            ],
             'google_places_key' => [
                 'FriendlyName' => 'Google Places API Key',
                 'Type' => 'password',
