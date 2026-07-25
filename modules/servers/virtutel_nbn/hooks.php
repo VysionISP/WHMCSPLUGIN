@@ -443,12 +443,32 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
     }
 
     $gid = (int) ($_REQUEST['gid'] ?? 0);
-    if ($gid === 0 && preg_match('#/store/([^/?]+)#', (string) ($_SERVER['REQUEST_URI'] ?? ''), $m)) {
+    $slug = '';
+    if (preg_match('#/store/([^/?]+)#', (string) ($_SERVER['REQUEST_URI'] ?? ''), $m)) {
+        $slug = strtolower($m[1]);
+    }
+    if ($gid === 0 && $slug !== '') {
+        // Layered lookups: slug column (if present), then slugified name.
         try {
-            $gid = (int) (Capsule::table('tblproductgroups')
-                ->where('slug', $m[1])->value('id') ?? 0);
+            if (Capsule::schema()->hasColumn('tblproductgroups', 'slug')) {
+                $gid = (int) (Capsule::table('tblproductgroups')
+                    ->whereRaw('LOWER(slug) = ?', [$slug])->value('id') ?? 0);
+            }
         } catch (\Throwable $e) {
             $gid = 0;
+        }
+        if ($gid === 0) {
+            try {
+                foreach (Capsule::table('tblproductgroups')->get(['id', 'name']) as $group) {
+                    $nameSlug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower((string) $group->name)), '-');
+                    if ($nameSlug === $slug) {
+                        $gid = (int) $group->id;
+                        break;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $gid = 0;
+            }
         }
     }
     if ($gid === 0) {
