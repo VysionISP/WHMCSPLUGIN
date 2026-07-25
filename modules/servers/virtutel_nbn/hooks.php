@@ -426,6 +426,6 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         return '';
     }
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=6">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=7">'
         . '<meta name="color-scheme" content="dark">';
 });

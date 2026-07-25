@@ -131,6 +131,18 @@ hr { border-color: var(--kx-border); }
 /* Mobile toggler */
 .navbar-toggler { border-color: var(--kx-border) !important; }
 .navbar-toggler-icon { filter: invert(1); }
+
+/* Belt-and-braces: ANY link living in the header or nav bars renders
+   bright, whatever markup Twenty-One uses for it. */
+#header a, .header a, #main-menu a, nav.navbar a, #main-menu li > a,
+#header .nav-link, #main-menu .nav-link, .navbar li > a,
+#main-menu .dropdown-toggle, #header .dropdown-toggle {
+  color: #dde3f0 !important;
+}
+#header a:hover, .header a:hover, #main-menu a:hover, nav.navbar a:hover,
+#main-menu li > a:hover, .navbar li > a:hover {
+  color: #ffffff !important;
+}
 .header-lined h1 { font-weight: 800 !important; letter-spacing: -.02em; }
 .header-lined { border-color: var(--kx-border) !important; }
 
