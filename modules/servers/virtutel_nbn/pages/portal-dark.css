@@ -276,18 +276,15 @@ hr { border-color: var(--kx-border); }
   letter-spacing: .08em;
   border-color: var(--kx-border) !important;
 }
-/* Every body row dark, whatever classes DataTables/WHMCS put on it —
-   kills the white-row/white-text combination on invoice lists etc. */
-.table tbody tr, table.dataTable tbody tr,
-table.dataTable tr.odd, table.dataTable tr.even,
-.table tbody tr.odd, .table tbody tr.even {
+/* EVERY table body row dark, whatever table class WHMCS/DataTables/
+   standard_cart uses — a dark theme has no white rows, full stop. */
+table tbody tr, table tbody tr.odd, table tbody tr.even, .view-cart .item {
   background: var(--kx-surface) !important;
 }
-.table tbody tr:nth-of-type(even), table.dataTable tr.even { background: var(--kx-surface-2) !important; }
-.table tbody td, .table tbody th, table.dataTable tbody td { color: var(--kx-text) !important; }
-.table tbody tr:hover, .table-hover tbody tr:hover, table.dataTable tbody tr:hover {
-  background: var(--kx-surface-3) !important;
-}
+table tbody tr:nth-of-type(even), table tbody tr.even { background: var(--kx-surface-2) !important; }
+table tbody td, table tbody th { color: var(--kx-text) !important; }
+table tbody tr:hover { background: var(--kx-surface-3) !important; }
+table tbody td small, table tbody td .text-muted { color: var(--kx-muted) !important; }
 .dataTables_wrapper, .dataTables_info, .dataTables_filter, .dataTables_length { color: var(--kx-muted) !important; }
 
 /* ---------- Forms ---------- */
