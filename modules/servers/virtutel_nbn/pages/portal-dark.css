@@ -272,9 +272,18 @@ hr { border-color: var(--kx-border); }
   letter-spacing: .08em;
   border-color: var(--kx-border) !important;
 }
-.table-striped tbody tr:nth-of-type(odd), table.dataTable tbody tr { background: var(--kx-surface) !important; }
-.table-striped tbody tr:nth-of-type(even) { background: var(--kx-surface-2) !important; }
-.table-hover tbody tr:hover { background: var(--kx-surface-3) !important; }
+/* Every body row dark, whatever classes DataTables/WHMCS put on it —
+   kills the white-row/white-text combination on invoice lists etc. */
+.table tbody tr, table.dataTable tbody tr,
+table.dataTable tr.odd, table.dataTable tr.even,
+.table tbody tr.odd, .table tbody tr.even {
+  background: var(--kx-surface) !important;
+}
+.table tbody tr:nth-of-type(even), table.dataTable tr.even { background: var(--kx-surface-2) !important; }
+.table tbody td, .table tbody th, table.dataTable tbody td { color: var(--kx-text) !important; }
+.table tbody tr:hover, .table-hover tbody tr:hover, table.dataTable tbody tr:hover {
+  background: var(--kx-surface-3) !important;
+}
 .dataTables_wrapper, .dataTables_info, .dataTables_filter, .dataTables_length { color: var(--kx-muted) !important; }
 
 /* ---------- Forms ---------- */
@@ -345,8 +354,17 @@ input[type=tel], input[type=search] {
   border-radius: 12px !important;
   box-shadow: var(--kx-shadow) !important;
 }
-.dropdown-item, .dropdown-menu > li > a { color: var(--kx-text) !important; }
-.dropdown-item:hover, .dropdown-menu > li > a:hover { background: var(--kx-surface-2) !important; color: #fff !important; }
+.dropdown-menu { height: auto !important; max-height: none !important; overflow: visible !important; }
+/* Items carry their own solid background so a short/clipped menu panel
+   can never leave entries floating transparent over the page. */
+.dropdown-item, .dropdown-menu > li > a, .dropdown-menu a {
+  background-color: var(--kx-surface) !important;
+  color: var(--kx-text) !important;
+}
+.dropdown-item:hover, .dropdown-menu > li > a:hover, .dropdown-menu a:hover {
+  background-color: var(--kx-surface-2) !important;
+  color: #fff !important;
+}
 .dropdown-divider { border-color: var(--kx-border) !important; }
 .nav-tabs { border-color: var(--kx-border) !important; }
 .nav-tabs .nav-link { color: var(--kx-muted) !important; border: 0 !important; font-weight: 600; }
