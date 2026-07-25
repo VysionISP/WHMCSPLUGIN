@@ -57,16 +57,41 @@ hr { border-color: var(--kx-border); }
   border: 0 !important;
   box-shadow: none !important;
 }
-/* Header search as a pill */
-#header input[type=text], .header input[type=text], #header .form-control, .header .form-control {
-  border-radius: 999px !important;
-  background: rgba(19, 26, 43, .8) !important;
+/* Header search: ONE clean pill — the group is the pill, everything
+   inside is transparent and borderless. */
+#header .input-group, .header .input-group {
+  background: rgba(19, 26, 43, .85) !important;
   border: 1px solid var(--kx-border) !important;
-  padding-left: 18px !important;
+  border-radius: 999px !important;
+  overflow: hidden;
+  align-items: center;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
-#header .input-group-text, .header .input-group-text {
-  border-radius: 999px 0 0 999px !important;
-  background: rgba(19, 26, 43, .8) !important;
+#header .input-group:focus-within, .header .input-group:focus-within {
+  border-color: var(--kx-brand) !important;
+  box-shadow: 0 0 0 3px rgba(77, 141, 255, .2) !important;
+}
+#header .input-group .form-control, .header .input-group .form-control,
+#header .input-group input[type=text], .header .input-group input[type=text] {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding-left: 4px !important;
+}
+#header .input-group .input-group-text, .header .input-group .input-group-text,
+#header .input-group .input-group-prepend .input-group-text {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--kx-muted) !important;
+  padding-left: 16px;
+}
+/* standalone header inputs (no group) still get the pill themselves */
+#header > .form-control, #header input.form-control:not(.input-group *) {
+  border-radius: 999px !important;
+  background: rgba(19, 26, 43, .85) !important;
+  border: 1px solid var(--kx-border) !important;
 }
 #header .badge, .header .badge {
   background: var(--kx-gradient) !important;
