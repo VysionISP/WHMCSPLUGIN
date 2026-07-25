@@ -49,26 +49,99 @@ hr { border-color: var(--kx-border); }
 .text-muted, .text-secondary, small, .small { color: var(--kx-muted) !important; }
 .bg-white, .bg-light { background-color: var(--kx-surface) !important; }
 
-/* ---------- Header / navigation: glassy sticky bar ---------- */
-#header, .header, .navbar, .navbar-light, .navbar-default, #main-menu {
-  background: rgba(7, 11, 20, .82) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+/* ---------- Top utility bar: minimal, glassy ---------- */
+#header, .header, .navbar-light, .navbar-default {
+  background: rgba(7, 11, 20, .85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 0 !important;
-  border-bottom: 1px solid var(--kx-border) !important;
   box-shadow: none !important;
 }
-.navbar .navbar-nav .nav-link, .navbar .nav > li > a, #main-menu .nav > li > a {
-  color: var(--kx-text) !important;
-  font-weight: 500 !important;
-  border-radius: 10px;
-  transition: background .15s ease;
+/* Header search as a pill */
+#header input[type=text], .header input[type=text], #header .form-control, .header .form-control {
+  border-radius: 999px !important;
+  background: rgba(19, 26, 43, .8) !important;
+  border: 1px solid var(--kx-border) !important;
+  padding-left: 18px !important;
 }
-.navbar .navbar-nav .nav-link:hover, #main-menu .nav > li > a:hover,
-#main-menu .nav > li.active > a {
+#header .input-group-text, .header .input-group-text {
+  border-radius: 999px 0 0 999px !important;
+  background: rgba(19, 26, 43, .8) !important;
+}
+#header .badge, .header .badge {
+  background: var(--kx-gradient) !important;
   color: #fff !important;
-  background: var(--kx-surface-2) !important;
 }
+
+/* ---------- Main nav: floating glass dock ---------- */
+#main-menu {
+  background: rgba(19, 26, 43, .72) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 18px !important;
+  margin: 14px 18px !important;
+  padding: 4px 10px !important;
+  box-shadow: var(--kx-shadow) !important;
+}
+@media (min-width: 1280px) {
+  #main-menu { margin: 14px auto !important; max-width: 1240px; }
+}
+#main-menu .navbar, #main-menu.navbar {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Nav links: quiet by default, gradient underline slides in */
+.navbar .navbar-nav .nav-link, .navbar .nav > li > a, #main-menu .nav > li > a {
+  position: relative;
+  color: var(--kx-muted) !important;
+  font-weight: 600 !important;
+  padding: 12px 16px !important;
+  border-radius: 12px;
+  background: transparent !important;
+  transition: color .15s ease;
+}
+.navbar .navbar-nav .nav-link::after, #main-menu .nav > li > a::after {
+  content: '';
+  position: absolute;
+  left: 16px; right: 16px; bottom: 7px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--kx-gradient);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .22s ease;
+}
+.navbar .navbar-nav .nav-link:hover, .navbar .nav > li > a:hover,
+#main-menu .nav > li > a:hover,
+#main-menu .nav > li.active > a, .navbar .navbar-nav .nav-item.active .nav-link {
+  color: #fff !important;
+  background: transparent !important;
+}
+.navbar .navbar-nav .nav-link:hover::after, #main-menu .nav > li > a:hover::after,
+#main-menu .nav > li.active > a::after, .navbar .navbar-nav .nav-item.active .nav-link::after {
+  transform: scaleX(1);
+}
+
+/* Account / right-side actions as a gradient pill */
+#main-menu .navbar-nav.ml-auto > li > a, #main-menu .nav.navbar-right > li > a,
+.navbar .navbar-nav.ml-auto .nav-link.dropdown-toggle {
+  background: var(--kx-gradient) !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+  padding: 10px 20px !important;
+  margin: 4px 0;
+  box-shadow: 0 6px 18px rgba(77, 141, 255, .3);
+}
+#main-menu .navbar-nav.ml-auto > li > a::after,
+.navbar .navbar-nav.ml-auto .nav-link.dropdown-toggle::after { display: inline-block; position: static; transform: none; height: auto; background: none; }
+#main-menu .navbar-nav.ml-auto > li > a:hover { filter: brightness(1.1); }
+
+/* Mobile toggler */
+.navbar-toggler { border-color: var(--kx-border) !important; }
+.navbar-toggler-icon { filter: invert(1); }
 .header-lined h1 { font-weight: 800 !important; letter-spacing: -.02em; }
 .header-lined { border-color: var(--kx-border) !important; }
 
