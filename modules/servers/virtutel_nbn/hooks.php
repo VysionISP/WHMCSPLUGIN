@@ -21,6 +21,12 @@ if (!defined('WHMCS')) {
     die('This file cannot be accessed directly');
 }
 
+// Guard against double registration (module autoload + includes/hooks loader).
+if (defined('VIRTUTEL_NBN_HOOKS_LOADED')) {
+    return;
+}
+define('VIRTUTEL_NBN_HOOKS_LOADED', true);
+
 require_once __DIR__ . '/lib/Autoloader.php';
 
 add_hook('DailyCronJob', 1, function () {
@@ -161,40 +167,12 @@ add_hook('AfterCronJob', 1, function () {
  * in the session on any cart page load...
  */
 add_hook('ClientAreaPageCart', 1, function () {
-    $locId = strtoupper(trim((string) ($_GET['vt_locid'] ?? '')));
-    if (!preg_match('/^LOC\d{9,15}$/', $locId)) {
-        return;
+    // Fallback only — the primary capture is pages/order.php, which stores
+    // the session BEFORE redirecting into the cart.
+    $signup = WHMCS\Module\Server\VirtutelNbn\Service\SignupCapture::fromRequest($_GET);
+    if ($signup !== []) {
+        $_SESSION['virtutel_nbn_signup'] = $signup;
     }
-
-    $signup = ['Location ID' => $locId];
-
-    $avc = strtoupper(trim((string) ($_GET['vt_avc'] ?? '')));
-    if (preg_match('/^(AVC\d{12}|\d{5})$/', $avc)) {
-        $signup['Churn AVC'] = $avc;
-        // The customer authorised the transfer on the qualification page.
-        $signup['Authority Date'] = date('Y-m-d');
-    }
-
-    // Optional customer port choice from the qualification page.
-    $ntd = strtoupper(trim((string) ($_GET['vt_ntd'] ?? '')));
-    $port = strtoupper(trim((string) ($_GET['vt_port'] ?? '')));
-    if (preg_match('/^NTD[0-9A-Z]{6,20}$/', $ntd) && preg_match('/^[0-9A-Z][0-9A-Z-]{0,19}$/', $port)) {
-        $signup['NTD ID'] = $ntd;
-        $signup['UNI-D Port'] = $port;
-    }
-
-    // Display-only extras for the cart card (not custom fields —
-    // CustomFields only writes its known field names).
-    $addr = trim(preg_replace('/[^\PC ]/u', '', strip_tags((string) ($_GET['vt_addr'] ?? ''))) ?? '');
-    if ($addr !== '') {
-        $signup['Address'] = mb_substr($addr, 0, 120);
-    }
-    $tech = trim(preg_replace('/[^\PC ]/u', '', strip_tags((string) ($_GET['vt_tech'] ?? ''))) ?? '');
-    if ($tech !== '') {
-        $signup['Technology'] = mb_substr($tech, 0, 60);
-    }
-
-    $_SESSION['virtutel_nbn_signup'] = $signup;
 });
 
 /**

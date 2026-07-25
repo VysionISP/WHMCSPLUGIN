@@ -205,7 +205,10 @@ try {
                         'down' => $tier['down'] ?? 0,
                         'price' => ($currency->prefix ?? '$') . number_format((float) $monthly, 2)
                             . ($currency->suffix ? ' ' . $currency->suffix : '') . '/mo',
-                        'orderUrl' => $systemUrl . '/cart.php?a=add&pid=' . (int) $product->id
+                        // Hand-off endpoint stores the qualification in the
+                        // session itself, then forwards to the cart — immune
+                        // to cart-redirect hook timing.
+                        'orderUrl' => $systemUrl . '/modules/servers/virtutel_nbn/pages/order.php?pid=' . (int) $product->id
                             . '&vt_locid=' . rawurlencode($q['location_id'])
                             . ($churn !== null && $churn['matched']
                                 ? '&vt_avc=' . rawurlencode($avcId) : ''),
