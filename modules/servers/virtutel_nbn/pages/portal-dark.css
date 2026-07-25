@@ -15,7 +15,7 @@
   --kx-surface-3: #222d47;
   --kx-border: #263251;
   --kx-text: #e8ecf6;
-  --kx-muted: #93a0bb;
+  --kx-muted: #a6b2cc;
   --kx-brand: #4d8dff;
   --kx-brand-2: #7a5cff;
   --kx-brand-deep: #2f6fe0;
@@ -88,7 +88,8 @@ hr { border-color: var(--kx-border); }
 /* Nav links: quiet by default, gradient underline slides in */
 .navbar .navbar-nav .nav-link, .navbar .nav > li > a, #main-menu .nav > li > a {
   position: relative;
-  color: var(--kx-muted) !important;
+  color: #d6dcea !important;
+  font-size: 15px;
   font-weight: 600 !important;
   background: transparent !important;
   transition: color .15s ease;
@@ -228,7 +229,7 @@ hr { border-color: var(--kx-border); }
 .table th, .table td { border-color: var(--kx-border) !important; vertical-align: middle; }
 .table thead th, .table thead td, table.dataTable thead th {
   background: var(--kx-surface-2) !important;
-  color: var(--kx-muted) !important;
+  color: #b6c0d8 !important;
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: .08em;
@@ -252,7 +253,7 @@ input[type=tel], input[type=search] {
   border-color: var(--kx-brand) !important;
   box-shadow: 0 0 0 3px rgba(77, 141, 255, .22) !important;
 }
-.form-control::placeholder { color: #566079 !important; }
+.form-control::placeholder { color: #74809c !important; }
 .form-control:disabled, .form-control[readonly] { background: var(--kx-surface-2) !important; }
 .input-group-text {
   background: var(--kx-surface-2) !important;
