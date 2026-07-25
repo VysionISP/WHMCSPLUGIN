@@ -354,7 +354,12 @@ input[type=tel], input[type=search] {
   border-radius: 12px !important;
   box-shadow: var(--kx-shadow) !important;
 }
-.dropdown-menu { height: auto !important; max-height: none !important; overflow: visible !important; }
+/* Menus float above sidebars/cards, sized to their content. */
+.dropdown-menu {
+  z-index: 2000 !important;
+  padding: 8px !important;
+  min-width: 220px;
+}
 /* Items carry their own solid background so a short/clipped menu panel
    can never leave entries floating transparent over the page. */
 .dropdown-item, .dropdown-menu > li > a, .dropdown-menu a {
@@ -425,6 +430,13 @@ input[type=tel], input[type=search] {
 .order-summary .summary-totals, .order-summary .promo-container { border-color: var(--kx-border) !important; }
 .view-cart .item, .review .item { background: var(--kx-surface) !important; border-color: var(--kx-border) !important; }
 .sub-heading span, .cart-body .sub-heading span { background: var(--kx-bg) !important; color: var(--kx-muted) !important; }
+/* Promo / tax tab panels: no leftover light slabs. */
+.tab-content, .tab-pane, .promo-container, .view-cart .tab-content,
+.cart-body .tab-content, #applyCredit, .apply-credit-container {
+  background: transparent !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
 
 /* ---------- Virtutel NBN widgets ---------- */
 .vt-nbn-card, .vt-nbn-checker {
