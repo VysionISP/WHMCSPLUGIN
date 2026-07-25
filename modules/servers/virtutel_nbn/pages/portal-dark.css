@@ -71,8 +71,25 @@ hr { border-color: var(--kx-border); }
 }
 .header-lined h1 { font-weight: 800 !important; letter-spacing: -.02em; }
 .header-lined { border-color: var(--kx-border) !important; }
-.breadcrumb { background: transparent !important; }
+
+/* Logo: dark artwork inverted to white, sized for the bar. */
+#header img, .navbar-brand img, .logo img, #logo img, .header .logo img {
+  filter: invert(1) hue-rotate(180deg) brightness(1.05);
+  max-height: 44px !important;
+  width: auto !important;
+  padding: 0 !important;
+}
+.navbar-brand, #logo { padding-top: 8px !important; padding-bottom: 8px !important; }
+
+/* Breadcrumb strip: no more light band under the nav. */
+.breadcrumb, .breadcrumb-container, [class*="breadcrumb"], nav[aria-label="breadcrumb"],
+.top-nav-breadcrumb, .container-fluid.header-lined, .app-header-sub {
+  background: transparent !important;
+  border: 0 !important;
+}
 .breadcrumb .breadcrumb-item, .breadcrumb li, .breadcrumb a { color: var(--kx-muted) !important; }
+.breadcrumb .breadcrumb-item.active { color: var(--kx-text) !important; }
+.breadcrumb-item + .breadcrumb-item::before { color: var(--kx-muted) !important; }
 
 /* ---------- Footer ---------- */
 #footer, .footer, footer {
