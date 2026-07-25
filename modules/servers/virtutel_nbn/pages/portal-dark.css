@@ -299,6 +299,45 @@ input[type=tel], input[type=search] {
 }
 .field-help-text, .form-text { color: var(--kx-muted) !important; }
 
+/* ---------- Input groups everywhere: one joined control ----------
+   The group is the visible field (border, radius, focus glow); icons,
+   inputs, and attached buttons are flat segments inside it. */
+.input-group {
+  background: var(--kx-bg-deep) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  align-items: stretch;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.input-group:focus-within {
+  border-color: var(--kx-brand) !important;
+  box-shadow: 0 0 0 3px rgba(77, 141, 255, .2) !important;
+}
+.input-group .form-control, .input-group input, .input-group select {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.input-group .input-group-text,
+.input-group .input-group-prepend .input-group-text,
+.input-group .input-group-append .input-group-text {
+  background: var(--kx-surface-2) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--kx-muted) !important;
+}
+.input-group .btn {
+  border-radius: 0 !important;
+  background: var(--kx-surface-2) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--kx-muted) !important;
+  margin: 0 !important;
+}
+.input-group .btn:hover { color: #fff !important; background: var(--kx-surface-3) !important; }
+
 /* ---------- Dropdowns / tabs / pagination ---------- */
 .dropdown-menu {
   background: var(--kx-surface) !important;
