@@ -38,7 +38,7 @@ header('Content-Type: text/html; charset=utf-8');
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Check NBN availability at your address</title>
-<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t==="dark")document.documentElement.classList.add("vt-dark");if(t==="light")document.documentElement.classList.add("vt-light");})();</script>
+<script>(function(){var q=new URLSearchParams(location.search);var t=q.get("theme");if(t==="dark")document.documentElement.classList.add("vt-dark");if(t==="light")document.documentElement.classList.add("vt-light");if(q.get("embed"))document.documentElement.classList.add("vt-embed");})();</script>
 <style>
   :root {
     --brand:#1a5fd0; --ok:#1d9e55; --warn:#c77c11; --bad:#c0392b; --ink:#222; --muted:#667;
@@ -65,6 +65,11 @@ header('Content-Type: text/html; charset=utf-8');
       --badbg:#3a1512; --badline:#722a24;
     }
   }
+  /* Embedded in the WHMCS store page: blend in — no own heading,
+     transparent background, full width. */
+  html.vt-embed, html.vt-embed body { background: transparent !important; }
+  html.vt-embed .wrap { max-width: 100%; padding: 4px 2px 30px; }
+  html.vt-embed h1, html.vt-embed p.lead { display: none; }
   * { box-sizing:border-box; }
   body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
          color:var(--ink); margin:0; background:var(--page); }

@@ -431,21 +431,18 @@ add_hook('ClientAreaHeadOutput', 5, function () {
 });
 
 /**
- * Address-first store flow: browsing a product group that contains
- * Virtutel NBN products redirects to the qualification page — NBN plans
- * are address-specific, so the address comes first and the qualify page
- * then shows only the plans actually available there. Non-NBN groups are
- * untouched.
+ * Address-first store flow, embedded IN the WHMCS page: on a product
+ * group containing Virtutel NBN products, the plan grid is replaced with
+ * the full qualification experience (autocomplete, port map, transfer
+ * flow, address-valid plans) in a same-origin auto-sizing frame — nav,
+ * sidebar, and theme stay. Non-NBN groups are untouched.
  */
-add_hook('ClientAreaPageCart', 2, function ($vars) {
-    if (($_GET['a'] ?? '') === 'add') {
-        return; // add-to-cart flow (from the qualify page) must pass through
+add_hook('ClientAreaHeadOutput', 6, function ($vars) {
+    if (($vars['filename'] ?? '') !== 'cart' || ($_GET['a'] ?? '') === 'add') {
+        return '';
     }
 
     $gid = (int) ($_REQUEST['gid'] ?? 0);
-    if ($gid === 0 && isset($vars['productGroup']) && is_object($vars['productGroup'])) {
-        $gid = (int) ($vars['productGroup']->id ?? 0);
-    }
     if ($gid === 0 && preg_match('#/store/([^/?]+)#', (string) ($_SERVER['REQUEST_URI'] ?? ''), $m)) {
         try {
             $gid = (int) (Capsule::table('tblproductgroups')
@@ -455,7 +452,7 @@ add_hook('ClientAreaPageCart', 2, function ($vars) {
         }
     }
     if ($gid === 0) {
-        return;
+        return '';
     }
 
     try {
@@ -465,14 +462,28 @@ add_hook('ClientAreaPageCart', 2, function ($vars) {
             ->where('hidden', 0)
             ->exists();
         if (!$isNbnGroup) {
-            return;
+            return '';
         }
-
-        $systemUrl = rtrim((string) (Capsule::table('tblconfiguration')
-            ->where('setting', 'SystemURL')->value('value') ?? ''), '/');
-        header('Location: ' . $systemUrl . '/modules/servers/virtutel_nbn/pages/qualify.php', true, 302);
-        exit;
+        $dark = (string) (Capsule::table('tbladdonmodules')
+            ->where('module', 'virtutel_nbn_admin')
+            ->where('setting', 'portal_dark')
+            ->value('value') ?? '');
     } catch (\Throwable $e) {
-        return; // never break the store on an internal error
+        return '';
     }
+
+    $theme = in_array($dark, ['on', '1', 'yes'], true) ? 'dark' : 'light';
+    $src = '/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=' . $theme;
+
+    return "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "var grid=document.querySelector('.products')||document.getElementById('products');"
+        . "if(!grid){return;}"
+        . "var f=document.createElement('iframe');"
+        . "f.src='{$src}';"
+        . "f.style.cssText='width:100%;border:0;display:block;min-height:520px;background:transparent';"
+        . "f.setAttribute('scrolling','no');"
+        . "grid.replaceWith(f);"
+        . "setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;"
+        . "if(h>200&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);"
+        . "});</script>";
 });
