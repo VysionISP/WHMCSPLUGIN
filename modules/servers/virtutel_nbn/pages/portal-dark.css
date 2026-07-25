@@ -57,6 +57,10 @@ hr { border-color: var(--kx-border); }
   border: 0 !important;
   box-shadow: none !important;
 }
+/* The whole nav layer stacks above page content, so open dropdowns can
+   never be painted over by cards (which sit in later DOM order). */
+#header, .header { position: relative; z-index: 1040 !important; }
+#main-menu, nav.navbar { position: relative; z-index: 1039 !important; }
 /* Header search: ONE clean pill — the group is the pill, everything
    inside is transparent and borderless. */
 #header .input-group, .header .input-group {
