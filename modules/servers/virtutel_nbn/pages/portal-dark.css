@@ -433,6 +433,56 @@ input[type=tel], input[type=search] {
 }
 .vt-nbn-checker button { border-radius: 999px; }
 
+/* ---------- Login / register: designed, not default ---------- */
+.card:has(form[action*="dologin"]), .panel:has(form[action*="dologin"]),
+.card:has(#inputNewPassword1), .card:has(form[action*="register"]) {
+  position: relative;
+  max-width: 460px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: 5vh !important;
+  border-radius: 18px !important;
+}
+.card:has(form[action*="dologin"])::before, .card:has(form[action*="register"])::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--kx-gradient);
+}
+.card:has(form[action*="dologin"]) h1, .card:has(form[action*="dologin"]) h2,
+.card:has(form[action*="dologin"]) h3, .card:has(form[action*="dologin"]) .card-title {
+  background: var(--kx-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-size: 34px !important;
+  letter-spacing: -.02em;
+}
+form[action*="dologin"] .btn-primary, form[action*="dologin"] input[type=submit] {
+  display: block;
+  width: 100% !important;
+  padding: 13px 0 !important;
+  font-size: 16px !important;
+  margin-top: 6px;
+}
+form[action*="dologin"] .custom-control { margin-top: 14px; }
+
+/* Checkboxes / radios: branded everywhere */
+input[type=checkbox], input[type=radio] {
+  accent-color: var(--kx-brand);
+  width: 17px; height: 17px;
+}
+.custom-control-input:checked ~ .custom-control-label::before {
+  background-color: var(--kx-brand) !important;
+  border-color: var(--kx-brand) !important;
+}
+.custom-control-label::before {
+  background-color: var(--kx-bg-deep) !important;
+  border-color: var(--kx-border) !important;
+}
+
 /* ---------- Misc ---------- */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--kx-bg-deep); }
