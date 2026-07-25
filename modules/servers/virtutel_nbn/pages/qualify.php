@@ -38,27 +38,52 @@ header('Content-Type: text/html; charset=utf-8');
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Check NBN availability at your address</title>
+<script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t==="dark")document.documentElement.classList.add("vt-dark");if(t==="light")document.documentElement.classList.add("vt-light");})();</script>
 <style>
-  :root { --brand:#1a5fd0; --ok:#1d9e55; --warn:#c77c11; --bad:#c0392b; --ink:#222; --muted:#667; }
+  :root {
+    --brand:#1a5fd0; --ok:#1d9e55; --warn:#c77c11; --bad:#c0392b; --ink:#222; --muted:#667;
+    --page:#f5f7fb; --card:#fff; --line:#dde3ee; --input:#fff; --chip:#eef3fd; --chipline:#c9d8f6;
+    --okbg:#e7f6ec; --okline:#b7e3c6; --oktext:#177a43;
+    --warnbg:#fdf1e0; --warnline:#f0d9a8; --warntext:#a3690e;
+    --badbg:#fdecea; --badline:#f3b6b0;
+  }
+  /* Dark palette: follows the OS setting, or force with ?theme=dark (for
+     embedding in the dark portal) / ?theme=light. */
+  html.vt-dark {
+    --brand:#4d8dff; --ok:#2fbf71; --warn:#e2a336; --bad:#e2564a; --ink:#e6e9f2; --muted:#98a2b8;
+    --page:#0f1420; --card:#171e2e; --line:#2a3347; --input:#0a0e18; --chip:#1e2739; --chipline:#2a3347;
+    --okbg:#12301f; --okline:#1d5c38; --oktext:#7fdcaa;
+    --warnbg:#372a10; --warnline:#6b531f; --warntext:#ecc575;
+    --badbg:#3a1512; --badline:#722a24;
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not(.vt-light) {
+      --brand:#4d8dff; --ok:#2fbf71; --warn:#e2a336; --bad:#e2564a; --ink:#e6e9f2; --muted:#98a2b8;
+      --page:#0f1420; --card:#171e2e; --line:#2a3347; --input:#0a0e18; --chip:#1e2739; --chipline:#2a3347;
+      --okbg:#12301f; --okline:#1d5c38; --oktext:#7fdcaa;
+      --warnbg:#372a10; --warnline:#6b531f; --warntext:#ecc575;
+      --badbg:#3a1512; --badline:#722a24;
+    }
+  }
   * { box-sizing:border-box; }
   body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-         color:var(--ink); margin:0; background:#f5f7fb; }
+         color:var(--ink); margin:0; background:var(--page); }
   .wrap { max-width:640px; margin:0 auto; padding:28px 16px 60px; }
   h1 { font-size:26px; margin:0 0 6px; }
   p.lead { color:var(--muted); margin:0 0 22px; }
   .searchbox { display:flex; gap:8px; }
-  .searchbox input { flex:1; font-size:16px; padding:12px 14px; border:1px solid #c8cfdb;
+  .searchbox input { flex:1; font-size:16px; padding:12px 14px; background:var(--input); color:var(--ink); border:1px solid var(--line);
                      border-radius:8px; outline:none; }
   .searchbox input:focus { border-color:var(--brand); }
   .btn { font-size:16px; padding:12px 20px; border:0; border-radius:8px; background:var(--brand);
          color:#fff; cursor:pointer; }
   .btn:disabled { opacity:.6; cursor:wait; }
   .matches { margin:18px 0 0; padding:0; list-style:none; }
-  .matches li { background:#fff; border:1px solid #dde3ee; border-radius:8px; margin-bottom:8px; }
+  .matches li { background:var(--card); border:1px solid var(--line); border-radius:8px; margin-bottom:8px; }
   .matches button { width:100%; text-align:left; background:none; border:0; padding:12px 14px;
-                    font-size:15px; cursor:pointer; }
-  .matches button:hover { background:#eef3fd; }
-  .card { background:#fff; border:1px solid #dde3ee; border-radius:12px; padding:22px; margin-top:22px; }
+                    font-size:15px; cursor:pointer; color:var(--ink); }
+  .matches button:hover { background:var(--chip); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:22px; margin-top:22px; }
   .status { display:inline-block; padding:5px 12px; border-radius:999px; color:#fff;
             font-size:13px; font-weight:600; letter-spacing:.3px; }
   .status.connect_now { background:var(--ok); }
@@ -71,38 +96,38 @@ header('Content-Type: text/html; charset=utf-8');
   .tech { font-size:18px; font-weight:600; margin:12px 0 2px; }
   .desc { color:var(--muted); margin:10px 0 0; line-height:1.5; }
   .tiers { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
-  .tier { background:#eef3fd; color:var(--brand); border:1px solid #c9d8f6; border-radius:8px;
+  .tier { background:var(--chip); color:var(--brand); border:1px solid var(--chipline); border-radius:8px;
           padding:8px 14px; font-weight:600; font-size:15px; }
   .plans { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-top:18px; }
-  .plan { border:1px solid #dde3ee; border-radius:10px; padding:16px; text-align:center; background:#fbfcff; }
+  .plan { border:1px solid var(--line); border-radius:10px; padding:16px; text-align:center; background:var(--card); }
   .plan .pname { font-weight:700; margin-bottom:2px; }
   .plan .pspeed { color:var(--muted); font-size:13px; margin-bottom:8px; }
   .plan .pprice { font-size:19px; font-weight:700; color:var(--brand); margin-bottom:12px; }
   .plan a.btn { display:inline-block; text-decoration:none; padding:9px 18px; font-size:15px; }
-  .note { margin-top:14px; padding:10px 14px; background:#fff7e8; border:1px solid #f0d9a8;
+  .note { margin-top:14px; padding:10px 14px; background:var(--warnbg); border:1px solid var(--warnline); color:var(--warntext);
           border-radius:8px; font-size:14px; }
-  .error { margin-top:16px; padding:12px 14px; background:#fdecea; border:1px solid #f3b6b0;
+  .error { margin-top:16px; padding:12px 14px; background:var(--badbg); border:1px solid var(--badline);
            border-radius:8px; color:var(--bad); }
   .portmode { display:flex; gap:8px; margin-top:16px; }
-  .modebtn { padding:8px 14px; font-size:14px; border-radius:8px; border:1px solid #c8cfdb;
-             background:#fff; color:var(--muted); cursor:pointer; }
+  .modebtn { padding:8px 14px; font-size:14px; border-radius:8px; border:1px solid var(--line);
+             background:var(--card); color:var(--muted); cursor:pointer; }
   .modebtn.active { background:var(--brand); border-color:var(--brand); color:#fff; }
-  .portbox { margin-top:12px; padding:14px; border:1px solid #dde3ee; border-radius:10px; background:#fbfcff; }
+  .portbox { margin-top:12px; padding:14px; border:1px solid var(--line); border-radius:10px; background:var(--card); }
   .portboxlabel { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;
                   letter-spacing:.5px; margin-bottom:10px; }
   .portrow { display:flex; flex-wrap:wrap; gap:10px; }
   .portbtn { min-width:86px; padding:10px 8px; border-radius:8px; cursor:pointer; text-align:center;
              font-weight:700; font-size:14px; border:2px solid transparent; }
   .portbtn .portstate { display:block; font-weight:400; font-size:11px; margin-top:3px; }
-  .portbtn.free { background:#e7f6ec; color:#177a43; border-color:#b7e3c6; }
-  .portbtn.used { background:#fdf1e0; color:#a3690e; border-color:#f0d9a8; }
+  .portbtn.free { background:var(--okbg); color:var(--oktext); border-color:var(--okline); }
+  .portbtn.used { background:var(--warnbg); color:var(--warntext); border-color:var(--warnline); }
   .portbtn.selected { border-color:var(--brand); box-shadow:0 0 0 2px rgba(26,95,208,.25); }
-  .churn { margin-top:18px; padding:16px; background:#f4f8ff; border:1px solid #c9d8f6; border-radius:10px; }
+  .churn { margin-top:18px; padding:16px; background:var(--chip); border:1px solid var(--chipline); border-radius:10px; }
   .churn.attention { border-color:var(--brand); box-shadow:0 0 0 2px rgba(26,95,208,.2); }
   .churn h3 { margin:0 0 6px; font-size:16px; }
   .churn p { margin:0 0 10px; color:var(--muted); font-size:14px; line-height:1.5; }
   .churn .row { display:flex; gap:8px; }
-  .churn input[type=text] { flex:1; font-size:15px; padding:10px 12px; border:1px solid #c8cfdb; border-radius:8px; }
+  .churn input[type=text] { flex:1; font-size:15px; padding:10px 12px; background:var(--input); color:var(--ink); border:1px solid var(--line); border-radius:8px; }
   .churn label.consent { display:flex; gap:8px; align-items:flex-start; font-size:13px; color:var(--muted);
                           margin:10px 0 0; line-height:1.45; }
   .churn .cherr { color:var(--bad); font-size:14px; margin-top:8px; }

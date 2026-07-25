@@ -262,6 +262,7 @@ add_hook('ClientAreaHeadOutput', 1, function ($vars) {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var wrap = document.createElement('div');
+  wrap.className = 'vt-nbn-checker';
   wrap.style.cssText = 'background:#fff7e8;border:1px solid #f0d9a8;border-radius:10px;padding:16px 20px;margin:12px auto 18px;max-width:1100px;font-size:14px';
   wrap.innerHTML = '<div style="font-weight:700;font-size:15px;margin-bottom:4px;color:#a3690e">Check availability for your address</div>'
     + '<div style="color:#667;margin-bottom:10px">NBN plans are address-specific &mdash; confirm yours before checkout.</div>'
@@ -358,7 +359,7 @@ HTML;
             . '</tr>';
     }
 
-    $card = '<div style="background:#f4f8ff;border:1px solid #c9d8f6;border-radius:10px;'
+    $card = '<div class="vt-nbn-card" style="background:#f4f8ff;border:1px solid #c9d8f6;border-radius:10px;'
         . 'padding:16px 20px;margin:12px auto 18px;max-width:1100px;font-size:14px">'
         . '<div style="font-weight:700;font-size:15px;margin-bottom:6px;color:#1a5fd0">'
         . '&#10003; Your NBN connection</div>'

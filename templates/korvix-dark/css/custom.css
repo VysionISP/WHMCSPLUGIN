@@ -1,0 +1,233 @@
+/**
+ * Korvix Dark — dark skin for the WHMCS Twenty-One client theme.
+ * Child theme: all templates inherit from twenty-one; this stylesheet
+ * re-colours them. Also restyles the Virtutel NBN module widgets
+ * (.vt-nbn-card / .vt-nbn-checker) injected on cart pages.
+ */
+
+:root {
+  --kx-bg: #0f1420;
+  --kx-bg-deep: #0a0e18;
+  --kx-surface: #171e2e;
+  --kx-surface-2: #1e2739;
+  --kx-border: #2a3347;
+  --kx-text: #e6e9f2;
+  --kx-muted: #98a2b8;
+  --kx-brand: #4d8dff;
+  --kx-brand-deep: #2f6fe0;
+  --kx-green: #2fbf71;
+  --kx-amber: #e2a336;
+  --kx-red: #e2564a;
+}
+
+/* ---------- Base ---------- */
+body {
+  background: var(--kx-bg) !important;
+  color: var(--kx-text) !important;
+}
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6,
+legend, label, dt, .card-title {
+  color: var(--kx-text) !important;
+}
+p, li, dd, td, th, small, .small { color: inherit; }
+a { color: var(--kx-brand); }
+a:hover, a:focus { color: #78aaff; }
+hr { border-color: var(--kx-border); }
+.text-muted, .text-secondary { color: var(--kx-muted) !important; }
+.bg-white, .bg-light { background-color: var(--kx-surface) !important; }
+
+/* ---------- Header / nav / footer ---------- */
+#header, .header, .navbar, .navbar-light, .navbar-default,
+#main-menu, .logincontainer {
+  background-color: var(--kx-bg-deep) !important;
+  border-color: var(--kx-border) !important;
+}
+.navbar .navbar-nav .nav-link,
+.navbar .nav > li > a,
+#main-menu .nav > li > a {
+  color: var(--kx-text) !important;
+}
+.navbar .navbar-nav .nav-link:hover,
+#main-menu .nav > li > a:hover,
+#main-menu .nav > li.active > a {
+  color: #fff !important;
+  background-color: var(--kx-surface-2) !important;
+}
+.header-lined h1, .header-lined .breadcrumb { color: var(--kx-text) !important; }
+.header-lined { border-color: var(--kx-border) !important; }
+.breadcrumb { background: transparent !important; }
+.breadcrumb .breadcrumb-item, .breadcrumb li, .breadcrumb a { color: var(--kx-muted) !important; }
+#footer, .footer, footer {
+  background-color: var(--kx-bg-deep) !important;
+  color: var(--kx-muted) !important;
+  border-color: var(--kx-border) !important;
+}
+#footer a, .footer a, footer a { color: var(--kx-muted) !important; }
+
+/* ---------- Cards / panels / wells ---------- */
+.card, .panel, .well, .tile, .list-group-item, .modal-content,
+.popover, .jumbotron, .accordion .card-header {
+  background-color: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.card-header, .panel-heading, .card-footer, .panel-footer, .modal-header, .modal-footer {
+  background-color: var(--kx-surface-2) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.list-group-item.active {
+  background-color: var(--kx-brand-deep) !important;
+  border-color: var(--kx-brand-deep) !important;
+  color: #fff !important;
+}
+.list-group-item-action:hover { background-color: var(--kx-surface-2) !important; }
+
+/* ---------- Tables ---------- */
+.table { color: var(--kx-text) !important; }
+.table th, .table td { border-color: var(--kx-border) !important; }
+.table thead th, .table thead td, table.dataTable thead th {
+  background-color: var(--kx-surface-2) !important;
+  color: var(--kx-text) !important;
+  border-color: var(--kx-border) !important;
+}
+.table-striped tbody tr:nth-of-type(odd),
+.table-hover tbody tr:hover,
+table.dataTable tbody tr {
+  background-color: var(--kx-surface) !important;
+}
+.table-striped tbody tr:nth-of-type(even) { background-color: var(--kx-surface-2) !important; }
+.table-hover tbody tr:hover { background-color: #232e45 !important; }
+.dataTables_wrapper, .dataTables_info, .dataTables_filter, .dataTables_length {
+  color: var(--kx-muted) !important;
+}
+
+/* ---------- Forms ---------- */
+.form-control, .custom-select, select, textarea,
+input[type=text], input[type=email], input[type=password], input[type=number],
+input[type=tel], input[type=search] {
+  background-color: var(--kx-bg-deep) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.form-control:focus, .custom-select:focus {
+  border-color: var(--kx-brand) !important;
+  box-shadow: 0 0 0 .2rem rgba(77, 141, 255, .25) !important;
+}
+.form-control::placeholder { color: #5f6b83 !important; }
+.form-control:disabled, .form-control[readonly] { background-color: var(--kx-surface-2) !important; }
+.input-group-text {
+  background-color: var(--kx-surface-2) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-muted) !important;
+}
+.field-help-text, .form-text { color: var(--kx-muted) !important; }
+
+/* ---------- Buttons ---------- */
+.btn-default, .btn-light, .btn-secondary, .btn-outline-secondary {
+  background-color: var(--kx-surface-2) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.btn-default:hover, .btn-light:hover, .btn-secondary:hover, .btn-outline-secondary:hover {
+  background-color: #253048 !important;
+  color: #fff !important;
+}
+.btn-primary { background-color: var(--kx-brand-deep) !important; border-color: var(--kx-brand-deep) !important; }
+.btn-primary:hover { background-color: var(--kx-brand) !important; border-color: var(--kx-brand) !important; }
+.btn-link { color: var(--kx-brand) !important; }
+
+/* ---------- Dropdowns / menus / tabs ---------- */
+.dropdown-menu {
+  background-color: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+}
+.dropdown-item, .dropdown-menu > li > a { color: var(--kx-text) !important; }
+.dropdown-item:hover, .dropdown-menu > li > a:hover {
+  background-color: var(--kx-surface-2) !important;
+  color: #fff !important;
+}
+.dropdown-divider { border-color: var(--kx-border) !important; }
+.nav-tabs { border-color: var(--kx-border) !important; }
+.nav-tabs .nav-link { color: var(--kx-muted) !important; }
+.nav-tabs .nav-link.active {
+  background-color: var(--kx-surface) !important;
+  border-color: var(--kx-border) var(--kx-border) var(--kx-surface) !important;
+  color: var(--kx-text) !important;
+}
+.pagination .page-link {
+  background-color: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.pagination .page-item.active .page-link {
+  background-color: var(--kx-brand-deep) !important;
+  border-color: var(--kx-brand-deep) !important;
+}
+
+/* ---------- Alerts / badges ---------- */
+.alert-success { background: #12301f !important; border-color: #1d5c38 !important; color: #7fdcaa !important; }
+.alert-info { background: #122740 !important; border-color: #1d4c7c !important; color: #8dbdf3 !important; }
+.alert-warning { background: #372a10 !important; border-color: #6b531f !important; color: #ecc575 !important; }
+.alert-danger { background: #3a1512 !important; border-color: #722a24 !important; color: #f0968d !important; }
+.badge-secondary, .label-default { background-color: var(--kx-surface-2) !important; color: var(--kx-text) !important; }
+
+/* ---------- Home page / panels widgets ---------- */
+.tiles .tile .stat, .tiles .tile .title { color: var(--kx-text) !important; }
+.panel .panel-body, .card .card-body { color: var(--kx-text) !important; }
+.search-container, #searchBox, .home-shortcuts {
+  background-color: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+}
+.client-home-panels .card-header { background-color: var(--kx-surface-2) !important; }
+
+/* ---------- Order forms (standard_cart) ---------- */
+.view-cart .products .product, .products .product,
+.order-summary, .summary-container, .view-cart .order-summary,
+.sidebar-collapsed .card, .cart-body .card {
+  background-color: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.order-summary { color: var(--kx-text) !important; }
+.order-summary .summary-totals, .order-summary .promo-container { border-color: var(--kx-border) !important; }
+.view-cart .item, .review .item { background-color: var(--kx-surface) !important; border-color: var(--kx-border) !important; }
+.sub-heading span, .cart-body .sub-heading span {
+  background-color: var(--kx-bg) !important;
+  color: var(--kx-muted) !important;
+}
+
+/* ---------- Virtutel NBN injected widgets ---------- */
+.vt-nbn-card, .vt-nbn-checker {
+  background: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.vt-nbn-card table td { color: var(--kx-text) !important; }
+.vt-nbn-card table td:first-child { color: var(--kx-muted) !important; }
+.vt-nbn-card > div:first-child { color: var(--kx-brand) !important; }
+.vt-nbn-card > div:last-child, .vt-nbn-checker > div:nth-child(2) { color: var(--kx-muted) !important; }
+.vt-nbn-checker > div:first-child { color: var(--kx-amber) !important; }
+.vt-nbn-checker input {
+  background: var(--kx-bg-deep) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.vt-nbn-checker #vtqOut button {
+  background: var(--kx-surface-2) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+
+/* ---------- Misc ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--kx-bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--kx-border); border-radius: 5px; }
+.modal-backdrop { background-color: #000 !important; }
+.close, .modal .close { color: var(--kx-text) !important; text-shadow: none; }
+code, pre {
+  background-color: var(--kx-bg-deep) !important;
+  color: #9fc1ff !important;
+  border-color: var(--kx-border) !important;
+}
+img.card-img-top { filter: brightness(.9); }
