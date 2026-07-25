@@ -46,10 +46,16 @@ class HttpClient
     /**
      * @param array $options ['json' => array, 'query' => array, 'headers' => array<string,string>,
      *                        'bearer' => string, 'action' => string (log label),
-     *                        'allowVtFailure' => bool (return instead of throwing on vt_success=false)]
+     *                        'allowVtFailure' => bool (return instead of throwing on vt_success=false),
+     *                        'timeout' => int (seconds, overrides default),
+     *                        'attempts' => int (overrides retry count — use 1 for
+     *                        interactive/customer-facing requests so slow upstream
+     *                        calls can't pile up PHP workers)]
      */
     public function request(string $method, string $path, array $options = []): ApiResponse
     {
+        $maxAttempts = max(1, (int) ($options['attempts'] ?? self::MAX_ATTEMPTS));
+        $timeout = max(5, (int) ($options['timeout'] ?? self::TIMEOUT));
         $url = $this->baseUrl . '/' . ltrim($path, '/');
         if (!empty($options['query'])) {
             $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($options['query']);
@@ -75,21 +81,21 @@ class HttpClient
         $lastError = '';
         while (true) {
             $attempt++;
-            [$status, $rawBody, $responseHeaders, $curlError] = $this->execute($method, $url, $headers, $body);
+            [$status, $rawBody, $responseHeaders, $curlError] = $this->execute($method, $url, $headers, $body, $timeout);
 
             $logAction = $options['action'] ?? (strtoupper($method) . ' ' . $path);
             $this->log($logAction, $method, $url, $options['json'] ?? null, $status, $rawBody, $curlError);
 
             if ($curlError !== '') {
                 $lastError = $curlError;
-                if ($attempt < self::MAX_ATTEMPTS) {
+                if ($attempt < $maxAttempts) {
                     $this->backoff($attempt);
                     continue;
                 }
                 throw new ApiException("Virtutel API request failed: {$lastError}");
             }
 
-            if (($status === 429 || $status >= 500) && $attempt < self::MAX_ATTEMPTS) {
+            if (($status === 429 || $status >= 500) && $attempt < $maxAttempts) {
                 $this->backoff($attempt, $this->retryAfterSeconds($responseHeaders));
                 continue;
             }
@@ -122,7 +128,7 @@ class HttpClient
     /**
      * @return array{0:int,1:string,2:array<string,string>,3:string} [status, body, headers, curlError]
      */
-    private function execute(string $method, string $url, array $headers, ?string $body): array
+    private function execute(string $method, string $url, array $headers, ?string $body, int $timeout = self::TIMEOUT): array
     {
         $ch = curl_init();
 
@@ -132,8 +138,8 @@ class HttpClient
             CURLOPT_CUSTOMREQUEST => strtoupper($method),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT,
-            CURLOPT_TIMEOUT => self::TIMEOUT,
+            CURLOPT_CONNECTTIMEOUT => min(self::CONNECT_TIMEOUT, $timeout),
+            CURLOPT_TIMEOUT => $timeout,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_HEADERFUNCTION => function ($ch, $line) use (&$responseHeaders) {

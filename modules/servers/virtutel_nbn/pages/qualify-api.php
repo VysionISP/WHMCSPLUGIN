@@ -23,6 +23,13 @@ use WHMCS\Module\Server\VirtutelNbn\Service\SpeedTier;
 require_once __DIR__ . '/../../../../init.php';
 require_once __DIR__ . '/../lib/Autoloader.php';
 
+// This endpoint never writes session data — release the lock immediately so
+// concurrent requests (and the rest of the client area) aren't serialised
+// behind slow upstream API calls.
+if (function_exists('session_write_close')) {
+    @session_write_close();
+}
+
 header('Content-Type: application/json');
 header('X-Robots-Tag: noindex');
 

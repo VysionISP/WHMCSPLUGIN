@@ -51,6 +51,9 @@ class AppointmentService
                 $response = $this->client->request('GET', VirtutelClient::PATH_APPOINTMENT_TIMESLOTS, [
                     'action' => 'GetTimeslots',
                     'query' => $base + ['appointmentSlotType' => $slotType],
+                    // Interactive page: fail fast, no retry pile-up.
+                    'timeout' => 25,
+                    'attempts' => 1,
                 ]);
             } catch (ApiException $e) {
                 continue; // one empty window must not sink the other

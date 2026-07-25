@@ -11,6 +11,12 @@
 
 require_once __DIR__ . '/../../../../init.php';
 
+// Static page — release the session lock so it never queues behind other
+// requests from the same visitor.
+if (function_exists('session_write_close')) {
+    @session_write_close();
+}
+
 // Google Places key from the addon settings (Addons -> Virtutel NBN Tools
 // -> Configure). Empty key = plain text search fallback.
 $placesKey = '';

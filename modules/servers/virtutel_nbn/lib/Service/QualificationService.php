@@ -31,6 +31,9 @@ class QualificationService
         $response = $this->client->request('POST', VirtutelClient::PATH_LOCATIONS, [
             'action' => 'AddressSearch',
             'json' => $search,
+            // Interactive: fail fast rather than hold a PHP worker.
+            'timeout' => 20,
+            'attempts' => 1,
         ]);
 
         return array_values((array) $response->get('responseData', []));
@@ -53,7 +56,13 @@ class QualificationService
         $response = $this->client->request(
             'GET',
             VirtutelClient::PATH_SERVICE_QUALIFICATIONS . '/' . rawurlencode($locationId),
-            ['action' => 'ServiceQualification', 'query' => $params]
+            [
+                'action' => 'ServiceQualification',
+                'query' => $params,
+                // Interactive: fail fast rather than hold a PHP worker.
+                'timeout' => 25,
+                'attempts' => 1,
+            ]
         );
 
         return ['parsed' => self::parseQualification($response->data), 'raw' => $response->data];
