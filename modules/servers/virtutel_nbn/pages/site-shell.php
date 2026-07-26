@@ -90,12 +90,17 @@ function kx_site_render(string $section): void
     if ($family === 'personal') {
         $nav = [
             ['Home', '/'],
-            ['NBN Internet', '/store/residental-internet'],
+            ['NBN Internet', '/personal/nbn/'],
             ['Mobile', '/personal/mobile/'],
             ['Home Phone', '/personal/home-phone/'],
             ['Contact', '/contact.php'],
         ];
-        $active = ['residential' => 'Home', 'mobile' => 'Mobile', 'homephone' => 'Home Phone'][$section] ?? '';
+        $active = [
+            'residential' => 'Home',
+            'nbn' => 'NBN Internet',
+            'mobile' => 'Mobile',
+            'homephone' => 'Home Phone',
+        ][$section] ?? '';
     } else {
         $nav = [
             ['Home', '/'],
@@ -108,6 +113,7 @@ function kx_site_render(string $section): void
 
     $titles = [
         'residential' => 'Personal NBN — Korvix',
+        'nbn' => 'NBN Internet Plans — Korvix',
         'mobile' => 'Mobile — Korvix',
         'homephone' => 'Home Phone — Korvix',
         'business' => 'Business Internet & Services — Korvix',
@@ -287,6 +293,69 @@ function kx_site_render(string $section): void
     <p class="sub">Call us on <?php echo $e($phone); ?> and talk to a local &mdash; we'll sort it in one call.</p>
     <a class="btn" href="tel:<?php echo $e($tel); ?>">Call now</a>
   </div></div>
+</section>
+
+<script>
+(function(){var f=document.getElementById('kxQ');if(!f){return;}
+setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;
+if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);})();
+</script>
+
+<?php } elseif ($section === 'nbn') { $plans = kx_site_plans(); ?>
+
+<section class="hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker">NBN Internet</div>
+    <h1>Find the right plan<br>for <span class="grad">your address</span></h1>
+    <p class="sub">NBN plans are address-specific &mdash; enter yours and we'll show your connection
+      type and exactly which plans and speeds you can get, then order in a couple of clicks.</p>
+    <div class="checker" id="check">
+      <p class="t">Check your address</p>
+      <p class="s">Straight from the NBN database &mdash; takes about ten seconds.</p>
+      <iframe id="kxQ" src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark"
+              scrolling="no" title="NBN address checker"></iframe>
+    </div>
+  </div>
+</section>
+
+<?php if ($plans !== []) { ?>
+<section style="text-align:center">
+  <div class="inner">
+    <div class="kicker">Plans</div>
+    <h2>Every tier, one simple price</h2>
+    <p class="sub">Month-to-month, unlimited data. Your address decides which tiers are available
+      &mdash; check it above and order the one that fits.</p>
+    <div class="cards">
+      <?php foreach ($plans as [$name, $price, $down, $up]) { ?>
+      <div class="card plan">
+        <h3><?php echo $e($name); ?></h3>
+        <div class="speed"><?php echo $down !== ''
+            ? $e($down) . ' Mbps down / ' . $e($up) . ' Mbps up' : 'Speed tier at your address'; ?></div>
+        <div class="price">$<?php echo $e($price); ?><small>/mo</small></div>
+        <a class="btn ghost" style="margin-top:14px" href="#check">Check availability</a>
+      </div>
+      <?php } ?>
+    </div>
+  </div>
+</section>
+<?php } ?>
+
+<section style="text-align:center">
+  <div class="inner">
+    <div class="kicker">How it works</div>
+    <h2>Three steps to connected</h2>
+    <div class="cards">
+      <div class="card"><div class="ico">&#128205;</div><h3>1. Check your address</h3>
+        <p>We look up the NBN database and show your connection type, ports, and available speeds.</p></div>
+      <div class="card"><div class="ico">&#128179;</div><h3>2. Pick a plan &amp; order</h3>
+        <p>Only plans your address supports are shown. Switching provider? Your AVC ID transfers
+           the service remotely.</p></div>
+      <div class="card"><div class="ico">&#128640;</div><h3>3. Get online</h3>
+        <p>We lodge the order the moment payment clears and keep you posted &mdash; including
+           self-serve appointment booking if a technician is needed.</p></div>
+    </div>
+  </div>
 </section>
 
 <script>
