@@ -713,7 +713,7 @@ add_hook('ClientAreaHeadOutput', 9, function ($vars) {
 add_hook('ClientAreaHeadOutput', 4, function () {
     $items = [
         ['Service Status', '/serverstatus.php'],
-        ['Get Remote Support', '/submitticket.php'],
+        ['Get Remote Support', 'https://go.getscreen.me/invite/683032125'],
         ['Pay an Invoice', '/clientarea.php?action=invoices'],
     ];
     // TEMPORARY number — revert to 1300 881 437 when it's live.
@@ -724,7 +724,9 @@ add_hook('ClientAreaHeadOutput', 4, function () {
 
     $left = '';
     foreach ($items as [$label, $href]) {
-        $left .= '<a href="' . htmlspecialchars($href, ENT_QUOTES) . '">'
+        $external = str_starts_with($href, 'http');
+        $left .= '<a href="' . htmlspecialchars($href, ENT_QUOTES) . '"'
+            . ($external ? ' target="_blank" rel="noopener"' : '') . '>'
             . htmlspecialchars($label, ENT_QUOTES) . '</a>';
     }
     $tel = preg_replace('/\D/', '', $phone);

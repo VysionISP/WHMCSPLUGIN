@@ -431,7 +431,7 @@ function kx_site_render(string $section, string $arg = ''): void
 <div class="kx-topbar"><div class="in">
   <div class="l">
     <a href="/serverstatus.php">Service Status</a>
-    <a href="/submitticket.php">Get Remote Support</a>
+    <a href="https://go.getscreen.me/invite/683032125" target="_blank" rel="noopener">Get Remote Support</a>
     <a href="/clientarea.php?action=invoices">Pay an Invoice</a>
   </div>
   <div class="r" style="display:flex;gap:14px;align-items:center">
