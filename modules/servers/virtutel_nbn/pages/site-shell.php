@@ -70,9 +70,19 @@ function kx_site_plans(): array
     }
 }
 
-function kx_site_render(string $section): void
+function kx_site_render(string $section, string $arg = ''): void
 {
     $e = 'kx_site_e';
+
+    // Legal documents render through the same chrome; resolve the doc up
+    // front so the <title> is right.
+    $legalDocs = [];
+    $legalSlug = '';
+    if ($section === 'legal') {
+        require_once __DIR__ . '/legal.php';
+        $legalDocs = kx_legal_docs();
+        $legalSlug = isset($legalDocs[$arg]) ? $arg : 'terms';
+    }
     // Google Places key (same addon setting the qualifier uses); empty key
     // degrades to plain text search.
     $placesKey = '';
@@ -132,6 +142,9 @@ function kx_site_render(string $section): void
         'business' => 'Business Internet & Services — Korvix',
     ];
     $title = $titles[$section] ?? 'Korvix';
+    if ($section === 'legal') {
+        $title = $legalDocs[$legalSlug][0] . ' — Korvix';
+    }
 
     header('Content-Type: text/html; charset=utf-8');
     // These pages change with every plugin release — never let the
@@ -329,6 +342,27 @@ function kx_site_render(string $section): void
   .kx-footer a:hover { color:#fff; }
   .kx-footer .legal { border-top:1px solid #1c2436; margin-top:40px; padding:18px 0; display:flex;
                       justify-content:space-between; gap:14px; flex-wrap:wrap; font-size:12.5px; }
+  /* ---------- legal documents ---------- */
+  .lg-head { padding:56px 20px 8px; }
+  .lg-nav { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0 0; }
+  .lg-nav a { border:1px solid var(--line); border-radius:999px; padding:6px 15px; font-size:13px;
+              font-weight:600; color:var(--muted); }
+  .lg-nav a:hover { color:#fff; border-color:#3a4763; }
+  .lg-nav a.on { color:#fff; background:var(--surface); border-color:var(--brand); }
+  .lg-prose { max-width:860px; }
+  .lg-prose h2 { font-size:20px; margin:34px 0 10px; }
+  .lg-prose h3 { font-size:16px; margin:22px 0 8px; }
+  .lg-prose p, .lg-prose li { color:#c7cede; font-size:15px; }
+  .lg-prose ul { padding-left:22px; }
+  .lg-prose li { margin-bottom:8px; }
+  .lg-prose table { width:100%; border-collapse:collapse; margin:14px 0 6px; font-size:14.5px; }
+  .lg-prose th, .lg-prose td { border:1px solid var(--line); padding:10px 14px; text-align:left;
+                               vertical-align:top; color:#c7cede; }
+  .lg-prose th { width:200px; color:#e6e9f2; background:var(--surface); font-weight:700;
+                 white-space:nowrap; }
+  .lg-prose .cis { margin-top:10px; }
+  .lg-updated { color:var(--muted); font-size:13px; margin-top:6px; }
+  @media(max-width:700px){ .lg-prose th { white-space:normal; width:120px; } }
   /* ---------- mobile pass ---------- */
   @media(max-width:760px){
     section { padding:40px 16px; }
@@ -692,6 +726,25 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
   </div></div>
 </section>
 
+<?php } elseif ($section === 'legal') {
+    [$lgTitle, $lgTag, $lgUpdated, $lgHtml] = $legalDocs[$legalSlug];
+    ?>
+<section class="lg-head"><div class="inner">
+  <div class="kicker">Legal</div>
+  <h1><?php echo $e($lgTitle); ?></h1>
+  <p class="sub" style="margin-left:0"><?php echo $e($lgTag); ?></p>
+  <div class="lg-updated">Last updated <?php echo $e(date('j F Y', strtotime($lgUpdated))); ?></div>
+  <nav class="lg-nav">
+    <?php foreach ($legalDocs as $slug => [$navTitle]) { ?>
+    <a href="/<?php echo $e($slug); ?>/" class="<?php echo $slug === $legalSlug ? 'on' : ''; ?>"><?php
+        echo $e($navTitle); ?></a>
+    <?php } ?>
+  </nav>
+</div></section>
+<section style="padding-top:10px"><div class="inner">
+  <div class="lg-prose"><?php echo $lgHtml; /* trusted module-authored HTML */ ?></div>
+</div></section>
+
 <?php } ?>
 
 <footer class="kx-footer"><div class="in">
@@ -723,9 +776,13 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
   </div>
   <div class="legal">
     <div>&copy; <?php echo date('Y'); ?> Korvix. All rights reserved.</div>
-    <div style="display:flex;gap:20px">
-      <a href="/terms">Terms of Service</a>
-      <a href="/privacy">Privacy Policy</a>
+    <div style="display:flex;gap:18px;flex-wrap:wrap">
+      <a href="/terms/">Terms of Service</a>
+      <a href="/privacy/">Privacy</a>
+      <a href="/acceptable-use/">Acceptable Use</a>
+      <a href="/critical-information/">Plan Information (CIS)</a>
+      <a href="/complaints/">Complaints</a>
+      <a href="/financial-hardship/">Financial Hardship</a>
     </div>
   </div>
 </div></footer>

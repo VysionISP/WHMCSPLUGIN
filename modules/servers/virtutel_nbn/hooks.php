@@ -852,8 +852,12 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         return $out . '</ul></div>';
     };
 
-    $legal = '<a href="' . $e($tos !== '' ? $tos : '/terms') . '">Terms of Service</a>'
-        . '<a href="/privacy">Privacy Policy</a>';
+    $legal = '<a href="' . $e($tos !== '' ? $tos : '/terms/') . '">Terms of Service</a>'
+        . '<a href="/privacy/">Privacy</a>'
+        . '<a href="/acceptable-use/">Acceptable Use</a>'
+        . '<a href="/critical-information/">Plan Information (CIS)</a>'
+        . '<a href="/complaints/">Complaints</a>'
+        . '<a href="/financial-hardship/">Financial Hardship</a>';
 
     return '<style>'
         . 'footer:not(.kx-footer),.footer:not(.kx-footer),#footer:not(.kx-footer)'
@@ -879,7 +883,7 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         . '.kx-footer .legal{border-top:1px solid #1c2436;margin-top:40px;padding:18px 0;'
         . 'display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;'
         . 'font-size:12.5px}'
-        . '.kx-footer .legal .links{display:flex;gap:20px}'
+        . '.kx-footer .legal .links{display:flex;gap:18px;flex-wrap:wrap}'
         . '</style>'
         . '<footer class="kx-footer"><div class="in"><div class="grid">'
         . '<div class="col brand"><div id="kxFooterLogo" class="txtlogo">KORVIX</div>'
