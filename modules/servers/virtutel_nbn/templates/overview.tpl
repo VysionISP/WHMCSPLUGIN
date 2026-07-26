@@ -86,17 +86,14 @@
       {/if}
     </div>
   </div>
+  {if $vt_order_id && $vt_conn_state == 'in_progress'}
   <div class="col-sm-6">
     <div style="background:#141b2b;border:1px solid #2a3347;border-radius:12px;padding:18px 20px;margin-bottom:18px;color:#e6e9f2">
       <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#98a2b8;margin-bottom:10px">Order progress</div>
-      {if $vt_order_id}
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
-          <span style="color:#98a2b8">Order</span><code style="background:#0a0e18;border-radius:6px;padding:1px 8px">{$vt_order_id}</code></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
-          <span style="color:#98a2b8">Status</span><strong>{$vt_order_status_label|default:'—'}</strong></div>
-      {else}
-        <div style="color:#98a2b8;padding:6px 0">No orders in progress.</div>
-      {/if}
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
+        <span style="color:#98a2b8">Order</span><code style="background:#0a0e18;border-radius:6px;padding:1px 8px">{$vt_order_id}</code></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
+        <span style="color:#98a2b8">Status</span><strong>{$vt_order_status_label|default:'—'}</strong></div>
       {if $vt_appointment_start}
         <div style="display:flex;justify-content:space-between;padding:6px 0">
           <span style="color:#98a2b8">Appointment</span>
@@ -105,6 +102,7 @@
       {/if}
     </div>
   </div>
+  {/if}
 </div>
 
 {* ---- on-premises equipment (from the last NBN health check) ---- *}
