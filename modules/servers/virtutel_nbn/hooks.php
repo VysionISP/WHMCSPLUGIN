@@ -496,13 +496,16 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
     $src = '/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=' . $theme;
 
     return "<script>document.addEventListener('DOMContentLoaded',function(){"
-        . "var grid=document.querySelector('.products')||document.getElementById('products');"
-        . "if(!grid){return;}"
+        . "var grid=document.querySelector('.products,#products,.product-listing,.products-list');"
+        . "if(!grid){var card=document.querySelector('.product,[class*=product-]');"
+        . "if(card){grid=card.parentElement;}}"
         . "var f=document.createElement('iframe');"
         . "f.src='{$src}';"
         . "f.style.cssText='width:100%;border:0;display:block;min-height:520px;background:transparent';"
         . "f.setAttribute('scrolling','no');"
-        . "grid.replaceWith(f);"
+        . "if(grid){grid.replaceWith(f);}"
+        . "else{var mb=document.getElementById('main-body')||document.querySelector('.main-content,section#main-menu+*');"
+        . "if(!mb){return;}mb.insertBefore(f,mb.firstChild);}"
         . "setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;"
         . "if(h>200&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);"
         . "});</script>";
