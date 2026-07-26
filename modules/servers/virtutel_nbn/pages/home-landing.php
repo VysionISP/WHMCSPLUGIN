@@ -60,7 +60,8 @@ $qualifySrc = '/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dar
   .kx-landing { --bg:#0b0f1a; --surface:#141b2b; --surface2:#1a2338; --line:#2a3347;
                 --text:#e6e9f2; --muted:#98a2b8; --brand:#4d8dff; --brand2:#7a5cff;
                 --ok:#2fbf71;
-                color:var(--text); font-size:16px; line-height:1.6; }
+                color:var(--text); font-size:16px; line-height:1.6;
+                font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; }
   .kx-landing * { box-sizing:border-box; }
   .kx-landing section { padding:56px 20px; }
   .kx-landing .inner { max-width:1080px; margin:0 auto; }
@@ -73,7 +74,12 @@ $qualifySrc = '/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dar
   .kx-grad { background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff);
              -webkit-background-clip:text; background-clip:text; color:transparent; }
 
-  .kx-hero { text-align:center; padding-top:64px; }
+  .kx-hero { text-align:center; padding-top:72px; position:relative; overflow:hidden; }
+  .kx-hero .glow { position:absolute; border-radius:50%; filter:blur(100px); opacity:.32;
+                   pointer-events:none; }
+  .kx-hero .g1 { width:440px; height:440px; background:#2b5cff; top:-160px; left:-100px; }
+  .kx-hero .g2 { width:400px; height:400px; background:#7a5cff; top:-120px; right:-80px; }
+  .kx-hero .inner { position:relative; }
   .kx-hero .chips { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:22px; }
   .kx-hero .chip { font-size:13px; color:var(--muted); border:1px solid var(--line);
                    background:var(--surface); border-radius:999px; padding:6px 14px; }
@@ -96,6 +102,15 @@ $qualifySrc = '/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dar
   .kx-plan { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px 22px;
              display:flex; flex-direction:column; align-items:center; transition:transform .15s,border-color .15s; }
   .kx-plan:hover { transform:translateY(-4px); border-color:var(--brand); }
+  .kx-plan.featured { border-color:var(--brand); position:relative;
+                      box-shadow:0 14px 44px rgba(77,141,255,.18); }
+  .kx-plan .tag { position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+                  background:linear-gradient(92deg,#4d8dff,#7a5cff); color:#fff; font-size:11px;
+                  font-weight:700; padding:4px 13px; border-radius:999px; letter-spacing:.08em;
+                  text-transform:uppercase; white-space:nowrap; }
+  .kx-plan ul.inc { list-style:none; margin:0 0 18px; padding:0; color:var(--muted);
+                    font-size:13px; line-height:1.9; text-align:left; }
+  .kx-plan ul.inc li:before { content:'\2713'; color:var(--ok); font-weight:700; margin-right:8px; }
   .kx-plan .pname { font-weight:800; font-size:18px; }
   .kx-plan .pspeed { color:var(--muted); font-size:13.5px; margin:6px 0 14px; }
   .kx-plan .pprice { font-size:34px; font-weight:800; letter-spacing:-.02em; }
@@ -132,6 +147,7 @@ $qualifySrc = '/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dar
 </style>
 
 <section class="kx-hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
   <div class="inner">
     <div class="kicker">NBN Internet &mdash; Gippsland &amp; beyond</div>
     <h1>Fast, local NBN<br>without the <span class="kx-grad">runaround</span></h1>
@@ -180,15 +196,31 @@ $qualifySrc = '/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dar
     <p class="sub">Every plan is month-to-month with unlimited data. Availability and top speeds
       depend on your address &mdash; check it above and we'll show you exactly what you can get.</p>
     <div class="grid">
-      <?php foreach ($plans as $plan) { ?>
-      <div class="kx-plan">
+      <?php
+      // Highlight the 100 Mbps tier as most popular; fall back to the
+      // middle card when there isn't one.
+      $featured = intdiv(count($plans), 2);
+      foreach ($plans as $i => $plan) {
+          if ($plan['down'] === '100') {
+              $featured = $i;
+              break;
+          }
+      }
+      foreach ($plans as $i => $plan) { ?>
+      <div class="kx-plan<?php echo $i === $featured ? ' featured' : ''; ?>">
+        <?php if ($i === $featured) { ?><div class="tag">Most popular</div><?php } ?>
         <div class="pname"><?php echo $e($plan['name']); ?></div>
         <div class="pspeed"><?php echo $plan['down'] !== ''
             ? $e($plan['down']) . ' Mbps down / ' . $e($plan['up']) . ' Mbps up'
             : 'Speed tier at your address'; ?></div>
         <div class="pprice">$<?php echo $e($plan['price']); ?><small>/mo</small></div>
         <div class="pnote">AUD, incl. GST</div>
-        <a class="kx-btn ghost" href="#kx-check">Check availability</a>
+        <ul class="inc">
+          <li>Unlimited data</li>
+          <li>No lock-in contract</li>
+          <li>BYO router (IPoE ready)</li>
+        </ul>
+        <a class="kx-btn<?php echo $i === $featured ? '' : ' ghost'; ?>" href="#kx-check">Check availability</a>
       </div>
       <?php } ?>
     </div>

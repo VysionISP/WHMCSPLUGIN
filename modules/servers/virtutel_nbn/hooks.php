@@ -653,3 +653,54 @@ add_hook('ClientAreaHeadOutput', 9, function ($vars) {
         . "}).catch(function(){mb.style.opacity='1';});"
         . "});</script>";
 });
+
+/**
+ * Site-wide utility bar above the theme nav: status / remote support /
+ * pay invoice on the left, phone + Customer Portals on the right.
+ * Edit the $items / $right arrays to change destinations.
+ */
+add_hook('ClientAreaHeadOutput', 4, function () {
+    $items = [
+        ['Service Status', '/serverstatus.php'],
+        ['Get Remote Support', '/submitticket.php'],
+        ['Pay an Invoice', '/clientarea.php?action=invoices'],
+    ];
+    $phone = '1300 881 437';
+    $portal = ['Customer Portals', '/clientarea.php'];
+
+    $left = '';
+    foreach ($items as [$label, $href]) {
+        $left .= '<a href="' . htmlspecialchars($href, ENT_QUOTES) . '">'
+            . htmlspecialchars($label, ENT_QUOTES) . '</a>';
+    }
+    $tel = preg_replace('/\D/', '', $phone);
+
+    $bar = '<div class="kx-topbar"><div class="in">'
+        . '<div class="l">' . $left . '</div>'
+        . '<div class="r">'
+        . '<a class="ph" href="tel:' . $tel . '">&#9742;&nbsp;' . htmlspecialchars($phone, ENT_QUOTES) . '</a>'
+        . '<a class="cp" href="' . htmlspecialchars($portal[1], ENT_QUOTES) . '">'
+        . htmlspecialchars($portal[0], ENT_QUOTES) . '</a>'
+        . '</div></div></div>';
+
+    $json = json_encode($bar, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+
+    return '<style>'
+        . '.kx-topbar{background:#070a12;border-bottom:1px solid #1c2436;font-size:12.5px;'
+        . 'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}'
+        . '.kx-topbar .in{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;'
+        . 'align-items:center;padding:7px 20px;gap:14px;flex-wrap:wrap}'
+        . '.kx-topbar .l{display:flex;gap:18px;flex-wrap:wrap}'
+        . '.kx-topbar .r{display:flex;gap:14px;align-items:center}'
+        . '.kx-topbar a{color:#98a2b8;text-decoration:none;transition:color .15s}'
+        . '.kx-topbar a:hover{color:#e6e9f2;text-decoration:none}'
+        . '.kx-topbar .ph{color:#e6e9f2;font-weight:700;letter-spacing:.02em}'
+        . '.kx-topbar .cp{background:linear-gradient(92deg,#4d8dff,#7a5cff);color:#fff;'
+        . 'padding:4px 14px;border-radius:999px;font-weight:600}'
+        . '.kx-topbar .cp:hover{color:#fff;filter:brightness(1.12)}'
+        . '@media(max-width:640px){.kx-topbar .l{display:none}}'
+        . '</style>'
+        . "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "var d=document.createElement('div');d.innerHTML={$json};"
+        . "document.body.insertBefore(d.firstChild,document.body.firstChild);});</script>";
+});
