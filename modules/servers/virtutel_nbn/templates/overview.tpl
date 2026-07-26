@@ -71,46 +71,40 @@
   </div>
 {/if}
 
-{* ---- details ---- *}
-<div class="row">
-  <div class="col-sm-6">
-    <div style="background:#141b2b;border:1px solid #2a3347;border-radius:12px;padding:18px 20px;margin-bottom:18px;color:#e6e9f2">
-      <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#98a2b8;margin-bottom:10px">Connection</div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
-        <span style="color:#98a2b8">Technology</span><strong>{$vt_technology|default:'—'}</strong></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
-        <span style="color:#98a2b8">Speed</span><strong>{$vt_speed|default:'—'}</strong></div>
-      {if $vt_avc}
-      <div style="padding:8px 0 0;color:#98a2b8;font-size:12px">
-        Keep your AVC ID handy if you ever transfer to another provider.</div>
-      {/if}
-    </div>
+{* ---- details: one stretch-to-fit card grid ---- *}
+<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:stretch;margin-bottom:18px">
+
+  <div style="flex:1 1 280px;min-width:260px;background:#141b2b;border:1px solid #2a3347;border-radius:12px;padding:18px 20px;color:#e6e9f2">
+    <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#98a2b8;margin-bottom:10px">Connection</div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
+      <span style="color:#98a2b8">Technology</span><strong>{$vt_technology|default:'—'}</strong></div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
+      <span style="color:#98a2b8">Speed</span><strong>{$vt_speed|default:'—'}</strong></div>
+    {if $vt_avc}
+    <div style="padding:8px 0 0;color:#98a2b8;font-size:12px">
+      Keep your AVC ID handy if you ever transfer to another provider.</div>
+    {/if}
   </div>
+
   {if $vt_order_id && $vt_conn_state == 'in_progress'}
-  <div class="col-sm-6">
-    <div style="background:#141b2b;border:1px solid #2a3347;border-radius:12px;padding:18px 20px;margin-bottom:18px;color:#e6e9f2">
-      <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#98a2b8;margin-bottom:10px">Order progress</div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
-        <span style="color:#98a2b8">Order</span><code style="background:#0a0e18;border-radius:6px;padding:1px 8px">{$vt_order_id}</code></div>
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
-        <span style="color:#98a2b8">Status</span><strong>{$vt_order_status_label|default:'—'}</strong></div>
-      {if $vt_appointment_start}
-        <div style="display:flex;justify-content:space-between;padding:6px 0">
-          <span style="color:#98a2b8">Appointment</span>
-          <span style="text-align:right"><strong>{$vt_appointment_start}</strong>{if $vt_appointment_end} – {$vt_appointment_end}{/if}
-            <br><small style="color:#98a2b8">Status: {$vt_appointment_status}</small></span></div>
-      {/if}
-    </div>
+  <div style="flex:1 1 280px;min-width:260px;background:#141b2b;border:1px solid #2a3347;border-radius:12px;padding:18px 20px;color:#e6e9f2">
+    <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#98a2b8;margin-bottom:10px">Order progress</div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
+      <span style="color:#98a2b8">Order</span><code style="background:#0a0e18;border-radius:6px;padding:1px 8px">{$vt_order_id}</code></div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
+      <span style="color:#98a2b8">Status</span><strong>{$vt_order_status_label|default:'—'}</strong></div>
+    {if $vt_appointment_start}
+      <div style="display:flex;justify-content:space-between;padding:6px 0">
+        <span style="color:#98a2b8">Appointment</span>
+        <span style="text-align:right"><strong>{$vt_appointment_start}</strong>{if $vt_appointment_end} – {$vt_appointment_end}{/if}
+          <br><small style="color:#98a2b8">Status: {$vt_appointment_status}</small></span></div>
+    {/if}
   </div>
   {/if}
-</div>
 
-{* ---- on-premises equipment (from the last NBN health check) ---- *}
-{if $vt_cpe && $vt_cpe.groups}
-<div class="row">
-  {foreach from=$vt_cpe.groups key=vtCpeGroup item=vtCpeItems}
-  <div class="col-sm-6">
-    <div style="background:#141b2b;border:1px solid #2a3347;border-radius:12px;padding:18px 20px;margin-bottom:18px;color:#e6e9f2">
+  {if $vt_cpe && $vt_cpe.groups}
+    {foreach from=$vt_cpe.groups key=vtCpeGroup item=vtCpeItems}
+    <div style="flex:1 1 280px;min-width:260px;background:#141b2b;border:1px solid #2a3347;border-radius:12px;padding:18px 20px;color:#e6e9f2">
       <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#98a2b8;margin-bottom:10px">
         {$vtCpeGroup|escape}</div>
       {foreach from=$vtCpeItems key=vtCpeLabel item=vtCpeValue}
@@ -125,9 +119,11 @@
           match your router, the wrong device may be connected.</div>
       {/if}
     </div>
-  </div>
-  {/foreach}
+    {/foreach}
+  {/if}
+
 </div>
+{if $vt_cpe && $vt_cpe.groups}
 <div style="color:#667;font-size:11.5px;margin:-8px 0 14px">
   Equipment details as seen by the NBN network on {$vt_cpe.at|date_format:'%e %b %Y'}.</div>
 {/if}
