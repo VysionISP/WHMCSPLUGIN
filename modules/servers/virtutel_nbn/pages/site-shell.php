@@ -325,6 +325,32 @@ function kx_site_render(string $section): void
   .kx-footer a:hover { color:#fff; }
   .kx-footer .legal { border-top:1px solid #1c2436; margin-top:40px; padding:18px 0; display:flex;
                       justify-content:space-between; gap:14px; flex-wrap:wrap; font-size:12.5px; }
+  /* ---------- mobile pass ---------- */
+  @media(max-width:760px){
+    section { padding:40px 16px; }
+    .hero2 { padding:42px 16px 32px; }
+    .hero2 .wrap { gap:26px; }
+    .hero2 h1 br { display:none; }   /* let headlines wrap naturally */
+    .ticks li { font-size:14px; }
+    h2 { font-size:22px; }
+    .kx-switch .in, .kx-topbar .in { padding-left:14px; padding-right:14px; }
+    .kx-nav .in { padding:14px 16px; gap:10px; }
+    /* nav: one scrollable row instead of wrapped link soup */
+    .kx-nav .links { width:100%; margin-left:0; flex-wrap:nowrap; overflow-x:auto;
+                     gap:20px; padding-bottom:2px; scrollbar-width:none; }
+    .kx-nav .links::-webkit-scrollbar { display:none; }
+    .kx-nav .links a { white-space:nowrap; font-size:14px; }
+    .srow { gap:8px; }
+    .srow .btn { width:100%; }
+    .checkwrap .checker { padding:20px 16px 12px; }
+    /* popup: top-anchored so the keyboard doesn't shove it off screen */
+    .kxm { align-items:flex-start; padding-top:12px; }
+    .kxm .panel { width:96vw; max-height:92vh; }
+    .kxm iframe { padding:8px 12px 14px; }
+    .band { padding:34px 18px; }
+    .pgrid { padding:22px 2px 14px; }
+    .kx-footer .in { padding:36px 16px 0; }
+  }
 </style>
 </head>
 <body>
