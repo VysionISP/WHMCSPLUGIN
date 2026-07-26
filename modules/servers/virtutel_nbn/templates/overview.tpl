@@ -74,12 +74,15 @@
     btn.dataset.kxBound='1';
     var base='clientarea.php?action=productdetails&id={/literal}{$vt_serviceid}{literal}&modop=custom';
     function kxFetch(url){
-      return fetch(url,{credentials:'same-origin'}).then(function(r){return r.text();})
-        .then(function(t){
+      return fetch(url,{credentials:'same-origin'}).then(function(r){
+        return r.text().then(function(t){
           var m=t.match(/@@KXJSON@@([\s\S]*?)@@ENDKXJSON@@/);
-          if(!m){throw new Error('no payload');}
-          return JSON.parse(m[1]);
+          if(m){return JSON.parse(m[1]);}
+          var snip=t.replace(/<script[\s\S]*?<\/script>/gi,' ')
+            .replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,200);
+          throw new Error('HTTP '+r.status+' without payload. Response starts: "'+snip+'"');
         });
+      });
     }
     btn.addEventListener('click',function(){
       var sel=document.getElementById('vtCliTestSel');
@@ -127,7 +130,7 @@
               .catch(function(){setTimeout(poll,4000);});
           })();
         })
-        .catch(function(){fail('The check could not be started — please try again.');});
+        .catch(function(e){fail('The check could not be started: '+e.message);});
     });
   })();
   </script>
