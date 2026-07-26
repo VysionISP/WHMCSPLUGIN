@@ -371,12 +371,13 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 . '</small>'
                 . virtutel_nbn_test_overlay_js($serviceId);
 
-            $tests = json_decode((string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
-                'tests_' . $serviceId,
-                ''
-            ) ?? ''), true);
-            if (is_array($tests) && $tests !== []) {
-                $fields['Recent Diagnostics'] = virtutel_nbn_render_tests($tests);
+            $tests = \WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::history($serviceId);
+            if ($tests !== []) {
+                $fields['Previous Tests'] =
+                    '<button type="button" class="btn btn-default btn-sm" id="vtHistBtn">'
+                    . 'View previous tests (' . count($tests) . ')</button>'
+                    . '<div id="vtHistData" style="display:none">'
+                    . virtutel_nbn_render_tests($tests) . '</div>';
             }
         }
 
@@ -514,49 +515,72 @@ function virtutel_nbn_test_overlay_js(int $serviceId): string
   if(!btn||btn.dataset.kxBound){return;}
   btn.dataset.kxBound='1';
   var base='addonmodules.php?module=virtutel_nbn_admin&serviceid={$sid}';
-  btn.addEventListener('click',function(){
-    var type=document.getElementById('vtTestSel').value;
-    if(!type){alert('Choose a diagnostic test first.');return;}
+  // The addon endpoint's JSON arrives embedded in the admin page chrome —
+  // extract it by sentinel.
+  function kxFetch(url){
+    return fetch(url,{credentials:'same-origin'}).then(function(r){return r.text();})
+      .then(function(t){
+        var m=t.match(/@@KXJSON@@([\\s\\S]*?)@@ENDKXJSON@@/);
+        if(!m){throw new Error('no payload');}
+        return JSON.parse(m[1]);
+      });
+  }
+  function kxOverlay(spin,msg,sub,closeLabel){
     var ov=document.createElement('div');
     ov.style.cssText='position:fixed;inset:0;background:rgba(10,14,24,.7);z-index:99999;'
       +'display:flex;align-items:center;justify-content:center';
     ov.innerHTML='<div style="background:#fff;padding:26px 34px;border-radius:10px;text-align:center;'
-      +'max-width:560px;width:92%;max-height:80vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">'
-      +'<div id="vtOvSpin" style="width:38px;height:38px;border:4px solid #dde3ee;'
+      +'max-width:620px;width:92%;max-height:82vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">'
+      +'<div id="vtOvSpin" style="'+(spin?'':'display:none;')+'width:38px;height:38px;border:4px solid #dde3ee;'
       +'border-top-color:#1a5fd0;border-radius:50%;margin:0 auto 14px;animation:vtspin 1s linear infinite"></div>'
       +'<style>@keyframes vtspin{to{transform:rotate(360deg)}}</style>'
-      +'<div id="vtOvMsg" style="font-weight:600;color:#222">Queuing '+type+'&hellip;</div>'
-      +'<div id="vtOvSub" style="color:#667;font-size:12px;margin-top:6px">Results come back from NBN '
-      +'&mdash; usually under a couple of minutes.</div>'
+      +'<div id="vtOvMsg" style="font-weight:600;color:#222">'+msg+'</div>'
+      +'<div id="vtOvSub" style="color:#667;font-size:12px;margin-top:6px">'+sub+'</div>'
       +'<button type="button" id="vtOvClose" class="btn btn-default btn-sm" style="margin-top:14px">'
-      +'Run in background</button></div>';
+      +closeLabel+'</button></div>';
     document.body.appendChild(ov);
+    return ov;
+  }
+  var hist=document.getElementById('vtHistBtn');
+  if(hist&&!hist.dataset.kxBound){
+    hist.dataset.kxBound='1';
+    hist.addEventListener('click',function(){
+      var data=document.getElementById('vtHistData');
+      var ov=kxOverlay(false,'<div style="text-align:left;font-weight:400">'
+        +(data?data.innerHTML:'No tests yet.')+'</div>','','Close');
+      ov.querySelector('#vtOvClose').addEventListener('click',function(){ov.remove();});
+      ov.addEventListener('click',function(e){if(e.target===ov){ov.remove();}});
+    });
+  }
+  btn.addEventListener('click',function(){
+    var type=document.getElementById('vtTestSel').value;
+    if(!type){alert('Choose a diagnostic test first.');return;}
+    var ov=kxOverlay(true,'Queuing '+type+'&hellip;',
+      'Results come back from NBN &mdash; usually under a couple of minutes.','Run in background');
     var closed=false;
     function shut(){closed=true;ov.remove();}
-    document.getElementById('vtOvClose').addEventListener('click',shut);
+    ov.querySelector('#vtOvClose').addEventListener('click',shut);
     function fail(msg){
-      document.getElementById('vtOvSpin').style.display='none';
-      document.getElementById('vtOvMsg').textContent=msg;
-      document.getElementById('vtOvClose').textContent='Close';
+      ov.querySelector('#vtOvSpin').style.display='none';
+      ov.querySelector('#vtOvMsg').textContent=msg;
+      ov.querySelector('#vtOvClose').textContent='Close';
     }
-    fetch(base+'&kxajax=run_test&testtype='+encodeURIComponent(type),{credentials:'same-origin'})
-      .then(function(r){return r.json();})
+    kxFetch(base+'&kxajax=run_test&testtype='+encodeURIComponent(type))
       .then(function(j){
         if(!j.ok){fail('Failed: '+(j.error||'unknown error'));return;}
-        document.getElementById('vtOvMsg').textContent='Test '+j.id+' running…';
+        ov.querySelector('#vtOvMsg').textContent='Test '+j.id+' running…';
         var tries=0;
         (function poll(){
           if(closed){return;}
           if(++tries>60){fail('Still running — the result will appear in Recent Diagnostics.');return;}
-          fetch(base+'&kxajax=test_status&testid='+encodeURIComponent(j.id),{credentials:'same-origin'})
-            .then(function(r){return r.json();})
+          kxFetch(base+'&kxajax=test_status&testid='+encodeURIComponent(j.id))
             .then(function(s){
               if(closed){return;}
               if(s.done){
-                document.getElementById('vtOvSpin').style.display='none';
-                document.getElementById('vtOvMsg').innerHTML=s.html;
-                document.getElementById('vtOvSub').textContent='';
-                var c=document.getElementById('vtOvClose');
+                ov.querySelector('#vtOvSpin').style.display='none';
+                ov.querySelector('#vtOvMsg').innerHTML=s.html;
+                ov.querySelector('#vtOvSub').textContent='';
+                var c=ov.querySelector('#vtOvClose');
                 c.textContent='Close';
                 c.addEventListener('click',function(){location.reload();});
               }else{setTimeout(poll,3000);}

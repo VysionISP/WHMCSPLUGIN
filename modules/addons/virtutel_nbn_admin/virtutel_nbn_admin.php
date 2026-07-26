@@ -136,37 +136,37 @@ function virtutel_nbn_admin_deactivate(): array
 
 function virtutel_nbn_admin_output(array $vars): void
 {
-    // AJAX endpoint for the service-page Run Test overlay (admin session
-    // already validated by WHMCS before output runs).
+    // AJAX endpoint for the service-page Run Test overlay. WHMCS has
+    // already printed the admin page header by the time _output runs, so
+    // the JSON is wrapped in sentinels and extracted client-side.
     $ajax = (string) ($_REQUEST['kxajax'] ?? '');
     if ($ajax !== '') {
-        header('Content-Type: application/json');
+        $emit = function (array $payload): void {
+            echo '@@KXJSON@@' . json_encode($payload) . '@@ENDKXJSON@@';
+            exit;
+        };
         $serviceId = (int) ($_REQUEST['serviceid'] ?? 0);
         try {
             Migrations::ensure();
             if ($serviceId <= 0) {
-                echo json_encode(['ok' => false, 'error' => 'Missing service id.']);
-                exit;
+                $emit(['ok' => false, 'error' => 'Missing service id.']);
             }
             if ($ajax === 'run_test') {
-                echo json_encode(\WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::queue(
+                $emit(\WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::queue(
                     $serviceId,
                     (string) ($_REQUEST['testtype'] ?? '')
                 ));
-                exit;
             }
             if ($ajax === 'test_status') {
-                echo json_encode(\WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::statusHtml(
+                $emit(\WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::statusHtml(
                     $serviceId,
                     (string) ($_REQUEST['testid'] ?? '')
                 ));
-                exit;
             }
-            echo json_encode(['ok' => false, 'error' => 'Unknown action.']);
+            $emit(['ok' => false, 'error' => 'Unknown action.']);
         } catch (\Throwable $ex) {
-            echo json_encode(['ok' => false, 'error' => $ex->getMessage()]);
+            $emit(['ok' => false, 'error' => $ex->getMessage()]);
         }
-        exit;
     }
 
     $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
