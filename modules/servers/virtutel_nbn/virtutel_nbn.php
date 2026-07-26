@@ -432,6 +432,20 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
             $poi = is_array($raw) ? trim((string) ($raw['poiId'] ?? '')) : '';
             $csa = is_array($raw) ? trim((string) ($raw['csaId'] ?? '')) : '';
 
+            // Plan: friendly speed-tier label (from the stored enum) plus
+            // Virtutel's own wholesale product description underneath.
+            $speedEnum = trim((string) ($row->speed_tier ?? ''));
+            $tier = $speedEnum !== ''
+                ? \WHMCS\Module\Server\VirtutelNbn\Service\SpeedTier::describe($speedEnum)
+                : null;
+            $planLabel = trim((string) ($tier['label'] ?? '')) ?: $speedEnum;
+            $wholesale = is_array($raw) ? trim((string) ($raw['description'] ?? '')) : '';
+            $planHtml = htmlspecialchars($planLabel !== '' ? $planLabel : '—')
+                . ($speedEnum !== '' && $planLabel !== $speedEnum
+                    ? ' <code style="font-size:11px">' . htmlspecialchars($speedEnum) . '</code>' : '')
+                . ($wholesale !== ''
+                    ? '<br><small style="color:#667">' . htmlspecialchars($wholesale) . '</small>' : '');
+
             $fields = [
                 'VT Service ID' => htmlspecialchars((string) ($row->vt_service_id ?? '—')),
                 'AVC ID' => htmlspecialchars((string) ($row->avc_id ?? '—')),
@@ -440,6 +454,7 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                     (string) (($row->service_address ?? '') !== '' ? $row->service_address : '—')
                 ),
                 'Technology' => htmlspecialchars((string) ($row->technology_type ?? '—')),
+                'Plan' => $planHtml,
                 'POI' => htmlspecialchars($poi !== '' ? $poi : '—')
                     . ($csa !== '' ? ' <small style="color:#667">(CSA ' . htmlspecialchars($csa) . ')</small>' : ''),
                 'Carrier Status' => htmlspecialchars((string) ($row->carrier_status ?? '—')),
