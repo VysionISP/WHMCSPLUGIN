@@ -430,13 +430,18 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
 
         // On-prem equipment as last seen by NBN (health check extraction).
         $cpe = \WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::cpe($serviceId);
-        if ($cpe !== null && !empty($cpe['items'])) {
-            $cpeParts = [];
-            foreach ($cpe['items'] as $label => $value) {
-                $cpeParts[] = '<span style="color:#667">' . htmlspecialchars($label) . ':</span> <code>'
-                    . htmlspecialchars($value) . '</code>';
+        if ($cpe !== null && !empty($cpe['groups'])) {
+            $cpeLines = [];
+            foreach ($cpe['groups'] as $group => $items) {
+                $cpeParts = [];
+                foreach ($items as $label => $value) {
+                    $cpeParts[] = '<span style="color:#667">' . htmlspecialchars($label) . ':</span> <code>'
+                        . htmlspecialchars($value) . '</code>';
+                }
+                $cpeLines[] = '<strong>' . htmlspecialchars($group) . '</strong> &mdash; '
+                    . implode(' &middot; ', $cpeParts);
             }
-            $fields['CPE (on premises)'] = implode(' &middot; ', $cpeParts)
+            $fields['On-Prem Equipment'] = implode('<br>', $cpeLines)
                 . ' <small style="color:#889">(from health check '
                 . date('Y-m-d H:i', (int) ($cpe['at'] ?? 0)) . ')</small>';
         }

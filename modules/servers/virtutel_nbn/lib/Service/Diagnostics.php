@@ -129,19 +129,26 @@ class Diagnostics
     }
 
     /**
-     * Pulls the on-premises equipment details (CPE / NTD categories) out of
-     * a service health report as friendly label => value pairs.
+     * Pulls the on-premises equipment out of a service health report,
+     * grouped per device: the NBN connection box (NTD category — id,
+     * serial, port, state, install location) and the customer's router
+     * (Cpe category — MAC address).
      *
-     * @return array<string,string>
+     * @return array<string,array<string,string>> group => [label => value]
      */
     public static function extractCpe(array $report): array
     {
-        $out = [];
+        $groups = [];
         foreach ((array) ($report['healthCategory'] ?? []) as $category) {
             $type = (string) ($category['type'] ?? '');
-            if (!preg_match('/cpe|ntd/i', $type)) {
+            if (preg_match('/^cpe$/i', $type)) {
+                $group = 'Your router';
+            } elseif (preg_match('/ntd|ncd|dpu|btd/i', $type)) {
+                $group = 'NBN connection box';
+            } else {
                 continue;
             }
+
             foreach ((array) ($category['healthCategoryItem'] ?? []) as $item) {
                 $value = $item['value'] ?? null;
                 if (!is_scalar($value) || (string) $value === '') {
@@ -152,34 +159,41 @@ class Diagnostics
                 $label = preg_replace('/(?<=[a-z0-9])(?=[A-Z])/', ' ', $label) ?? $label;
                 $label = trim(str_ireplace(['CPEMain', 'NTDMain', 'Main'], '', ucfirst($label)));
                 $label = $label !== '' ? ucwords(strtolower($label)) : 'Detail';
-                if ($label === 'Mac Address') {
-                    $label = 'Device MAC Address';
-                }
-                $out[$label] = (string) $value;
+                $label = match ($label) {
+                    'Mac Address' => 'MAC Address',
+                    'Ntd Id' => 'NTD ID',
+                    'Port Id' => 'Port',
+                    default => $label,
+                };
+                $groups[$group][$label] = (string) $value;
             }
         }
 
-        return array_slice($out, 0, 8, true);
+        foreach ($groups as $group => $items) {
+            $groups[$group] = array_slice($items, 0, 8, true);
+        }
+
+        return $groups;
     }
 
     /**
-     * Last known on-prem equipment details for a service: the cached
-     * extraction, else pulled live from the stored health report.
+     * Last known on-prem equipment for a service: the cached extraction,
+     * else mined live from the stored health report.
      *
-     * @return array{items: array<string,string>, at: int}|null
+     * @return array{groups: array<string,array<string,string>>, at: int}|null
      */
     public static function cpe(int $serviceId): ?array
     {
         $cached = json_decode((string) (Settings::get('cpe_' . $serviceId, '') ?? ''), true);
-        if (is_array($cached) && !empty($cached['items'])) {
+        if (is_array($cached) && !empty($cached['groups'])) {
             return $cached;
         }
 
         $health = json_decode((string) (Settings::get('health_' . $serviceId, '') ?? ''), true);
         if (is_array($health) && !empty($health['report']) && is_array($health['report'])) {
-            $items = self::extractCpe($health['report']);
-            if ($items !== []) {
-                $state = ['items' => $items, 'at' => (int) ($health['at'] ?? time())];
+            $groups = self::extractCpe($health['report']);
+            if ($groups !== []) {
+                $state = ['groups' => $groups, 'at' => (int) ($health['at'] ?? time())];
                 Settings::set('cpe_' . $serviceId, (string) json_encode($state));
 
                 return $state;
