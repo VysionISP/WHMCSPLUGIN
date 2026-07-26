@@ -189,7 +189,9 @@ function kx_site_render(string $section, string $arg = ''): void
   .kx-nav .in { max-width:1200px; margin:0 auto; padding:18px 20px; display:flex;
                 align-items:center; gap:30px; flex-wrap:wrap; }
   .kx-nav .logo { font-size:24px; font-weight:900; color:#fff; letter-spacing:.02em; }
-  .kx-nav .logo img { height:32px; display:block; filter:brightness(0) invert(1); }
+  /* 36px matches the portal navbar logo (portal-dark.css) so the brand
+     doesn't jump size between logged-out and logged-in chrome */
+  .kx-nav .logo img { height:36px; display:block; filter:brightness(0) invert(1); }
   .kx-nav .links { display:flex; gap:22px; flex-wrap:wrap; margin-left:auto; }
   .kx-nav .links a { color:#c7cede; font-weight:600; font-size:15px; }
   .kx-nav .links a:hover, .kx-nav .links a.on { color:#fff; }

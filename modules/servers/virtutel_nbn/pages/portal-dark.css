@@ -178,7 +178,8 @@ hr { border-color: var(--kx-border); }
 /* Logo: dark artwork inverted to white, sized for the bar. */
 #header img, .navbar-brand img, .logo img, #logo img, .header .logo img {
   filter: invert(1) hue-rotate(180deg) brightness(1.05);
-  max-height: 44px !important;
+  /* keep in step with .kx-nav .logo img in site-shell.php */
+  max-height: 36px !important;
   width: auto !important;
   padding: 0 !important;
 }
