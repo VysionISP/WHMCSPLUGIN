@@ -620,3 +620,36 @@ add_hook('ClientAreaHeadOutput', 8, function ($vars) {
         . "if(box){box.style.display='none';break;}}}"
         . "});</script>";
 });
+
+/**
+ * Landing homepage: the portal front page (/) becomes a full marketing
+ * landing — hero with the embedded address checker, features, live plan
+ * cards, steps, FAQ — while keeping the theme's nav and footer. Content
+ * comes from pages/home-landing.php (fetched same-origin and injected;
+ * scripts can't ride innerHTML, so behaviour lives here).
+ */
+add_hook('ClientAreaHeadOutput', 9, function ($vars) {
+    $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+    if ($path !== '/' && $path !== '/index.php') {
+        return '';
+    }
+    if (($_GET['rp'] ?? '') !== '' || ($_GET['m'] ?? '') !== '') {
+        return '';
+    }
+
+    return '<style>#main-body{opacity:0;transition:opacity .2s}'
+        . 'html{scroll-behavior:smooth}#kx-check{scroll-margin-top:90px}</style>'
+        . "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "var mb=document.getElementById('main-body')||document.querySelector('.main-content');"
+        . "if(!mb){return;}"
+        . "fetch('/modules/servers/virtutel_nbn/pages/home-landing.php')"
+        . ".then(function(r){if(!r.ok){throw new Error('http '+r.status);}return r.text();})"
+        . ".then(function(html){"
+        . "mb.innerHTML=html;mb.style.opacity='1';"
+        . "var f=document.getElementById('kxQualifyFrame');"
+        . "if(f){setInterval(function(){try{"
+        . "var h=f.contentDocument.documentElement.scrollHeight;"
+        . "if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);}"
+        . "}).catch(function(){mb.style.opacity='1';});"
+        . "});</script>";
+});
