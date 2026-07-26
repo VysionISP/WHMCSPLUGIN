@@ -23,6 +23,17 @@ PATHS=(
   "$DOCROOT/modules/servers/virtutel_nbn"
   "$DOCROOT/modules/addons/virtutel_nbn_admin"
   "$DOCROOT/templates/korvix-dark"
+  # marketing site + legal page stubs (top-level docroot dirs)
+  "$DOCROOT/residental"
+  "$DOCROOT/residential"
+  "$DOCROOT/personal"
+  "$DOCROOT/business"
+  "$DOCROOT/terms"
+  "$DOCROOT/privacy"
+  "$DOCROOT/acceptable-use"
+  "$DOCROOT/complaints"
+  "$DOCROOT/financial-hardship"
+  "$DOCROOT/critical-information"
 )
 for p in "${PATHS[@]}"; do
   [ -d "$p" ] || continue
