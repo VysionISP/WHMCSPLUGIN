@@ -64,7 +64,25 @@ try {
         }
         Settings::set($key, (string) ($count + 1));
 
-        $respond(200, Diagnostics::queue($serviceId, $testType));
+        try {
+            $respond(200, Diagnostics::queue($serviceId, $testType));
+        } catch (\WHMCS\Module\Server\VirtutelNbn\Api\ApiException $e) {
+            // The carrier API rejected the request — its reason is safe to
+            // show (e.g. "test not allowed for this service type", rate
+            // limit) and beats a generic try-again.
+            if (function_exists('logActivity')) {
+                logActivity(sprintf(
+                    'Virtutel NBN: client test %s rejected for service #%d: %s [%s/%d]',
+                    $testType,
+                    $serviceId,
+                    $e->getMessage(),
+                    $e->getShortError(),
+                    $e->getHttpStatus()
+                ));
+            }
+            $respond(502, ['ok' => false,
+                'error' => 'The network couldn\'t run this check: ' . $e->getMessage()]);
+        }
     }
 
     if ($action === 'status') {
