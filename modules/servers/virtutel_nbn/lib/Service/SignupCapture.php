@@ -45,6 +45,16 @@ class SignupCapture
             }
         }
 
+        // Copper sites (FTTN/FTTB/FTTC): no NTD, the connection rides a
+        // copper pair. Written to the Copper Pair ID custom field.
+        $cpi = strtoupper(trim((string) ($get['vt_cpi'] ?? '')));
+        if (preg_match('/^[0-9A-Z][0-9A-Z_-]{2,29}$/', $cpi)) {
+            $signup['Copper Pair ID'] = $cpi;
+            if (($get['vt_auto'] ?? '') === '1') {
+                $signup['Port Auto'] = '1';
+            }
+        }
+
         // Display-only extras for the cart card (never written to fields —
         // CustomFields only writes its known field names).
         $addr = trim(preg_replace('/[^\PC ]/u', '', strip_tags((string) ($get['vt_addr'] ?? ''))) ?? '');

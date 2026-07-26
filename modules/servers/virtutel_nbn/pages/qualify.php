@@ -93,6 +93,14 @@ header('Content-Type: text/html; charset=utf-8');
          color:#fff; cursor:pointer; }
   .btn:disabled { opacity:.6; cursor:wait; }
   .matches { margin:18px 0 0; padding:0; list-style:none; }
+  /* Long unit lists (apartment towers): filter box + own scroll area so
+     the page doesn't become a kilometre of buttons. */
+  .matchfilter { width:100%; margin:14px 0 0; padding:11px 13px; font-size:15px;
+                 background:var(--input); color:var(--ink); border:1px solid var(--line);
+                 border-radius:8px; outline:none; }
+  .matchfilter:focus { border-color:var(--brand); }
+  .matches.scrolling { margin-top:10px; max-height:330px; overflow-y:auto;
+                       padding-right:4px; overscroll-behavior:contain; }
   .matches li { background:var(--card); border:1px solid var(--line); border-radius:8px; margin-bottom:8px; }
   .matches button { width:100%; text-align:left; background:none; border:0; padding:12px 14px;
                     font-size:15px; cursor:pointer; color:var(--ink); }
@@ -193,12 +201,40 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
     var m = res.body.matches || [];
     if (!m.length) { return fail('We couldn’t find that address in the NBN database. Try adding your suburb and postcode, or contact us and we’ll check manually.'); }
     if (m.length === 1) { return qualify(m[0].locId, m[0].address || fallbackLabel); }
-    var html = '<p class="spin">Select your exact address / unit:</p><ul class="matches">';
+    var html = '<p class="spin">Select your exact address / unit:</p>';
+    if (m.length > 8) {
+      html += '<input type="text" id="matchFilter" class="matchfilter" '
+        + 'placeholder="Type your unit / shop number to narrow it down, e.g. 1506">';
+    }
+    html += '<ul class="matches' + (m.length > 8 ? ' scrolling' : '') + '" id="matchList">';
     m.forEach(function (row) {
       html += '<li><button type="button" data-loc="' + esc(row.locId) + '">' + esc(row.address) + '</button></li>';
     });
     html += '</ul>';
+    if (m.length > 8) { html += '<div id="matchCount" class="spin" style="font-size:13px"></div>'; }
     show(html);
+
+    var filter = document.getElementById('matchFilter');
+    if (filter) {
+      var items = Array.prototype.slice.call(document.getElementById('matchList').children);
+      var count = document.getElementById('matchCount');
+      function applyFilter() {
+        var terms = filter.value.trim().toUpperCase().split(/\s+/).filter(Boolean);
+        var shown = 0;
+        items.forEach(function (li) {
+          var t = li.textContent.toUpperCase();
+          var hit = terms.every(function (w) { return t.indexOf(w) !== -1; });
+          li.style.display = hit ? '' : 'none';
+          if (hit) { shown++; }
+        });
+        count.textContent = shown === items.length
+          ? items.length + ' addresses found'
+          : shown + ' of ' + items.length + ' addresses match';
+      }
+      filter.addEventListener('input', applyFilter);
+      applyFilter();
+      filter.focus();
+    }
     out.querySelectorAll('button[data-loc]').forEach(function (b) {
       b.addEventListener('click', function () { qualify(b.getAttribute('data-loc'), b.textContent); });
     });
@@ -304,7 +340,8 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         html += '<div class="plans">';
         q.plans.forEach(function (p) {
           var orderUrl = p.orderUrl + '&vt_addr=' + encodeURIComponent(label)
-            + '&vt_tech=' + encodeURIComponent(q.technology);
+            + '&vt_tech=' + encodeURIComponent(q.technology)
+            + (q.copperPair ? '&vt_cpi=' + encodeURIComponent(q.copperPair.id) + '&vt_auto=1' : '');
           html += '<div class="plan">'
             + '<div class="pname">' + esc(p.name) + '</div>'
             + '<div class="pspeed">' + esc(p.speedLabel) + '</div>'

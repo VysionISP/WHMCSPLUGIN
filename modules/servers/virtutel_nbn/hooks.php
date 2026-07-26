@@ -348,6 +348,10 @@ HTML;
         $portName = $signup['Port Label'] ?? $signup['UNI-D Port'];
         $rows[] = ['NBN box port', $portName
             . (!empty($signup['Port Auto']) ? ' (auto-selected for you)' : ' (your selection)')];
+    } elseif (!empty($signup['Copper Pair ID'])) {
+        // FTTN/FTTB/FTTC — no NTD port, the service rides a copper pair.
+        $rows[] = ['Copper pair', $signup['Copper Pair ID']
+            . (!empty($signup['Port Auto']) ? ' (auto-selected for you)' : '')];
     } else {
         $rows[] = ['NBN box port', 'Auto-selected for you'];
     }

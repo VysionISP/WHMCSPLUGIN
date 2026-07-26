@@ -89,7 +89,9 @@ try {
         $results = $service->searchAddress($search);
 
         $matches = [];
-        foreach (array_slice($results, 0, 10) as $row) {
+        // No tight cap — apartment towers legitimately return hundreds of
+        // units; the UI filters/scrolls. 500 only bounds the payload.
+        foreach (array_slice($results, 0, 500) as $row) {
             $label = (string) (($row['fullAddress'] ?? '') ?: ($row['formattedAddress'] ?? ''));
             if (($row['id'] ?? '') !== '' && $label !== '') {
                 $matches[] = ['locId' => (string) $row['id'], 'address' => $label];
@@ -248,8 +250,27 @@ try {
             }
         }
 
+        // Copper sites (FTTN/FTTB/FTTC) have no NTD ports — surface the
+        // copper pair the order will use (churn-matched pair first, else
+        // the first pair, mirroring ProvisioningService::selectDevice) so
+        // checkout can name it.
+        $copperPair = null;
+        if ($q['copper_pairs'] !== [] && $readiness['code'] !== 'not_available') {
+            $pair = $q['copper_pairs'][0];
+            foreach ($q['copper_pairs'] as $candidate) {
+                if ($candidate['service_id_match']) {
+                    $pair = $candidate;
+                    break;
+                }
+            }
+            if ((string) $pair['id'] !== '') {
+                $copperPair = ['id' => (string) $pair['id']];
+            }
+        }
+
         $respond(200, [
             'locId' => $q['location_id'],
+            'copperPair' => $copperPair,
             'technology' => $technologyNames[$q['service_type']]
                 ?? ('NBN ' . ($q['technology'] !== '' ? $q['technology'] : 'Fixed Line')),
             'serviceClass' => $q['service_class'],
