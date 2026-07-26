@@ -365,8 +365,8 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
             $fields['Run Diagnostic Test'] =
                 '<select name="vt_test_type" id="vtTestSel">' . $options . '</select> '
                 . '<button type="button" class="btn btn-default btn-sm" id="vtRunTest">Run Test</button>'
-                . '<br><small>Runs live — a progress overlay shows until NBN returns the result '
-                . '(history below).'
+                . '<br><small>Runs live — a progress overlay shows until NBN returns the result. '
+                . '<span style="color:#aab">(diag v1.10.4)</span>'
                 . ($testMsg !== '' ? ' <strong>' . htmlspecialchars($testMsg) . '</strong>' : '')
                 . '</small>'
                 . virtutel_nbn_test_overlay_js($serviceId);
@@ -518,12 +518,16 @@ function virtutel_nbn_test_overlay_js(int $serviceId): string
   // The addon endpoint's JSON arrives embedded in the admin page chrome —
   // extract it by sentinel.
   function kxFetch(url){
-    return fetch(url,{credentials:'same-origin'}).then(function(r){return r.text();})
-      .then(function(t){
+    return fetch(url,{credentials:'same-origin'}).then(function(r){
+      return r.text().then(function(t){
         var m=t.match(/@@KXJSON@@([\\s\\S]*?)@@ENDKXJSON@@/);
-        if(!m){throw new Error('no payload');}
-        return JSON.parse(m[1]);
+        if(m){return JSON.parse(m[1]);}
+        // Surface what actually came back so failures are diagnosable.
+        var snip=t.replace(/<script[\\s\\S]*?<\\/script>/gi,' ')
+          .replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').trim().slice(0,220);
+        throw new Error('HTTP '+r.status+' without payload. Response starts: "'+snip+'"');
       });
+    });
   }
   function kxOverlay(spin,msg,sub,closeLabel){
     var ov=document.createElement('div');
@@ -541,17 +545,18 @@ function virtutel_nbn_test_overlay_js(int $serviceId): string
     document.body.appendChild(ov);
     return ov;
   }
-  var hist=document.getElementById('vtHistBtn');
-  if(hist&&!hist.dataset.kxBound){
-    hist.dataset.kxBound='1';
-    hist.addEventListener('click',function(){
-      var data=document.getElementById('vtHistData');
-      var ov=kxOverlay(false,'<div style="text-align:left;font-weight:400">'
-        +(data?data.innerHTML:'No tests yet.')+'</div>','','Close');
-      ov.querySelector('#vtOvClose').addEventListener('click',function(){ov.remove();});
-      ov.addEventListener('click',function(e){if(e.target===ov){ov.remove();}});
-    });
-  }
+  // The history button renders in a LATER tab row than this script, so it
+  // doesn't exist yet at parse time — delegate instead of binding direct.
+  document.addEventListener('click',function(e){
+    var t=e.target&&e.target.closest?e.target.closest('#vtHistBtn'):null;
+    if(!t){return;}
+    e.preventDefault();
+    var data=document.getElementById('vtHistData');
+    var ov=kxOverlay(false,'<div style="text-align:left;font-weight:400">'
+      +(data?data.innerHTML:'No tests yet.')+'</div>','','Close');
+    ov.querySelector('#vtOvClose').addEventListener('click',function(){ov.remove();});
+    ov.addEventListener('click',function(ev){if(ev.target===ov){ov.remove();}});
+  });
   btn.addEventListener('click',function(){
     var type=document.getElementById('vtTestSel').value;
     if(!type){alert('Choose a diagnostic test first.');return;}
@@ -604,9 +609,10 @@ function virtutel_nbn_test_catalogue(string $subType): array
 {
     $byTech = [
         'FTTP' => [
-            'NTD_RESET' => 'Reboot NBN connection box (NTD Reset)',
+            // NTD_RESET is NHAS-only (API-validated) — the FTTP reboot
+            // equivalent is the UNI-D port reset.
+            'PORT_RESET' => 'UNI-D Port Reset (reboots the port)',
             'NTD_STATUS' => 'NTD Status',
-            'PORT_RESET' => 'UNI-D Port Reset',
             'UNI_D_STATUS' => 'UNI-D Port Status',
             'LOOPBACK' => 'Loopback Test',
         ],
