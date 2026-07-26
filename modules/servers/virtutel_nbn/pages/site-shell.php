@@ -185,6 +185,55 @@ function kx_site_render(string $section): void
   .checker .t { font-weight:700; margin:0 0 2px; font-size:17px; }
   .checker .s { color:var(--muted); font-size:13.5px; margin:0 0 10px; }
   .checker iframe { width:100%; border:0; display:block; min-height:84px; background:transparent; }
+  /* split hero: copy left, checker right */
+  .hero2 { position:relative; overflow:hidden; padding:70px 20px 46px; }
+  .hero2 .wrap { max-width:1120px; margin:0 auto; display:grid; position:relative;
+                 grid-template-columns:1.05fr .95fr; gap:48px; align-items:center; }
+  @media(max-width:960px){ .hero2 .wrap { grid-template-columns:1fr; gap:30px; } }
+  .hero2 h1 { text-align:left; }
+  .hero2 .sub { margin:0 0 22px; max-width:none; }
+  .ticks { list-style:none; margin:0 0 24px; padding:0; }
+  .ticks li { margin-bottom:10px; color:#c7cede; font-size:15px; }
+  .ticks li:before { content:'\2713'; color:var(--ok); font-weight:800; margin-right:10px; }
+  .techs { display:flex; gap:8px; flex-wrap:wrap; }
+  .techs span { font-size:12px; font-weight:700; letter-spacing:.05em; color:var(--muted);
+                border:1px solid var(--line); border-radius:999px; padding:5px 12px;
+                background:rgba(20,27,43,.6); }
+  .checkwrap { padding:1px; border-radius:20px;
+               background:linear-gradient(135deg,rgba(77,141,255,.65),rgba(122,92,255,.35) 45%,rgba(42,51,71,.6)); }
+  .checkwrap .checker { margin:0; max-width:none; border:0; border-radius:19px; background:#10182a;
+                        padding:26px 26px 16px; }
+  .checkwrap .badge { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.1em;
+                      text-transform:uppercase; color:#7fdcaa; background:rgba(47,191,113,.12);
+                      border:1px solid rgba(47,191,113,.35); border-radius:999px; padding:4px 11px;
+                      margin-bottom:12px; }
+  /* pricing row */
+  .pgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:16px;
+           margin-top:34px; align-items:stretch; }
+  .pcard { background:var(--surface); border:1px solid var(--line); border-radius:18px;
+           padding:28px 22px 24px; display:flex; flex-direction:column; align-items:center;
+           position:relative; transition:transform .15s,border-color .15s; }
+  .pcard:hover { transform:translateY(-4px); border-color:var(--brand); }
+  .pcard .nm { font-weight:800; font-size:17px; }
+  .pcard .sp { color:var(--muted); font-size:13px; margin:4px 0 12px; }
+  .pcard .bar { width:100%; height:6px; border-radius:99px; background:#1e2739; margin-bottom:16px; }
+  .pcard .bar i { display:block; height:100%; border-radius:99px;
+                  background:linear-gradient(90deg,#4d8dff,#7a5cff); }
+  .pcard .pr { font-size:32px; font-weight:800; letter-spacing:-.02em; }
+  .pcard .pr small { font-size:13px; color:var(--muted); font-weight:600; }
+  .pcard .nt { color:var(--muted); font-size:11.5px; margin:2px 0 14px; }
+  .pcard ul { list-style:none; margin:0 0 18px; padding:0; color:var(--muted); font-size:13px;
+              line-height:1.9; align-self:flex-start; }
+  .pcard ul li:before { content:'\2713'; color:var(--ok); font-weight:700; margin-right:8px; }
+  .pcard .btn, .pcard .btn.ghost { margin-top:auto; width:100%; }
+  .pcard.feat { border:1px solid var(--brand);
+                background:linear-gradient(180deg,rgba(77,141,255,.10),rgba(20,27,43,0) 55%),var(--surface);
+                box-shadow:0 16px 44px rgba(77,141,255,.16); }
+  @media(min-width:700px){ .pcard.feat { transform:scale(1.045); } .pcard.feat:hover { transform:scale(1.045) translateY(-4px); } }
+  .pcard .tag { position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+                background:linear-gradient(92deg,#4d8dff,#7a5cff); color:#fff; font-size:10.5px;
+                font-weight:800; padding:4px 13px; border-radius:999px; letter-spacing:.08em;
+                text-transform:uppercase; white-space:nowrap; }
   .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-top:30px; }
   .card { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px 22px;
           transition:transform .15s,border-color .15s; }
@@ -252,91 +301,76 @@ function kx_site_render(string $section): void
   </div>
 </div></div>
 
-<?php if ($section === 'residential') { $plans = kx_site_plans(); ?>
+<?php if ($section === 'residential' || $section === 'nbn') {
+    $plans = kx_site_plans();
+    $isNbn = $section === 'nbn';
+    // Featured plan: the 100 Mbps tier, else the middle card.
+    $featured = intdiv(max(count($plans) - 1, 0), 2);
+    foreach ($plans as $i => $p) {
+        if ($p[2] === '100') { $featured = $i; break; }
+    }
+    $maxDown = 1;
+    foreach ($plans as $p) { $maxDown = max($maxDown, (int) $p[2]); }
+?>
 
-<section class="hero">
+<section class="hero2">
   <div class="glow g1"></div><div class="glow g2"></div>
-  <div class="inner">
-    <div class="kicker">Residential</div>
-    <h1>NBN for your home,<br>done <span class="grad">properly</span></h1>
-    <p class="sub">Every speed tier your address supports, month-to-month, with local support.
-      Switching providers happens remotely &mdash; no technician, no drama.</p>
-    <div class="checker" id="check">
-      <p class="t">Check your address</p>
-      <p class="s">We'll show your connection type and every plan available at your place.</p>
-      <iframe id="kxQ" src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark"
-              scrolling="no" title="NBN address checker"></iframe>
+  <div class="wrap">
+    <div>
+      <div class="kicker"><?php echo $isNbn ? 'NBN Internet' : 'Personal'; ?></div>
+      <h1><?php echo $isNbn
+          ? 'The right NBN plan<br>for <span class="grad">your address</span>'
+          : 'Fast, local NBN<br>without the <span class="grad">runaround</span>'; ?></h1>
+      <p class="sub">Enter your address and we\'ll show your connection type and exactly which
+        plans and speeds your place supports &mdash; then order in a couple of clicks.</p>
+      <ul class="ticks">
+        <li>Unlimited data on every plan</li>
+        <li>Switch providers remotely &mdash; usually no technician visit</li>
+        <li>Local Gippsland support, no offshore scripts</li>
+        <li>Month-to-month &mdash; no lock-in, cancel anytime</li>
+      </ul>
+      <div class="techs">
+        <span>FTTP</span><span>HFC</span><span>FTTC</span><span>FTTN/B</span><span>FIXED WIRELESS</span>
+      </div>
+    </div>
+    <div class="checkwrap">
+      <div class="checker" id="check">
+        <span class="badge">&#9679; Live NBN lookup</span>
+        <p class="t">Check your address</p>
+        <p class="s">Straight from the NBN database &mdash; takes about ten seconds.</p>
+        <iframe id="kxQ" src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark"
+                scrolling="no" title="NBN address checker"></iframe>
+      </div>
     </div>
   </div>
 </section>
 
 <?php if ($plans !== []) { ?>
-<section style="text-align:center">
-  <div class="inner">
+<section style="text-align:center;padding-top:30px">
+  <div class="inner" style="max-width:1120px">
     <div class="kicker">Plans</div>
     <h2>Simple monthly pricing</h2>
-    <div class="cards">
-      <?php foreach ($plans as [$name, $price, $down, $up]) { ?>
-      <div class="card plan">
-        <h3><?php echo $e($name); ?></h3>
-        <div class="speed"><?php echo $down !== ''
-            ? $e($down) . ' Mbps down / ' . $e($up) . ' Mbps up' : 'Speed tier at your address'; ?></div>
-        <div class="price">$<?php echo $e($price); ?><small>/mo</small></div>
-        <a class="btn ghost" style="margin-top:14px" href="#check">Check availability</a>
-      </div>
-      <?php } ?>
-    </div>
-  </div>
-</section>
-<?php } ?>
-
-<section>
-  <div class="inner"><div class="band">
-    <h2>Not sure what you need?</h2>
-    <p class="sub">Call us on <?php echo $e($phone); ?> and talk to a local &mdash; we'll sort it in one call.</p>
-    <a class="btn" href="tel:<?php echo $e($tel); ?>">Call now</a>
-  </div></div>
-</section>
-
-<script>
-(function(){var f=document.getElementById('kxQ');if(!f){return;}
-setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;
-if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);})();
-</script>
-
-<?php } elseif ($section === 'nbn') { $plans = kx_site_plans(); ?>
-
-<section class="hero">
-  <div class="glow g1"></div><div class="glow g2"></div>
-  <div class="inner">
-    <div class="kicker">NBN Internet</div>
-    <h1>Find the right plan<br>for <span class="grad">your address</span></h1>
-    <p class="sub">NBN plans are address-specific &mdash; enter yours and we'll show your connection
-      type and exactly which plans and speeds you can get, then order in a couple of clicks.</p>
-    <div class="checker" id="check">
-      <p class="t">Check your address</p>
-      <p class="s">Straight from the NBN database &mdash; takes about ten seconds.</p>
-      <iframe id="kxQ" src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark"
-              scrolling="no" title="NBN address checker"></iframe>
-    </div>
-  </div>
-</section>
-
-<?php if ($plans !== []) { ?>
-<section style="text-align:center">
-  <div class="inner">
-    <div class="kicker">Plans</div>
-    <h2>Every tier, one simple price</h2>
     <p class="sub">Month-to-month, unlimited data. Your address decides which tiers are available
       &mdash; check it above and order the one that fits.</p>
-    <div class="cards">
-      <?php foreach ($plans as [$name, $price, $down, $up]) { ?>
-      <div class="card plan">
-        <h3><?php echo $e($name); ?></h3>
-        <div class="speed"><?php echo $down !== ''
-            ? $e($down) . ' Mbps down / ' . $e($up) . ' Mbps up' : 'Speed tier at your address'; ?></div>
-        <div class="price">$<?php echo $e($price); ?><small>/mo</small></div>
-        <a class="btn ghost" style="margin-top:14px" href="#check">Check availability</a>
+    <div class="pgrid">
+      <?php foreach ($plans as $i => [$name, $price, $down, $up]) {
+          $pct = $down !== '' ? max(14, (int) round(sqrt((int) $down) / sqrt($maxDown) * 100)) : 50;
+      ?>
+      <div class="pcard<?php echo $i === $featured ? ' feat' : ''; ?>">
+        <?php if ($i === $featured) { ?><div class="tag">Most popular</div><?php } ?>
+        <div class="nm"><?php echo $e($name); ?></div>
+        <div class="sp"><?php echo $down !== ''
+            ? $e($down) . ' Mbps down &middot; ' . $e($up) . ' Mbps up'
+            : 'Speed tier at your address'; ?></div>
+        <div class="bar"><i style="width:<?php echo $pct; ?>%"></i></div>
+        <div class="pr">$<?php echo $e($price); ?><small>/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Unlimited data</li>
+          <li>No lock-in contract</li>
+          <li>BYO router (IPoE)</li>
+        </ul>
+        <a class="btn<?php echo $i === $featured ? '' : ' ghost'; ?>" href="#check">Check availability</a>
       </div>
       <?php } ?>
     </div>
@@ -359,6 +393,14 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
            self-serve appointment booking if a technician is needed.</p></div>
     </div>
   </div>
+</section>
+
+<section style="padding-top:10px">
+  <div class="inner"><div class="band">
+    <h2>Not sure what you need?</h2>
+    <p class="sub">Call us on <?php echo $e($phone); ?> and talk to a local &mdash; we\'ll sort it in one call.</p>
+    <a class="btn" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
+  </div></div>
 </section>
 
 <script>
