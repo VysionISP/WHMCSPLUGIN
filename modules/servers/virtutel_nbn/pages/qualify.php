@@ -38,6 +38,9 @@ header('Content-Type: text/html; charset=utf-8');
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Check NBN availability at your address</title>
+<!-- When embedded in the store page, order links must replace the whole
+     page, not load the cart inside the frame. Harmless standalone. -->
+<base target="_top">
 <script>(function(){var q=new URLSearchParams(location.search);var t=q.get("theme");if(t==="dark")document.documentElement.classList.add("vt-dark");if(t==="light")document.documentElement.classList.add("vt-light");if(q.get("embed"))document.documentElement.classList.add("vt-embed");})();</script>
 <style>
   :root {
