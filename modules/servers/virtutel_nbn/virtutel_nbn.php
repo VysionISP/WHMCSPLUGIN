@@ -411,6 +411,40 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 'Technology' => htmlspecialchars((string) ($row->technology_type ?? '—')),
                 'Carrier Status' => htmlspecialchars((string) ($row->carrier_status ?? '—')),
             ];
+            // Full raw API record (captured at link time): the source of
+            // truth for mapping service types we haven't hardcoded yet
+            // (voice / mobile numbers).
+            $raw = json_decode((string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
+                'svcraw_' . $serviceId,
+                ''
+            ) ?? ''), true);
+            if (is_array($raw) && $raw !== []) {
+                $flat = [];
+                foreach ($raw as $rk => $rv) {
+                    if (is_array($rv)) {
+                        foreach ($rv as $sk => $sv) {
+                            if (is_scalar($sv) && (string) $sv !== '') {
+                                $flat[$rk . '.' . $sk] = (string) $sv;
+                            }
+                        }
+                    } elseif (is_scalar($rv) && (string) $rv !== '') {
+                        $flat[(string) $rk] = (string) $rv;
+                    }
+                }
+                if ($flat !== []) {
+                    $rawRows = '';
+                    foreach ($flat as $rk => $rv) {
+                        $rawRows .= '<tr><td style="color:#667;padding:2px 14px 2px 0;white-space:nowrap">'
+                            . htmlspecialchars($rk) . '</td><td><code>'
+                            . htmlspecialchars($rv) . '</code></td></tr>';
+                    }
+                    $fields['Virtutel Data'] = '<details><summary style="cursor:pointer">'
+                        . 'Everything Virtutel returns for this service ('
+                        . count($flat) . ' fields)</summary>'
+                        . '<table style="font-size:12px;margin-top:6px;text-align:left">'
+                        . $rawRows . '</table></details>';
+                }
+            }
         } else {
             $fields['Virtutel'] = 'Not linked to a Virtutel service yet — paste an ID below and Save Changes.';
         }

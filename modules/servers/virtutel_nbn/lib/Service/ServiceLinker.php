@@ -71,11 +71,28 @@ class ServiceLinker
             $address = self::resolveAddress($client, (string) ($svc['locationId'] ?? ''));
         }
 
+        // Non-NBN services (mobile / voice) come through the same endpoint
+        // with a different shape: no AVC, and the phone number under a
+        // vendor-specific key. Fall back through the plausible ones.
+        $serviceType = strtolower(trim((string) ($svc['serviceType'] ?? 'nbn')));
+        $phoneNumber = '';
+        if ($serviceType !== 'nbn') {
+            foreach (['mobileNumber', 'msisdn', 'phoneNumber', 'fnn', 'serviceNumber', 'did'] as $key) {
+                if (!empty($svc[$key]) && is_scalar($svc[$key])) {
+                    $phoneNumber = trim((string) $svc[$key]);
+                    break;
+                }
+            }
+        }
+
         $values = [
             'vt_service_id' => $trim($svc['vtServiceId'] ?? '', 32),
             'avc_id' => $trim($svc['avcId'] ?? '', 32),
             'nbn_location_id' => $trim($svc['locationId'] ?? '', 32),
-            'technology_type' => $trim($svc['accessTechnology']['subType'] ?? '', 16),
+            'technology_type' => $trim(
+                ($svc['accessTechnology']['subType'] ?? '') ?: ($serviceType !== 'nbn' ? strtoupper($serviceType) : ''),
+                16
+            ),
             'speed_tier' => $trim($svc['speed'] ?? '', 32),
             'carrier_status' => $trim($svc['status'] ?? '', 64),
             'external_ref' => $trim($svc['supplierServiceId'] ?? '', 64),
@@ -96,16 +113,28 @@ class ServiceLinker
             );
         }
 
-        // AVC into the Domain field so WHMCS prints it on invoice lines and
-        // service lists natively (never clobbers a non-empty domain).
-        $avc = trim((string) ($svc['avcId'] ?? ''));
-        if ($avc !== '') {
+        // Service identifier into the Domain field so WHMCS prints it on
+        // invoice lines and service lists natively (never clobbers a
+        // non-empty domain): AVC for NBN, phone number for voice/mobile.
+        $identifier = trim((string) ($svc['avcId'] ?? '')) ?: $phoneNumber;
+        if ($identifier !== '') {
             Capsule::table('tblhosting')
                 ->where('id', $whmcsServiceId)
                 ->where(function ($q) {
                     $q->whereNull('domain')->orWhere('domain', '');
                 })
-                ->update(['domain' => substr($avc, 0, 100)]);
+                ->update(['domain' => substr($identifier, 0, 100)]);
+        }
+
+        // Keep the raw API record: the admin tab renders it in full, which
+        // is how we discover the real field layout of non-NBN services.
+        try {
+            \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
+                'svcraw_' . $whmcsServiceId,
+                (string) json_encode($svc)
+            );
+        } catch (\Throwable $e) {
+            // display-only cache
         }
 
         CustomFields::writeServiceValues($whmcsServiceId, [
