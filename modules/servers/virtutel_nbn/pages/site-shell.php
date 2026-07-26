@@ -108,7 +108,8 @@ function kx_site_render(string $section): void
   .inner { max-width:1080px; margin:0 auto; padding:0 20px; }
   /* chrome */
   .kx-switch { background:#04060c; font-size:12.5px; }
-  .kx-switch .in { max-width:1200px; margin:0 auto; padding:0 20px; display:flex; gap:2px; }
+  .kx-switch .in { max-width:1200px; margin:0 auto; padding:0 20px; display:flex; gap:2px;
+                   justify-content:flex-end; }
   .kx-switch a { color:#98a2b8; font-weight:600; padding:8px 16px; display:inline-block; }
   .kx-switch a:hover { color:#e6e9f2; }
   .kx-switch a.on { color:#fff; background:#0b0f1a; border-top:2px solid var(--brand); }
