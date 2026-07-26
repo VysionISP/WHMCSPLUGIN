@@ -180,6 +180,13 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
   var btn = document.getElementById('searchBtn');
   var PARAMS = new URLSearchParams(location.search);
   var COMPACT = PARAMS.get('compact') === '1';
+  // Reset link target: same mode, minus any carried address/LOC params.
+  window.vtReset = function () {
+    var p = new URLSearchParams(location.search);
+    p.delete('q'); p.delete('vt_locid'); p.delete('vt_addr');
+    var s = p.toString();
+    location.replace('qualify.php' + (s ? '?' + s : ''));
+  };
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -319,7 +326,7 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
               + '">View plans for my address &rarr;</a>'
             : '<p class="desc" style="margin:10px 0 18px">' + esc(q.readiness.description) + '</p>'
               + '<a class="btn" style="display:inline-block;text-decoration:none" href="/contact.php">Contact us</a>')
-          + '<button type="button" class="again" onclick="location.reload()">Check a different address</button>'
+          + '<button type="button" class="again" onclick="vtReset()">Check a different address</button>'
           + '</div>');
         return;
       }
@@ -417,7 +424,7 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
           + '</div>';
       }
 
-      html += '<button type="button" class="again" onclick="location.reload()">Check a different address</button></div>';
+      html += '<button type="button" class="again" onclick="vtReset()">Check a different address</button></div>';
       show(html);
 
       // Port map interactions: green ports/pairs select for the order;
@@ -563,10 +570,16 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
   // links here with the address it already validated.
   var bootLoc = (PARAMS.get('vt_locid') || '').toUpperCase();
   var bootAddr = PARAMS.get('vt_addr') || '';
+  var bootQ = (PARAMS.get('q') || '').trim();
   if (/^LOC\d{9,15}$/.test(bootLoc)) {
     var addrInput = document.getElementById('address');
     if (addrInput && bootAddr) { addrInput.value = bootAddr; }
     qualify(bootLoc, bootAddr || bootLoc);
+  } else if (bootQ.length >= 8) {
+    // Popup mode: the landing page hands the typed address over.
+    var qInput = document.getElementById('address');
+    if (qInput) { qInput.value = bootQ; }
+    searchByText(bootQ);
   }
 })();
 </script>

@@ -212,6 +212,22 @@ function kx_site_render(string $section): void
                       text-transform:uppercase; color:#7fdcaa; background:rgba(47,191,113,.12);
                       border:1px solid rgba(47,191,113,.35); border-radius:999px; padding:4px 11px;
                       margin-bottom:12px; }
+  .srow { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  .srow input { flex:1; min-width:220px; font-size:15.5px; padding:12px 14px; background:#0a0e18;
+                color:var(--text); border:1px solid var(--line); border-radius:10px; outline:none; }
+  .srow input:focus { border-color:var(--brand); }
+  /* the whole check flow lives in a fixed-size popup — no page reflow */
+  .kxm { position:fixed; inset:0; z-index:1000; display:flex; align-items:center;
+         justify-content:center; background:rgba(4,6,12,.74); backdrop-filter:blur(4px); }
+  .kxm .panel { width:min(620px,94vw); height:min(680px,88vh); background:#10182a;
+                border:1px solid var(--line); border-radius:20px; overflow:hidden;
+                display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,.55); }
+  .kxm .head { display:flex; justify-content:space-between; align-items:center;
+               padding:14px 20px; border-bottom:1px solid var(--line); font-weight:700; }
+  .kxm .head button { background:none; border:0; color:var(--muted); font-size:24px;
+                      cursor:pointer; line-height:1; padding:0 2px; }
+  .kxm .head button:hover { color:#fff; }
+  .kxm iframe { flex:1; width:100%; border:0; }
   /* pricing row */
   .pgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:16px;
            margin-top:34px; align-items:stretch; }
@@ -343,8 +359,11 @@ function kx_site_render(string $section): void
         <span class="badge">&#9679; Live NBN lookup</span>
         <p class="t">Check your address</p>
         <p class="s">Straight from the NBN database &mdash; takes about ten seconds.</p>
-        <iframe id="kxQ" src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark&compact=1"
-                scrolling="no" title="NBN address checker"></iframe>
+        <form id="kxForm" class="srow">
+          <input id="kxAddr" type="text" placeholder="e.g. 546 Flinders St Melbourne VIC 3000"
+                 required minlength="8" autocomplete="street-address">
+          <button class="btn" type="submit">Check address</button>
+        </form>
       </div>
     </div>
   </div>
@@ -409,9 +428,27 @@ function kx_site_render(string $section): void
 </section>
 
 <script>
-(function(){var f=document.getElementById('kxQ');if(!f){return;}
-setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;
-if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);})();
+(function(){
+  var form=document.getElementById('kxForm');
+  if(!form){return;}
+  form.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    var a=document.getElementById('kxAddr').value.trim();
+    if(a.length<8){return;}
+    var m=document.createElement('div');m.className='kxm';
+    m.innerHTML='<div class="panel"><div class="head"><span>Check your address</span>'
+      +'<button type="button" aria-label="Close">&times;</button></div>'
+      +'<iframe src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark&compact=1&q='
+      +encodeURIComponent(a)+'" title="NBN address check"></iframe></div>';
+    document.body.appendChild(m);
+    document.body.style.overflow='hidden';
+    function close(){m.remove();document.body.style.overflow='';}
+    m.addEventListener('click',function(e){if(e.target===m){close();}});
+    m.querySelector('.head button').addEventListener('click',close);
+    document.addEventListener('keydown',function esc(e){
+      if(e.key==='Escape'){close();document.removeEventListener('keydown',esc);}});
+  });
+})();
 </script>
 
 <?php } elseif ($section === 'signup') {
