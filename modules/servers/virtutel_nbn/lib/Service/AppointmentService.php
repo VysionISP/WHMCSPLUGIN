@@ -161,6 +161,16 @@ class AppointmentService
      *
      * @return array{id: string, status: string}
      */
+    /** Cancel an in-flight appointment (DELETE — supported by the API). */
+    public function cancel(string $appointmentId): void
+    {
+        $this->client->request(
+            'DELETE',
+            VirtutelClient::PATH_APPOINTMENTS . '/' . rawurlencode($appointmentId),
+            ['action' => 'CancelAppointment']
+        );
+    }
+
     public function reschedule(string $appointmentId, array $slot): array
     {
         $response = $this->client->request(

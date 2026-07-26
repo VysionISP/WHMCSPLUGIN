@@ -524,6 +524,39 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
             $orders = WHMCS\Database\Capsule::table('mod_virtutel_orders')
                 ->where('service_id', (int) $row->id)
                 ->orderByDesc('id')->limit(25)->get();
+
+            // Cancel an in-flight order: the API has NO self-serve order
+            // cancel (only appointments can be DELETEd), so this cancels
+            // any booked appointment, flags the order cancel-requested,
+            // and raises a to-do to contact Virtutel — honestly labelled.
+            $inFlightOrders = [];
+            foreach ($orders as $order) {
+                if (in_array((string) $order->whmcs_status, ['pending', 'in_progress', 'action_required'], true)
+                    && (string) ($order->action_required ?? '') !== 'cancel_requested') {
+                    $inFlightOrders[] = $order;
+                }
+            }
+            if ($inFlightOrders !== []) {
+                $cancelSelect = '<select name="vt_cancel_order"><option value="">— select an order —</option>';
+                foreach ($inFlightOrders as $order) {
+                    $cancelSelect .= '<option value="' . htmlspecialchars((string) ($order->vt_order_id ?? '')) . '">'
+                        . htmlspecialchars((string) $order->order_type . ' — '
+                            . (string) ($order->vt_order_id ?? 'no ID yet')
+                            . ' (' . (string) ($order->status ?? 'NEW') . ')')
+                        . '</option>';
+                }
+                $orderMsg = (string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
+                    'ordermsg_' . $serviceId,
+                    ''
+                ) ?? '');
+                $fields['Cancel In-flight Order'] = $cancelSelect . '</select>'
+                    . '<br><small>Virtutel\'s API has no self-serve order cancel: Save Changes cancels any '
+                    . 'booked appointment, marks the order cancel-requested, and raises a to-do to contact '
+                    . 'Virtutel support to withdraw it.'
+                    . ($orderMsg !== '' ? ' <strong>' . htmlspecialchars($orderMsg) . '</strong>' : '')
+                    . '</small>';
+            }
+
             if (count($orders) > 0) {
                 $orderRows = '';
                 foreach ($orders as $order) {
@@ -917,6 +950,7 @@ function virtutel_nbn_AdminServicesTabFieldsSave(array $params): void
 {
     virtutel_nbn_handle_test_request((int) $params['serviceid']);
     virtutel_nbn_handle_speed_change((int) $params['serviceid']);
+    virtutel_nbn_handle_order_cancel((int) $params['serviceid']);
 
     $ref = trim((string) ($_REQUEST['vt_link_ref'] ?? ''));
     if ($ref === '') {
@@ -960,6 +994,90 @@ function virtutel_nbn_AdminServicesTabFieldsSave(array $params): void
  * Queues the diagnostic test selected on the admin tab (POST
  * /service-tests); results arrive via ServiceTestStateChangeNotification.
  */
+/**
+ * Cancel-in-flight-order dropdown: cancels the booked appointment (the
+ * only cancel the API supports), flags the order cancel-requested, and
+ * raises a to-do to get Virtutel support to withdraw the order itself.
+ */
+function virtutel_nbn_handle_order_cancel(int $serviceId): void
+{
+    $vtOrderId = strtoupper(trim((string) ($_REQUEST['vt_cancel_order'] ?? '')));
+    if ($vtOrderId === '') {
+        return;
+    }
+
+    $msg = function (string $text) use ($serviceId): void {
+        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set('ordermsg_' . $serviceId, $text);
+    };
+
+    try {
+        Migrations::ensure();
+        $link = WHMCS\Database\Capsule::table('mod_virtutel_services')
+            ->where('whmcs_service_id', $serviceId)->first();
+        $order = $link ? WHMCS\Database\Capsule::table('mod_virtutel_orders')
+            ->where('service_id', (int) $link->id)
+            ->where('vt_order_id', $vtOrderId)
+            ->first() : null;
+        if (!$order) {
+            $msg('Order ' . $vtOrderId . ' not found on this service.');
+
+            return;
+        }
+
+        // Cancel a booked appointment if the order has one — that part IS
+        // supported by the API.
+        $apptNote = '';
+        $appt = WHMCS\Database\Capsule::table('mod_virtutel_appointments')
+            ->where('order_id', (int) $order->id)
+            ->whereNotNull('appointment_id')
+            ->whereNotIn('status', ['cancelled', 'completed'])
+            ->orderByDesc('id')->first();
+        if ($appt) {
+            try {
+                $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
+                (new \WHMCS\Module\Server\VirtutelNbn\Service\AppointmentService($client))
+                    ->cancel((string) $appt->appointment_id);
+                WHMCS\Database\Capsule::table('mod_virtutel_appointments')
+                    ->where('id', (int) $appt->id)
+                    ->update(['status' => 'cancelled', 'updated_at' => date('Y-m-d H:i:s')]);
+                $apptNote = ' Appointment ' . (string) $appt->appointment_id . ' cancelled.';
+            } catch (\Throwable $e) {
+                $apptNote = ' Appointment cancel FAILED: ' . $e->getMessage();
+            }
+        }
+
+        WHMCS\Database\Capsule::table('mod_virtutel_orders')
+            ->where('id', (int) $order->id)
+            ->update(['action_required' => 'cancel_requested', 'updated_at' => date('Y-m-d H:i:s')]);
+
+        localAPI('AddTodoItem', [
+            'date' => date('Y-m-d'),
+            'title' => 'Virtutel NBN: withdraw order ' . $vtOrderId,
+            'description' => sprintf(
+                'Cancellation requested for %s order %s (WHMCS service #%d). The API has no order '
+                . 'cancel — contact Virtutel support to withdraw it.%s',
+                (string) $order->order_type,
+                $vtOrderId,
+                $serviceId,
+                $apptNote
+            ),
+            'status' => 'Pending',
+            'duedate' => date('Y-m-d'),
+        ]);
+
+        logActivity(sprintf(
+            'Virtutel NBN: cancel requested for order %s (service #%d).%s',
+            $vtOrderId,
+            $serviceId,
+            $apptNote
+        ));
+        $msg('Cancel requested for ' . $vtOrderId . '.' . $apptNote
+            . ' To-do raised: contact Virtutel to withdraw the order.');
+    } catch (\Throwable $e) {
+        $msg('Cancel request failed: ' . $e->getMessage());
+    }
+}
+
 /** Change Speed dropdown on the admin tab: lodge the Modify Speed order. */
 function virtutel_nbn_handle_speed_change(int $serviceId): void
 {
