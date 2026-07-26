@@ -298,8 +298,21 @@ table tbody tr, table tbody tr.odd, table tbody tr.even, .view-cart .item {
 }
 table tbody tr:nth-of-type(even), table tbody tr.even { background: var(--kx-surface-2) !important; }
 table tbody td, table tbody th { color: var(--kx-text) !important; }
+/* Some templates (standard_cart's viewcart) paint the CELLS white or use
+   Bootstrap's inset stripe shadow on them — the row rule above can't win
+   from the tr, so neutralise cell backgrounds too. */
+table tbody td, table tbody th {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
 table tbody tr:hover { background: var(--kx-surface-3) !important; }
 table tbody td small, table tbody td .text-muted { color: var(--kx-muted) !important; }
+
+/* NBN details block inside the cart line item */
+.vt-nbn-inline { color: var(--kx-muted) !important; }
+.vt-nbn-inline span { color: var(--kx-muted) !important; }
+.vt-nbn-inline b { color: var(--kx-text) !important; }
 .dataTables_wrapper, .dataTables_info, .dataTables_filter, .dataTables_length { color: var(--kx-muted) !important; }
 
 /* ---------- Forms ---------- */

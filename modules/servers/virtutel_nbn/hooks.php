@@ -368,13 +368,48 @@ HTML;
         . 'automatically &mdash; nothing more to fill in.</div>'
         . '</div>';
 
-    $json = json_encode($card, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    // Compact version that lives inside the cart line item itself.
+    $inlineRows = '';
+    foreach ($rows as [$label, $value]) {
+        $inlineRows .= '<div><span style="color:#8a93a8">' . $e($label) . ':</span> '
+            . '<b style="font-weight:600">' . $e($value) . '</b></div>';
+    }
+    $inline = '<div class="vt-nbn-inline" style="margin-top:8px;font-size:12.5px;line-height:1.6">'
+        . $inlineRows . '</div>';
+
+    // Which cart item indexes are ours (the viewcart Edit links carry
+    // cart.php?a=confproduct&i=<index>, our anchor into the right row).
+    $vtIdx = [];
+    try {
+        $vtPids = array_map('intval', Capsule::table('tblproducts')
+            ->whereIn('id', $cartPids)
+            ->where('servertype', 'virtutel_nbn')
+            ->pluck('id')->all());
+        foreach ((array) ($_SESSION['cart']['products'] ?? []) as $i => $p) {
+            if (in_array((int) ($p['pid'] ?? 0), $vtPids, true)) {
+                $vtIdx[] = (int) $i;
+            }
+        }
+    } catch (\Throwable $e2) {
+        $vtIdx = [];
+    }
+
+    $jsonCard = json_encode($card, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $jsonInline = json_encode($inline, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $jsonIdx = json_encode(array_values($vtIdx));
 
     return "<script>document.addEventListener('DOMContentLoaded',function(){"
-        . "var d=document.createElement('div');"
-        . "d.innerHTML={$json};"
+        . "var idx={$jsonIdx},placed=false;"
+        . "function findRow(n){var as=document.querySelectorAll('a[href*=\"confproduct\"]');"
+        . "for(var i=0;i<as.length;i++){var m=as[i].getAttribute('href').match(/[?&]i=(\\d+)/);"
+        . "if(m&&parseInt(m[1],10)===n){return as[i].closest('tr')||as[i].closest('.item');}}return null;}"
+        . "idx.forEach(function(n){var row=findRow(n);if(!row){return;}"
+        . "var cell=row.querySelector('td')||row;"
+        . "var d=document.createElement('div');d.innerHTML={$jsonInline};"
+        . "cell.appendChild(d.firstChild);placed=true;});"
+        . "if(!placed){var d=document.createElement('div');d.innerHTML={$jsonCard};"
         . "var m=document.querySelector('#main-body')||document.querySelector('.main-content')||document.body;"
-        . "m.insertBefore(d.firstChild,m.firstChild);});</script>";
+        . "m.insertBefore(d.firstChild,m.firstChild);}});</script>";
 });
 
 /**
@@ -426,7 +461,7 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         return '';
     }
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=17">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=18">'
         . '<meta name="color-scheme" content="dark">';
 });
 
