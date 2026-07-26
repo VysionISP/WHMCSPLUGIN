@@ -46,6 +46,7 @@ class ServiceHealthHandler
                 $cpe = \WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::extractCpe($report->data);
                 if ($cpe !== []) {
                     Settings::set('cpe_' . $serviceId, (string) json_encode([
+                        'v' => 2,
                         'groups' => $cpe,
                         'at' => time(),
                     ]));

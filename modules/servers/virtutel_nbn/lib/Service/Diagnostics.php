@@ -129,6 +129,38 @@ class Diagnostics
     }
 
     /**
+     * Manufacturer for a MAC address from the bundled IEEE OUI registry
+     * (a MAC encodes the maker in its first three octets — the model
+     * isn't derivable). Friendly names for common registrants.
+     */
+    public static function macVendor(string $mac): ?string
+    {
+        static $table = null;
+
+        $oui = strtoupper(preg_replace('/[^0-9A-Fa-f]/', '', $mac) ?? '');
+        if (strlen($oui) < 6) {
+            return null;
+        }
+
+        if ($table === null) {
+            $file = __DIR__ . '/../../data/oui.php';
+            $table = is_file($file) ? (array) (require $file) : [];
+        }
+
+        $vendor = $table[substr($oui, 0, 6)] ?? null;
+        if ($vendor === null) {
+            return null;
+        }
+
+        // Registry names customers actually recognise.
+        $friendly = [
+            'Routerboard.com' => 'MikroTik (RouterBOARD)',
+        ];
+
+        return $friendly[$vendor] ?? $vendor;
+    }
+
+    /**
      * Pulls the on-premises equipment out of a service health report,
      * grouped per device: the NBN connection box (NTD category — id,
      * serial, port, state, install location) and the customer's router
@@ -169,6 +201,14 @@ class Diagnostics
             }
         }
 
+        // Derive the router's make from its MAC (model isn't in a MAC).
+        if (isset($groups['Your router']['MAC Address'])) {
+            $vendor = self::macVendor($groups['Your router']['MAC Address']);
+            if ($vendor !== null) {
+                $groups['Your router'] = ['Make' => $vendor] + $groups['Your router'];
+            }
+        }
+
         foreach ($groups as $group => $items) {
             $groups[$group] = array_slice($items, 0, 8, true);
         }
@@ -185,7 +225,7 @@ class Diagnostics
     public static function cpe(int $serviceId): ?array
     {
         $cached = json_decode((string) (Settings::get('cpe_' . $serviceId, '') ?? ''), true);
-        if (is_array($cached) && !empty($cached['groups'])) {
+        if (is_array($cached) && !empty($cached['groups']) && (int) ($cached['v'] ?? 0) === 2) {
             return $cached;
         }
 
@@ -193,7 +233,7 @@ class Diagnostics
         if (is_array($health) && !empty($health['report']) && is_array($health['report'])) {
             $groups = self::extractCpe($health['report']);
             if ($groups !== []) {
-                $state = ['groups' => $groups, 'at' => (int) ($health['at'] ?? time())];
+                $state = ['v' => 2, 'groups' => $groups, 'at' => (int) ($health['at'] ?? time())];
                 Settings::set('cpe_' . $serviceId, (string) json_encode($state));
 
                 return $state;
