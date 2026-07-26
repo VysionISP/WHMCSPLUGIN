@@ -884,6 +884,7 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         . 'display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;'
         . 'font-size:12.5px}'
         . '.kx-footer .legal .links{display:flex;gap:18px;flex-wrap:wrap}'
+        . '.powered-by,.footer-powered-by,#poweredBy{display:none !important}'
         . '</style>'
         . '<footer class="kx-footer"><div class="in"><div class="grid">'
         . '<div class="col brand"><div id="kxFooterLogo" class="txtlogo">KORVIX</div>'
@@ -902,7 +903,14 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         . "var h=document.querySelector('header img,nav img,.navbar-brand img,a[href=\"/\"] img');"
         . "if(h){var slot=document.getElementById('kxFooterLogo');"
         . "var img=h.cloneNode(true);img.removeAttribute('style');img.removeAttribute('width');"
-        . "img.removeAttribute('height');slot.replaceWith(img);}});</script>";
+        . "img.removeAttribute('height');slot.replaceWith(img);}"
+        // WHMCS "Powered by WHMCompleteSolution" line: remove wherever the
+        // template put it (small leaf elements only, so no real content
+        // container can ever match).
+        . "document.querySelectorAll('p,div,span,small,a').forEach(function(el){"
+        . "var t=(el.textContent||'').trim();"
+        . "if(t.length<60&&/WHMCompleteSolution/i.test(t)){el.remove();}"
+        . "});});</script>";
 });
 
 /**
