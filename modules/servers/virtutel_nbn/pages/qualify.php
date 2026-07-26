@@ -98,6 +98,23 @@ header('Cache-Control: no-store, max-age=0');
   .searchbox input { flex:1; font-size:16px; padding:12px 14px; background:var(--input); color:var(--ink); border:1px solid var(--line);
                      border-radius:8px; outline:none; }
   .searchbox input:focus { border-color:var(--brand); }
+  /* Google Places dropdown restyled to the page theme (vars cover both
+     light and dark) instead of Google's stock white panel. */
+  .pac-container { background:var(--card); border:1px solid var(--line); border-radius:10px;
+                   box-shadow:0 18px 50px rgba(0,0,0,.35); font-family:inherit; margin-top:6px;
+                   padding:4px 0; }
+  .pac-item { border-top:1px solid var(--line); padding:9px 13px; color:var(--muted);
+              cursor:pointer; font-size:13.5px; }
+  .pac-item:first-child { border-top:0; }
+  .pac-item:hover, .pac-item-selected { background:var(--chip); }
+  .pac-item-query { color:var(--ink); font-size:14.5px; }
+  .pac-matched { color:var(--brand); }
+  html.vt-dark .pac-icon { filter:invert(.6); }
+  html.vt-dark .pac-logo:after { filter:grayscale(1) invert(.8); }
+  @media (prefers-color-scheme: dark) {
+    html:not(.vt-light) .pac-icon { filter:invert(.6); }
+    html:not(.vt-light) .pac-logo:after { filter:grayscale(1) invert(.8); }
+  }
   .btn { font-size:16px; padding:12px 20px; border:0; border-radius:8px; background:var(--brand);
          color:#fff; cursor:pointer; }
   .btn:disabled { opacity:.6; cursor:wait; }
