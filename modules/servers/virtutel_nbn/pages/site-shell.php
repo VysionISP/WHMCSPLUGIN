@@ -82,14 +82,14 @@ function kx_site_render(string $section): void
     // Personal/Business switcher (top strip) works on section FAMILIES;
     // the main nav below is family-specific.
     $families = [
-        'personal' => ['Personal', '/personal/'],
+        'personal' => ['Personal', '/'],
         'business' => ['Business', '/business/'],
     ];
     $family = $section === 'business' ? 'business' : 'personal';
 
     if ($family === 'personal') {
         $nav = [
-            ['Home', '/personal/'],
+            ['Home', '/'],
             ['NBN Internet', '/store/residental-internet'],
             ['Mobile', '/personal/mobile/'],
             ['Home Phone', '/personal/home-phone/'],

@@ -687,7 +687,7 @@ add_hook('ClientAreaHeadOutput', 4, function () {
     // top-level divs would lose everything after the first.
     $bar = '<div class="kx-chrome">'
         . '<div class="kx-switch"><div class="in">'
-        . '<a href="/personal/">Personal</a><a href="/business/">Business</a>'
+        . '<a href="/">Personal</a><a href="/business/">Business</a>'
         . '</div></div>'
         . '<div class="kx-topbar"><div class="in">'
         . '<div class="l">' . $left . '</div>'
@@ -923,7 +923,7 @@ add_hook('ClientAreaPrimaryNavbar', 1, function ($primaryNavbar) {
         // menu on WHMCS pages as on /personal and /business.
         $primaryNavbar->addChild('kxPersonal', [
             'label' => 'Personal',
-            'uri' => '/personal/',
+            'uri' => '/',
             'order' => 10,
         ]);
         $primaryNavbar->addChild('kxBusiness', [
@@ -942,14 +942,16 @@ add_hook('ClientAreaPrimaryNavbar', 1, function ($primaryNavbar) {
 });
 
 /**
- * Personal is the site's front page: visitors hitting the portal homepage
- * are sent to /personal/ so the public index IS the Personal section.
- * Logged-in clients keep the portal homepage.
+ * Personal is the site's front page: for visitors the portal homepage
+ * renders the Personal section directly — same look and behaviour as
+ * /personal/ but the URL stays clean at /. Logged-in clients keep the
+ * portal homepage.
  */
 add_hook('ClientAreaPageHome', 1, function () {
     if (!empty($_SESSION['uid'])) {
         return;
     }
-    header('Location: /personal/', true, 302);
+    require_once __DIR__ . '/pages/site-shell.php';
+    kx_site_render('residential');
     exit;
 });
