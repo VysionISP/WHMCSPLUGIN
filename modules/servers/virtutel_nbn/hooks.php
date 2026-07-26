@@ -702,5 +702,21 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . '</style>'
         . "<script>document.addEventListener('DOMContentLoaded',function(){"
         . "var d=document.createElement('div');d.innerHTML={$json};"
-        . "document.body.insertBefore(d.firstChild,document.body.firstChild);});</script>";
+        . "document.body.insertBefore(d.firstChild,document.body.firstChild);"
+        // Hide WHMCS chrome strips: the admin 'Logged in as' masquerade bar
+        // and the notifications strip (the Return-to-admin side tab stays).
+        . "function hideBar(rx){var all=document.querySelectorAll('body div,body section,body header,body span,body a');"
+        . "for(var i=0;i<all.length;i++){var el=all[i];"
+        . "if(el.closest('.kx-topbar')){continue;}"
+        . "if(el.childElementCount>6){continue;}"
+        . "var t=(el.textContent||'').replace(/\\s+/g,' ').trim();"
+        . "if(!rx.test(t)||t.length>80){continue;}"
+        . "var box=el;"
+        . "while(box.parentElement&&box.parentElement!==document.body){"
+        . "var pt=(box.parentElement.textContent||'').replace(/\\s+/g,' ').trim();"
+        . "if(pt.length>t.length+12){break;}box=box.parentElement;}"
+        . "box.style.display='none';return;}}"
+        . "hideBar(/^Logged in as:/i);"
+        . "hideBar(/^\\d+ Notifications?$/i);"
+        . "});</script>";
 });
