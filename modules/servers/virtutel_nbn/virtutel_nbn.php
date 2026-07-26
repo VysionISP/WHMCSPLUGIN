@@ -267,6 +267,15 @@ function virtutel_nbn_ClientArea(array $params): array
 
         $state = WHMCS\Module\Server\VirtutelNbn\Service\ClientAreaState::forService((int) $params['serviceid']);
 
+        // Customer self-serve diagnostics (only when linked with an AVC).
+        $state['vt_serviceid'] = (int) $params['serviceid'];
+        $state['vt_customer_tests'] = [];
+        if (!empty($state['vt_avc'])) {
+            $state['vt_customer_tests'] = WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::customerTests(
+                (string) ($state['vt_technology'] ?? '')
+            );
+        }
+
         return [
             'tabOverviewReplacementTemplate' => 'templates/overview',
             'templateVariables' => $state,
@@ -282,6 +291,75 @@ function virtutel_nbn_ClientArea(array $params): array
 function virtutel_nbn_ClientAreaCustomButtonArray(): array
 {
     return ['Book Installation Appointment' => 'bookappointment'];
+}
+
+/**
+ * Non-button client custom functions (AJAX endpoints for self-serve
+ * diagnostics). WHMCS only invokes these for services the logged-in
+ * client owns.
+ */
+function virtutel_nbn_ClientAreaAllowedFunctions(): array
+{
+    return ['runtest' => 'runtest', 'teststatus' => 'teststatus'];
+}
+
+/** Emits a sentinel-wrapped JSON payload for the client overlay and stops. */
+function virtutel_nbn_client_json(array $payload): void
+{
+    echo '@@KXJSON@@' . json_encode($payload) . '@@ENDKXJSON@@';
+    exit;
+}
+
+function virtutel_nbn_runtest(array $params): array
+{
+    try {
+        Migrations::ensure();
+        $serviceId = (int) $params['serviceid'];
+        $testType = strtoupper(trim((string) ($_REQUEST['testtype'] ?? '')));
+
+        $row = WHMCS\Database\Capsule::table('mod_virtutel_services')
+            ->where('whmcs_service_id', $serviceId)->first();
+        $allowed = $row ? WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::customerTests(
+            (string) ($row->technology_type ?? '')
+        ) : [];
+        if (!isset($allowed[$testType])) {
+            virtutel_nbn_client_json(['ok' => false, 'error' => 'That test isn\'t available for your service.']);
+        }
+
+        // 5 customer-initiated tests per service per day.
+        $key = 'ctests_' . $serviceId . '_' . date('Ymd');
+        $count = (int) (WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get($key, '0') ?? '0');
+        if ($count >= 5) {
+            virtutel_nbn_client_json(['ok' => false,
+                'error' => 'Daily test limit reached — contact us if you\'re still having trouble.']);
+        }
+        WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set($key, (string) ($count + 1));
+
+        virtutel_nbn_client_json(
+            WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::queue($serviceId, $testType)
+        );
+    } catch (\Throwable $e) {
+        virtutel_nbn_client_json(['ok' => false, 'error' => 'Test could not be started — please try again.']);
+    }
+
+    return []; // unreachable
+}
+
+function virtutel_nbn_teststatus(array $params): array
+{
+    try {
+        Migrations::ensure();
+        virtutel_nbn_client_json(
+            WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::statusHtml(
+                (int) $params['serviceid'],
+                (string) ($_REQUEST['testid'] ?? '')
+            )
+        );
+    } catch (\Throwable $e) {
+        virtutel_nbn_client_json(['done' => false, 'html' => '']);
+    }
+
+    return []; // unreachable
 }
 
 /**
@@ -746,8 +824,23 @@ function virtutel_nbn_handle_test_request(int $serviceId): void
  * Admin buttons on the service: request an async NBN health check for the
  * linked service (result arrives via callback and shows in the tab).
  */
-function virtutel_nbn_AdminCustomButtonArray(): array
+function virtutel_nbn_AdminCustomButtonArray(array $params = []): array
 {
+    // Only offer the health check once the service is linked to Virtutel.
+    try {
+        $serviceId = (int) ($params['serviceid'] ?? 0);
+        if ($serviceId > 0) {
+            $linked = WHMCS\Database\Capsule::table('mod_virtutel_services')
+                ->where('whmcs_service_id', $serviceId)
+                ->value('vt_service_id');
+            if ((string) $linked === '') {
+                return [];
+            }
+        }
+    } catch (\Throwable $e) {
+        // fall through — show the button rather than hide functionality
+    }
+
     return ['Run Service Health Check' => 'runhealthcheck'];
 }
 

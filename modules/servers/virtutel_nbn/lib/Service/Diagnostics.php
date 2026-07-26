@@ -94,6 +94,40 @@ class Diagnostics
         return is_array($tests) ? $tests : [];
     }
 
+    /**
+     * Customer-safe tests per technology: a status check plus a "restart my
+     * connection" action. Server-side allowlist — the client area may only
+     * queue what this returns.
+     *
+     * @return array<string,string> testType => customer-facing label
+     */
+    public static function customerTests(string $subType): array
+    {
+        return match (strtoupper(trim($subType))) {
+            'FTTP' => [
+                'NTD_STATUS' => 'Check my connection box status',
+                'PORT_RESET' => 'Restart my connection (brief dropout)',
+            ],
+            'HFC' => [
+                'NTD_STATUS' => 'Check my connection box status',
+                'NTD_RESET' => 'Restart my connection box (brief dropout)',
+            ],
+            'FTTC' => [
+                'DPU_PORT_STATUS' => 'Check my connection status',
+                'DPU_PORT_RESET' => 'Restart my connection (brief dropout)',
+            ],
+            'FTTN', 'FTTB' => [
+                'LINE_STATE_DIAGNOSTIC' => 'Check my line status',
+                'LINE_QUALITY_DIAGNOSTIC' => 'Run a line quality check',
+            ],
+            'FW', 'FIXED WIRELESS' => [
+                'WNTD_MEASURE' => 'Check my wireless signal',
+                'WNTD_RESET' => 'Restart my connection box (brief dropout)',
+            ],
+            default => [],
+        };
+    }
+
     public static function serviceType(string $subType): string
     {
         return match (strtoupper(trim($subType))) {
