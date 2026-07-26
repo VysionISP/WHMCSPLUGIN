@@ -130,7 +130,10 @@ function kx_site_render(string $section): void
 <title><?php echo $e($title); ?></title>
 <style>
   :root { --bg:#0b0f1a; --surface:#141b2b; --line:#2a3347; --text:#e6e9f2; --muted:#98a2b8;
-          --brand:#4d8dff; --brand2:#7a5cff; --ok:#2fbf71; }
+          --brand:#4d8dff; --brand2:#7a5cff; --ok:#2fbf71;
+          /* must match the embedded checker's scheme or Chrome backs the
+             transparent iframe with an opaque slab */
+          color-scheme: dark; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font-size:16px; line-height:1.6;
          font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; }
@@ -178,10 +181,10 @@ function kx_site_render(string $section): void
   .hero .g2 { width:400px; height:400px; background:#7a5cff; top:-120px; right:-80px; }
   .hero .inner { position:relative; }
   .checker { max-width:760px; margin:30px auto 0; background:var(--surface); border:1px solid var(--line);
-             border-radius:16px; padding:22px 22px 8px; box-shadow:0 18px 50px rgba(0,0,0,.35); text-align:left; }
+             border-radius:16px; padding:22px 22px 12px; box-shadow:0 18px 50px rgba(0,0,0,.35); text-align:left; }
   .checker .t { font-weight:700; margin:0 0 2px; font-size:17px; }
   .checker .s { color:var(--muted); font-size:13.5px; margin:0 0 10px; }
-  .checker iframe { width:100%; border:0; display:block; min-height:150px; background:transparent; }
+  .checker iframe { width:100%; border:0; display:block; min-height:84px; background:transparent; }
   .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-top:30px; }
   .card { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px 22px;
           transition:transform .15s,border-color .15s; }
