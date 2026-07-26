@@ -244,14 +244,14 @@ function kx_site_render(string $section, string $arg = ''): void
   .checker iframe { width:100%; border:0; display:block; min-height:84px; background:transparent; }
   /* split hero: copy left, checker right */
   .hero2 { position:relative; overflow:hidden; padding:70px 20px 46px; }
-  /* faint engineering-grid texture, faded at the edges */
-  .hero2:before { content:''; position:absolute; inset:0; pointer-events:none;
+  /* faint engineering-grid texture, faded at the edges — every hero */
+  .hero:before, .hero2:before { content:''; position:absolute; inset:0; pointer-events:none;
                   background-image:radial-gradient(rgba(122,146,200,.16) 1px, transparent 1.4px);
                   background-size:26px 26px;
                   -webkit-mask-image:radial-gradient(70% 70% at 50% 30%, #000 30%, transparent 100%);
                   mask-image:radial-gradient(70% 70% at 50% 30%, #000 30%, transparent 100%); }
-  .hero2 .glow { animation:kxDrift 16s ease-in-out infinite; }
-  .hero2 .g2 { animation-delay:-8s; }
+  .hero .glow, .hero2 .glow { animation:kxDrift 16s ease-in-out infinite; }
+  .hero .g2, .hero2 .g2 { animation-delay:-8s; }
   .hero2 .g3 { width:340px; height:340px; background:#b16bff; bottom:-160px; left:36%;
                animation-delay:-4s; }
   @keyframes kxDrift { 0%,100% { transform:translate(0,0); } 50% { transform:translate(26px,18px); } }
@@ -282,6 +282,8 @@ function kx_site_render(string $section, string $arg = ''): void
                box-shadow:0 34px 80px rgba(31,66,150,.35);
                animation:kxBob 7s ease-in-out infinite; }
   @keyframes kxBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
+  /* tall embeds (signup) keep the gradient frame but sit still */
+  .checkwrap.still { animation:none; }
   .checkwrap .checker { margin:0; max-width:none; border:0; border-radius:19px; background:#10182a;
                         padding:26px 26px 16px; }
   .checkwrap .badge { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.1em;
@@ -305,6 +307,7 @@ function kx_site_render(string $section, string $arg = ''): void
   .kxm { position:fixed; inset:0; z-index:1000; display:flex; align-items:center;
          justify-content:center; background:rgba(4,6,12,.74); backdrop-filter:blur(4px); }
   .kxm .panel { width:min(620px,94vw); max-height:88vh; background:#10182a;
+         box-shadow:0 40px 100px rgba(0,0,0,.6), 0 0 0 1px rgba(77,141,255,.25);
                 border:1px solid var(--line); border-radius:20px; overflow:hidden;
                 display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,.55); }
   .kxm .head { display:flex; justify-content:space-between; align-items:center;
@@ -350,12 +353,15 @@ function kx_site_render(string $section, string $arg = ''): void
            position:relative; transition:transform .15s,border-color .15s;
            flex:0 0 256px; scroll-snap-align:center; }
   @media(max-width:700px){ .pcard { flex-basis:78vw; } }
-  .pcard:hover { transform:translateY(-4px); border-color:var(--brand); }
+  .pcard:hover { transform:translateY(-4px); border-color:var(--brand);
+                 box-shadow:0 18px 44px rgba(31,66,150,.28); }
   .pcard .nm { font-weight:800; font-size:17px; }
   .pcard .sp { color:var(--muted); font-size:13px; margin:4px 0 12px; }
   .pcard .bar { width:100%; height:6px; border-radius:99px; background:#1e2739; margin-bottom:16px; }
   .pcard .bar i { display:block; height:100%; border-radius:99px;
-                  background:linear-gradient(90deg,#4d8dff,#7a5cff); }
+                  background:linear-gradient(90deg,#4d8dff,#7a5cff);
+                  transform-origin:left; animation:kxBar .9s ease .25s both; }
+  @keyframes kxBar { from { transform:scaleX(0); } to { transform:scaleX(1); } }
   .pcard .pr { font-size:32px; font-weight:800; letter-spacing:-.02em; }
   .pcard .pr small { font-size:13px; color:var(--muted); font-weight:600; }
   .pcard .nt { color:var(--muted); font-size:11.5px; margin:2px 0 14px; }
@@ -365,7 +371,10 @@ function kx_site_render(string $section, string $arg = ''): void
   .pcard .btn, .pcard .btn.ghost { margin-top:auto; width:100%; }
   .pcard.feat { border:1px solid var(--brand);
                 background:linear-gradient(180deg,rgba(77,141,255,.10),rgba(20,27,43,0) 55%),var(--surface);
-                box-shadow:0 16px 44px rgba(77,141,255,.16); }
+                box-shadow:0 16px 50px rgba(77,141,255,.22); }
+  .pcard.feat .pr { background:linear-gradient(92deg,#7fb2ff,#a88cff);
+                    -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .pcard.feat .pr small { color:var(--muted); -webkit-text-fill-color:var(--muted); }
   @media(min-width:700px){ .pcard.feat { transform:scale(1.045); } .pcard.feat:hover { transform:scale(1.045) translateY(-4px); } }
   .pcard .tag { position:absolute; top:-12px; left:50%; transform:translateX(-50%);
                 background:linear-gradient(92deg,#4d8dff,#7a5cff); color:#fff; font-size:10.5px;
@@ -373,8 +382,9 @@ function kx_site_render(string $section, string $arg = ''): void
                 text-transform:uppercase; white-space:nowrap; }
   .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-top:30px; }
   .card { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px 22px;
-          transition:transform .15s,border-color .15s; }
-  .card:hover { transform:translateY(-4px); border-color:var(--brand); }
+          transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease; }
+  .card:hover { transform:translateY(-5px); border-color:var(--brand);
+                box-shadow:0 18px 40px rgba(31,66,150,.24); }
   .card h3 { margin:0 0 8px; font-size:18px; }
   .card p { margin:0 0 16px; color:var(--muted); font-size:14px; }
   .card .ico { font-size:26px; margin-bottom:10px; }
@@ -384,14 +394,29 @@ function kx_site_render(string $section, string $arg = ''): void
   .plan .price small { font-size:14px; color:var(--muted); font-weight:600; }
   .btn { display:inline-block; border:0; cursor:pointer; text-align:center;
          background:linear-gradient(92deg,#4d8dff,#7a5cff); color:#fff !important; font-weight:700;
-         font-size:15px; padding:12px 26px; border-radius:999px; }
-  .btn:hover { filter:brightness(1.1); }
+         font-size:15px; padding:12px 26px; border-radius:999px;
+         transition:transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+  .btn:hover { filter:brightness(1.08); transform:translateY(-2px);
+               box-shadow:0 10px 26px rgba(77,141,255,.4); }
   .btn.ghost { background:transparent; border:1px solid var(--line); color:var(--text) !important; }
-  .btn.ghost:hover { border-color:var(--brand); }
-  .band { background:linear-gradient(120deg,rgba(77,141,255,.14),rgba(122,92,255,.14));
-          border:1px solid var(--line); border-radius:20px; padding:44px 24px; text-align:center; }
+  .btn.ghost:hover { border-color:var(--brand); box-shadow:0 10px 26px rgba(77,141,255,.18); }
+  .band { position:relative; overflow:hidden; text-align:center; padding:46px 24px;
+          border-radius:20px; border:1px solid transparent;
+          background:linear-gradient(120deg,rgba(77,141,255,.13),rgba(122,92,255,.13)) padding-box,
+                     linear-gradient(135deg,rgba(77,141,255,.55),rgba(122,92,255,.3) 60%,rgba(42,51,71,.6)) border-box;
+          box-shadow:0 26px 60px rgba(31,66,150,.22); }
+  .band:before { content:''; position:absolute; inset:0; pointer-events:none;
+          background-image:radial-gradient(rgba(122,146,200,.13) 1px, transparent 1.4px);
+          background-size:26px 26px;
+          -webkit-mask-image:radial-gradient(80% 90% at 50% 50%, #000 40%, transparent 100%);
+          mask-image:radial-gradient(80% 90% at 50% 50%, #000 40%, transparent 100%); }
+  .band > * { position:relative; }
   /* footer */
-  .kx-footer { background:#070a12; border-top:1px solid #1c2436; margin-top:64px; color:#98a2b8; font-size:14px; }
+  .kx-footer { background:#070a12; border-top:0; margin-top:64px; color:#98a2b8; font-size:14px;
+               position:relative; }
+  .kx-footer:before { content:''; position:absolute; top:0; left:0; right:0; height:1px;
+               background:linear-gradient(90deg,transparent,#4d8dff 30%,#7a5cff 70%,transparent);
+               opacity:.55; }
   .kx-footer .in { max-width:1200px; margin:0 auto; padding:48px 20px 0; }
   .kx-footer .grid { display:grid; grid-template-columns:2fr 1fr 1fr; gap:32px; }
   @media(max-width:700px){ .kx-footer .grid { grid-template-columns:1fr; } }
@@ -749,7 +774,7 @@ function kxInitPlaces(){
     <p class="sub" style="margin:0 0 24px">Pick the plan that suits &mdash; port selection and
       switching from your current provider are all handled right here, and your address details
       carry straight through to checkout.</p>
-    <div class="checkwrap"><div class="checker" style="padding:26px 26px 16px">
+    <div class="checkwrap still"><div class="checker" style="padding:26px 26px 16px">
       <iframe id="kxQ" src="<?php echo $e($signupSrc); ?>" scrolling="no" title="NBN signup"></iframe>
     </div></div>
   </div>
