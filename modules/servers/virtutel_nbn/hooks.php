@@ -671,7 +671,9 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         ['Pay an Invoice', '/clientarea.php?action=invoices'],
     ];
     $phone = '1300 881 437';
-    $portal = ['Customer Portals', '/clientarea.php'];
+    $portal = !empty($_SESSION['uid'])
+        ? ['Logout', '/logout.php']
+        : ['Portal Login', '/clientarea.php'];
 
     $left = '';
     foreach ($items as [$label, $href]) {
