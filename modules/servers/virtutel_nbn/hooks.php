@@ -481,7 +481,7 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         . "document.addEventListener('DOMContentLoaded',function(){run();setTimeout(run,600);});"
         . "})();</script>";
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=23">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=24">'
         . '<meta name="color-scheme" content="dark">'
         . $whitewash;
 });
@@ -910,6 +910,13 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         . "document.querySelectorAll('p,div,span,small,a').forEach(function(el){"
         . "var t=(el.textContent||'').trim();"
         . "if(t.length<60&&/WHMCompleteSolution/i.test(t)){el.remove();}"
+        . "});"
+        // Knowledgebase search: removed on every portal page (CSS in
+        // portal-dark.css is the first line of defence; this catches
+        // markup the selectors miss).
+        . "document.querySelectorAll('input[placeholder*=\"knowledgebase\" i]').forEach(function(inp){"
+        . "var box=inp.closest('form,.search-container,section,div');"
+        . "if(box){box.remove();}else{inp.remove();}"
         . "});});</script>";
 });
 

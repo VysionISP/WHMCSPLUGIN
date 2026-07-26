@@ -488,10 +488,17 @@ input[type=tel], input[type=search] {
 /* ---------- Home page tiles ---------- */
 .tiles .tile, .client-home-panels .card { border-radius: var(--kx-radius) !important; }
 .tiles .tile .stat, .tiles .tile .title { color: var(--kx-text) !important; }
-.search-container, #searchBox, .home-shortcuts {
+.home-shortcuts {
   background: var(--kx-surface) !important;
   border-color: var(--kx-border) !important;
   border-radius: var(--kx-radius) !important;
+}
+
+/* Knowledgebase search: fully removed, every page (home, KB, support). */
+.search-container, #searchBox,
+form:has(input[placeholder*="knowledgebase" i]),
+input[placeholder*="knowledgebase" i] {
+  display: none !important;
 }
 
 /* ---------- Order form: products as pricing cards ---------- */
