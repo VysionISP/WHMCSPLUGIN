@@ -490,6 +490,62 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                         . $rawRows . '</table></details>';
                 }
             }
+
+            // Change Speed: pick a tier + Save Changes lodges the Modify
+            // Speed order (RADIUS follows on completion). The API rejects
+            // tiers the address can't support — that error shows here.
+            if ((string) ($row->vt_service_id ?? '') !== '') {
+                $tech = strtoupper((string) ($row->technology_type ?? ''));
+                $speedOptions = in_array($tech, ['FW', 'FIXED WIRELESS'], true)
+                    ? ['TC4FWP', 'TC4FWHF', 'TC4FWSF']
+                    : ['TC425D5U', 'TC425D10U', 'TC450D20U', 'TC4100D20U', 'TC4100D40U',
+                        'TC4250D25U', 'TC4500D50U', 'TC4750D50U', 'TC41000D50U', 'TC41000D100U'];
+                $speedSelect = '<select name="vt_speed_change"><option value="">— keep current —</option>';
+                foreach ($speedOptions as $enum) {
+                    if ($enum === $speedEnum) {
+                        continue;
+                    }
+                    $optTier = \WHMCS\Module\Server\VirtutelNbn\Service\SpeedTier::describe($enum);
+                    $speedSelect .= '<option value="' . htmlspecialchars($enum) . '">'
+                        . htmlspecialchars(($optTier['label'] ?? $enum) . ' (' . $enum . ')') . '</option>';
+                }
+                $speedMsg = (string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
+                    'speedmsg_' . $serviceId,
+                    ''
+                ) ?? '');
+                $fields['Change Speed'] = $speedSelect . '</select>'
+                    . '<br><small>Select a tier and click Save Changes to lodge a Modify Speed order. '
+                    . 'Billing/product stays as-is — repackage in WHMCS separately if the price changes.'
+                    . ($speedMsg !== '' ? ' <strong>' . htmlspecialchars($speedMsg) . '</strong>' : '')
+                    . '</small>';
+            }
+
+            // Order history: everything ever lodged for this service.
+            $orders = WHMCS\Database\Capsule::table('mod_virtutel_orders')
+                ->where('service_id', (int) $row->id)
+                ->orderByDesc('id')->limit(25)->get();
+            if (count($orders) > 0) {
+                $orderRows = '';
+                foreach ($orders as $order) {
+                    $orderRows .= '<tr>'
+                        . '<td style="padding:2px 12px 2px 0">' . htmlspecialchars((string) $order->order_type) . '</td>'
+                        . '<td style="padding:2px 12px 2px 0"><code>' . htmlspecialchars((string) ($order->vt_order_id ?? '—')) . '</code></td>'
+                        . '<td style="padding:2px 12px 2px 0">' . htmlspecialchars((string) ($order->status ?? '—'))
+                        . ' <span style="color:#667">(' . htmlspecialchars((string) $order->whmcs_status) . ')</span></td>'
+                        . '<td style="padding:2px 12px 2px 0;color:#667">' . htmlspecialchars(substr((string) $order->created_at, 0, 16))
+                        . ($order->completed_at ? ' &rarr; ' . htmlspecialchars(substr((string) $order->completed_at, 0, 16)) : '')
+                        . '</td></tr>';
+                }
+                $fields['Order History'] = '<details' . (count($orders) <= 3 ? ' open' : '') . '>'
+                    . '<summary style="cursor:pointer">' . count($orders) . ' order'
+                    . (count($orders) === 1 ? '' : 's') . '</summary>'
+                    . '<table style="font-size:12px;margin-top:6px;text-align:left">'
+                    . '<tr style="color:#667"><th style="text-align:left;padding-right:12px">Type</th>'
+                    . '<th style="text-align:left;padding-right:12px">VT Order</th>'
+                    . '<th style="text-align:left;padding-right:12px">Status</th>'
+                    . '<th style="text-align:left">Lodged &rarr; Completed</th></tr>'
+                    . $orderRows . '</table></details>';
+            }
         } else {
             $fields['Virtutel'] = 'Not linked to a Virtutel service yet — paste an ID below and Save Changes.';
         }
@@ -860,6 +916,7 @@ function virtutel_nbn_render_tests(array $tests): string
 function virtutel_nbn_AdminServicesTabFieldsSave(array $params): void
 {
     virtutel_nbn_handle_test_request((int) $params['serviceid']);
+    virtutel_nbn_handle_speed_change((int) $params['serviceid']);
 
     $ref = trim((string) ($_REQUEST['vt_link_ref'] ?? ''));
     if ($ref === '') {
@@ -903,6 +960,32 @@ function virtutel_nbn_AdminServicesTabFieldsSave(array $params): void
  * Queues the diagnostic test selected on the admin tab (POST
  * /service-tests); results arrive via ServiceTestStateChangeNotification.
  */
+/** Change Speed dropdown on the admin tab: lodge the Modify Speed order. */
+function virtutel_nbn_handle_speed_change(int $serviceId): void
+{
+    $newSpeed = strtoupper(trim((string) ($_REQUEST['vt_speed_change'] ?? '')));
+    if ($newSpeed === '') {
+        return;
+    }
+
+    try {
+        Migrations::ensure();
+        $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
+        $orderId = (new \WHMCS\Module\Server\VirtutelNbn\Service\LifecycleService())
+            ->changeSpeed($client, $serviceId, $newSpeed);
+        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
+            'speedmsg_' . $serviceId,
+            'Speed change to ' . $newSpeed . ' lodged — order ' . $orderId
+            . '. RADIUS updates automatically when it completes.'
+        );
+    } catch (\Throwable $e) {
+        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
+            'speedmsg_' . $serviceId,
+            'Speed change failed: ' . $e->getMessage()
+        );
+    }
+}
+
 function virtutel_nbn_handle_test_request(int $serviceId): void
 {
     $testType = strtoupper(trim((string) ($_REQUEST['vt_test_type'] ?? '')));
@@ -950,8 +1033,100 @@ function virtutel_nbn_AdminCustomButtonArray(array $params = []): array
 
     return [
         'Run Service Health Check' => 'runhealthcheck',
+        'Refresh from Virtutel' => 'refreshfromvt',
         'Reset Daily Test Limit' => 'resetdailytests',
+        'Cancel Service (Disconnect)' => 'cancelservice',
     ];
+}
+
+/**
+ * Re-pulls the /services record on demand and refreshes the stored link
+ * (status, speed, address, domain, raw data) — no waiting on callbacks.
+ */
+function virtutel_nbn_refreshfromvt(array $params): string
+{
+    $serviceId = (int) $params['serviceid'];
+    try {
+        Migrations::ensure();
+        $row = WHMCS\Database\Capsule::table('mod_virtutel_services')
+            ->where('whmcs_service_id', $serviceId)->first();
+        if (!$row || (string) ($row->vt_service_id ?? '') === '') {
+            return 'Not linked to a Virtutel service — link it first.';
+        }
+
+        $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
+        $svc = \WHMCS\Module\Server\VirtutelNbn\Service\ServiceLinker::lookup(
+            $client,
+            (string) $row->vt_service_id
+        );
+        if ($svc === null) {
+            return 'Virtutel no longer returns ' . (string) $row->vt_service_id
+                . ' — the service may be disconnected carrier-side.';
+        }
+
+        \WHMCS\Module\Server\VirtutelNbn\Service\ServiceLinker::link($serviceId, $svc, $client);
+        logActivity(sprintf(
+            'Virtutel NBN: refreshed service #%d from Virtutel (%s, status %s)',
+            $serviceId,
+            (string) ($svc['vtServiceId'] ?? '?'),
+            (string) ($svc['status'] ?? '?')
+        ));
+
+        return 'success';
+    } catch (\Throwable $e) {
+        return $e->getMessage();
+    }
+}
+
+/**
+ * Lodges the Virtutel disconnect order — two clicks required (the second
+ * within 5 minutes) since module command buttons have no confirm dialog.
+ * The customer stays online until the carrier completes the order; WHMCS
+ * billing termination stays a separate, deliberate step.
+ */
+function virtutel_nbn_cancelservice(array $params): string
+{
+    $serviceId = (int) $params['serviceid'];
+    try {
+        Migrations::ensure();
+        $row = WHMCS\Database\Capsule::table('mod_virtutel_services')
+            ->where('whmcs_service_id', $serviceId)->first();
+        if (!$row || (string) ($row->vt_service_id ?? '') === '') {
+            return 'Not linked to a Virtutel service — nothing to disconnect.';
+        }
+
+        $inFlight = WHMCS\Database\Capsule::table('mod_virtutel_orders')
+            ->where('service_id', (int) $row->id)
+            ->where('order_type', 'disconnect')
+            ->whereIn('whmcs_status', ['pending', 'in_progress', 'action_required'])
+            ->orderByDesc('id')->first();
+        if ($inFlight) {
+            return 'A disconnect order is already in flight ('
+                . (string) ($inFlight->vt_order_id ?? 'no ID yet') . ').';
+        }
+
+        $key = 'cancelreq_' . $serviceId;
+        $asked = (int) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get($key, '0') ?? '0');
+        if ($asked < time() - 300) {
+            \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set($key, (string) time());
+
+            return 'CONFIRM: this lodges a DISCONNECT order with Virtutel for '
+                . (string) $row->vt_service_id
+                . '. Click "Cancel Service (Disconnect)" again within 5 minutes to proceed.';
+        }
+        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set($key, '0');
+
+        $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
+        $orderId = (new \WHMCS\Module\Server\VirtutelNbn\Service\LifecycleService())
+            ->lodgeDisconnect($client, $serviceId);
+
+        return 'Disconnect order lodged'
+            . ($orderId !== '' ? ' — ' . $orderId : '')
+            . '. The service stays online until Virtutel completes it; terminate in WHMCS '
+            . 'separately when billing should stop.';
+    } catch (\Throwable $e) {
+        return $e->getMessage();
+    }
 }
 
 /**

@@ -100,6 +100,41 @@ class LifecycleService
     }
 
     /**
+     * Lodge ONLY the Virtutel disconnect order (admin Cancel Service
+     * button): the customer stays online until the carrier completes it.
+     * RADIUS teardown happens via the normal WHMCS Terminate, or when the
+     * disconnect completion lands.
+     *
+     * @return string the Virtutel order ID
+     */
+    public function lodgeDisconnect(VirtutelClient $client, int $whmcsServiceId): string
+    {
+        $service = $this->serviceRow($whmcsServiceId);
+        if (empty($service->vt_service_id)) {
+            throw new ApiException('No VT service ID on file — cannot lodge a disconnect order');
+        }
+
+        $payload = ['service' => ['vtServiceId' => (string) $service->vt_service_id]];
+        $response = $client->request(
+            'POST',
+            VirtutelClient::PATH_PRODUCT_ORDERS . '?orderType=disconnect',
+            ['action' => 'SubmitDisconnectOrder', 'json' => $payload]
+        );
+
+        $vtOrderId = (string) $response->get('vtOrderId', '');
+        $this->recordOrder($service, 'disconnect', $vtOrderId, $payload);
+        $this->touchStatus($service, 'disconnecting');
+
+        logActivity(sprintf(
+            'Virtutel NBN: disconnect order %s lodged for service #%d (admin action)',
+            $vtOrderId !== '' ? $vtOrderId : '(no id returned)',
+            $whmcsServiceId
+        ));
+
+        return $vtOrderId;
+    }
+
+    /**
      * Lodge a Modify Speed order. RADIUS attributes are applied when the
      * VTOrderCompleted callback lands (OrderCompletion), keeping billing,
      * carrier, and AAA state in step.
