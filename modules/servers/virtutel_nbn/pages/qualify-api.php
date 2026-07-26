@@ -88,6 +88,41 @@ try {
 
         $results = $service->searchAddress($search);
 
+        // The NBN fuzzy search is punctuation-sensitive: a hand-typed
+        // address ("324-330 Raglan St, Sale VIC 3850") can return nothing
+        // while a slightly different formatting of the same place matches.
+        // Before giving up, retry progressively normalised variants.
+        if ($results === [] && isset($search['unstructured'])) {
+            $base = strtoupper(trim($address));
+            $variants = [];
+            $push = function (string $v) use (&$variants) {
+                $v = trim(preg_replace('/\s+/', ' ', $v) ?? '');
+                if ($v !== '' && !in_array($v, $variants, true)) {
+                    $variants[] = $v;
+                }
+            };
+            // Without the country suffix autocomplete sometimes appends.
+            $push(preg_replace('/,?\s*AUSTRALIA\s*$/', '', $base));
+            // Commas out.
+            $push(str_replace(',', ' ', $base));
+            // Street-number ranges collapsed to the first number
+            // ("324-330 RAGLAN ST" -> "324 RAGLAN ST").
+            $deRanged = preg_replace('/\b(\d+[A-Z]?)\s*[-\x{2013}]\s*\d+[A-Z]?\b/u', '$1', $base);
+            $push($deRanged);
+            $push(str_replace(',', ' ', (string) $deRanged));
+            foreach ($variants as $variant) {
+                if ($variant === $base) {
+                    continue;
+                }
+                $results = $service->searchAddress(
+                    ['unstructured' => ['address' => $variant, 'fuzzy' => true]]
+                );
+                if ($results !== []) {
+                    break;
+                }
+            }
+        }
+
         $matches = [];
         // No tight cap — apartment towers legitimately return hundreds of
         // units; the UI filters/scrolls. 500 only bounds the payload.
