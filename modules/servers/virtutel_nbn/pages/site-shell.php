@@ -40,6 +40,58 @@ function kx_site_groups(): array
     }
 }
 
+/**
+ * Home-phone plans: visible products in any product group whose name
+ * mentions "phone", with price and up to four description lines.
+ *
+ * @return array[] [name, price, features[], orderUrl]
+ */
+function kx_site_phone_plans(): array
+{
+    try {
+        $gids = [];
+        foreach (Capsule::table('tblproductgroups')->where('hidden', 0)->get(['id', 'name']) as $g) {
+            if (stripos((string) $g->name, 'phone') !== false) {
+                $gids[] = (int) $g->id;
+            }
+        }
+        if ($gids === []) {
+            return [];
+        }
+
+        $rows = Capsule::table('tblproducts')
+            ->join('tblpricing', function ($join) {
+                $join->on('tblpricing.relid', '=', 'tblproducts.id')
+                    ->where('tblpricing.type', '=', 'product')
+                    ->where('tblpricing.currency', '=', 1);
+            })
+            ->whereIn('tblproducts.gid', $gids)
+            ->where('tblproducts.hidden', 0)
+            ->where('tblproducts.retired', 0)
+            ->where('tblpricing.monthly', '>', 0)
+            ->orderBy('tblpricing.monthly')
+            ->get(['tblproducts.id', 'tblproducts.name', 'tblproducts.description', 'tblpricing.monthly']);
+
+        $plans = [];
+        foreach ($rows as $row) {
+            $features = array_values(array_filter(array_map(
+                fn ($l) => trim(strip_tags((string) $l)),
+                preg_split('/\r?\n|<br\s*\/?>/i', (string) $row->description) ?: []
+            )));
+            $plans[] = [
+                (string) $row->name,
+                number_format((float) $row->monthly, 2),
+                array_slice($features, 0, 4),
+                '/cart.php?a=add&pid=' . (int) $row->id,
+            ];
+        }
+
+        return $plans;
+    } catch (\Throwable $e) {
+        return [];
+    }
+}
+
 /** @return array[] NBN plans: [name, price, down, up] cheapest first */
 function kx_site_plans(): array
 {
@@ -376,6 +428,9 @@ function kx_site_render(string $section, string $arg = ''): void
                     -webkit-background-clip:text; background-clip:text; color:transparent; }
   .pcard.feat .pr small { color:var(--muted); -webkit-text-fill-color:var(--muted); }
   @media(min-width:700px){ .pcard.feat { transform:scale(1.045); } .pcard.feat:hover { transform:scale(1.045) translateY(-4px); } }
+  /* coming-soon plan cards: present but visibly not orderable yet */
+  .pcard.soonp { filter:saturate(.6); }
+  .pcard.soonp:hover { filter:saturate(1); }
   .pcard .tag { position:absolute; top:-12px; left:50%; transform:translateX(-50%);
                 background:linear-gradient(92deg,#4d8dff,#7a5cff); color:#fff; font-size:10.5px;
                 font-weight:800; padding:4px 13px; border-radius:999px; letter-spacing:.08em;
@@ -960,21 +1015,72 @@ setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;
 if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);})();
 </script>
 
-<?php } elseif ($section === 'mobile' || $section === 'homephone') {
-    $isMobile = $section === 'mobile';
+<?php } elseif ($section === 'mobile') {
+    // Launch line-up (coming soon — prices to be confirmed at launch):
+    // [name, price, GB, featured]
+    $mobilePlans = [
+        ['Saver', '25', '20', false],
+        ['Value', '35', '45', false],
+        ['Essential', '45', '100', true],
+        ['Premium', '55', '180', false],
+    ];
 ?>
 
-<section class="hero">
-  <div class="glow g1"></div><div class="glow g2"></div>
-  <div class="inner">
-    <div class="kicker"><?php echo $isMobile ? 'Mobile' : 'Home Phone'; ?></div>
-    <h1><?php echo $isMobile
-        ? 'Mobile plans are<br><span class="grad">on the way</span>'
-        : 'Home phone,<br><span class="grad">simplified</span>'; ?></h1>
-    <p class="sub"><?php echo $isMobile
-        ? 'We\'re putting the finishing touches on Korvix Mobile — plans on a major Australian network with the same local support as our NBN.'
-        : 'Keep your home number without the copper line — VoIP home phone that rides your NBN connection. Launching soon.'; ?></p>
-    <a class="btn" href="/contact.php">Register your interest</a>
+<section class="hero2">
+  <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+  <div class="wrap">
+    <div>
+      <div class="kicker">Mobile</div>
+      <h1>Big-data mobile,<br>same <span class="grad">local support</span></h1>
+      <p class="sub">Korvix Mobile is nearly here &mdash; SIM-only plans on a major Australian 5G
+        network, managed in the same portal and backed by the same Gippsland humans as your NBN.</p>
+      <ul class="ticks">
+        <li>Unlimited standard national calls &amp; texts on every plan</li>
+        <li>5G access, with 4G coverage reaching 98%+ of Australians</li>
+        <li>Keep your number &mdash; ports handled for you</li>
+        <li>Month-to-month, no lock-in &mdash; like everything we sell</li>
+      </ul>
+      <div class="techs">
+        <span>5G</span><span>SIM ONLY</span><span>KEEP YOUR NUMBER</span><span>NO LOCK-IN</span>
+      </div>
+    </div>
+    <div class="checkwrap">
+      <div class="checker">
+        <span class="badge" style="color:#ecc575;background:rgba(226,163,54,.12);border-color:rgba(226,163,54,.35)">&#9679; Launching soon</span>
+        <p class="t">Be first in line</p>
+        <p class="s">Register your interest and we'll email you the moment plans go live &mdash;
+          early access (and launch pricing) goes to the people who ask.</p>
+        <a class="btn" href="/contact.php" style="width:100%;margin-bottom:8px">Register your interest</a>
+        <div class="chints">
+          <span>No commitment</span><span>Launch pricing locked</span><span>Local support</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="text-align:center;padding-top:30px">
+  <div class="inner" style="max-width:1120px">
+    <div class="kicker">The line-up</div>
+    <h2>Plans we're <span class="grad">launching with</span></h2>
+    <p class="sub">Final pricing confirmed at launch &mdash; this is the shape of it.</p>
+    <div class="pgrid" style="justify-content:center;overflow:visible;padding-top:26px">
+      <?php foreach ($mobilePlans as [$mName, $mPrice, $mGb, $mFeat]) { ?>
+      <div class="pcard soonp<?php echo $mFeat ? ' feat' : ''; ?>" style="flex:0 1 250px">
+        <div class="tag" style="background:#3a4356"><?php echo $mFeat ? 'Coming soon · popular' : 'Coming soon'; ?></div>
+        <div class="nm">Korvix Mobile <?php echo $e($mName); ?></div>
+        <div class="sp"><?php echo $e($mGb); ?>GB data &middot; 5G</div>
+        <div class="pr">$<?php echo $e($mPrice); ?><small>/mo</small></div>
+        <div class="nt">expected pricing, AUD incl. GST</div>
+        <ul>
+          <li>Unlimited national calls &amp; text</li>
+          <li><?php echo $e($mGb); ?>GB on a major 5G network</li>
+          <li>Keep your number</li>
+        </ul>
+        <a class="btn ghost" href="/contact.php">Register interest</a>
+      </div>
+      <?php } ?>
+    </div>
   </div>
 </section>
 
@@ -984,6 +1090,169 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
     <p class="sub">Call <?php echo $e($phone); ?> and tell us what you need &mdash; early access
       goes to the people who ask.</p>
     <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
+  </div></div>
+</section>
+
+<?php } elseif ($section === 'homephone') {
+    // Live WHMCS products (any product group named *phone*) when they
+    // exist; until then, the launch pricing below renders with an
+    // enquire CTA. Rates modelled on the market standard (Leaptel-style
+    // Basic/Ultimate tiers).
+    $phonePlans = kx_site_phone_plans();
+    $phoneFallback = $phonePlans === [];
+    if ($phoneFallback) {
+        $phonePlans = [
+            ['Home Phone Basic', '9.95', [
+                'Unlimited local &amp; national calls',
+                'Calls to Australian mobiles billed per second',
+                '13/1300 numbers 40c untimed',
+                'Keep your existing number',
+            ], '/contact.php'],
+            ['Home Phone Ultimate', '19.95', [
+                'Unlimited local, national &amp; mobile calls',
+                '13/1300 numbers 40c untimed',
+                'Per-second billing where charges apply',
+                'Keep your existing number',
+            ], '/contact.php'],
+        ];
+    }
+?>
+
+<section class="hero2">
+  <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+  <div class="wrap">
+    <div>
+      <div class="kicker">Home Phone</div>
+      <h1>Keep your number,<br>ditch the <span class="grad">line rental</span></h1>
+      <p class="sub">Your home phone, running over your NBN instead of a copper line you're
+        paying rent on. Same number, clearer calls, and it lives on the same bill as your
+        internet.</p>
+      <ul class="ticks">
+        <li>Keep your existing number &mdash; we handle the porting</li>
+        <li>Crystal-clear HD voice over your NBN connection</li>
+        <li>Works with a VoIP handset or an adapter for your old phone</li>
+        <li>Month-to-month &mdash; no lock-in, no line rental</li>
+      </ul>
+      <div class="techs">
+        <span>KEEP YOUR NUMBER</span><span>HD VOICE</span><span>NO LINE RENTAL</span><span>ONE BILL</span>
+      </div>
+    </div>
+    <div class="checkwrap">
+      <div class="checker">
+        <span class="badge">&#9679; Number porting</span>
+        <p class="t">Bring your number with you</p>
+        <p class="s">Porting is handled for you &mdash; your old service keeps working until the
+          moment your number moves, so you're never without a phone. We'll confirm timing and
+          any cost before anything changes.</p>
+        <a class="btn" href="<?php echo $phonePlans !== [] ? '#phoneplans' : '/contact.php'; ?>"
+           style="width:100%;margin-bottom:8px"><?php
+           echo $phonePlans !== [] ? 'See the plans' : 'Talk to us about porting'; ?></a>
+        <div class="chints">
+          <span>No lock-in</span><span>Porting arranged for you</span><span>Local support</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="phoneplans" style="text-align:center;padding-top:30px">
+  <div class="inner" style="max-width:1120px">
+    <div class="kicker">Plans</div>
+    <h2>Simple home phone pricing</h2>
+    <p class="sub">Month-to-month, no line rental, and your number comes with you.</p>
+    <div class="pgrid" style="justify-content:center;overflow:visible;padding-top:26px">
+      <?php foreach ($phonePlans as $pIdx => [$pName, $pPrice, $pFeatures, $pUrl]) { ?>
+      <div class="pcard<?php echo $pIdx === count($phonePlans) - 1 ? ' feat' : ''; ?>" style="flex:0 1 300px">
+        <?php if ($pIdx === count($phonePlans) - 1) { ?><div class="tag">Most popular</div><?php } ?>
+        <div class="nm"><?php echo $e($pName); ?></div>
+        <div class="pr" style="margin-top:10px">$<?php echo $e($pPrice); ?><small>/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <?php foreach ($pFeatures !== [] ? $pFeatures : ['Keep your number', 'HD voice calls', 'No lock-in contract'] as $feat) { ?>
+          <li><?php echo $feat; ?></li>
+          <?php } ?>
+        </ul>
+        <a class="btn<?php echo $pIdx === count($phonePlans) - 1 ? '' : ' ghost'; ?>"
+           href="<?php echo $e($pUrl); ?>"><?php echo $phoneFallback ? 'Enquire now' : 'Get started'; ?></a>
+      </div>
+      <?php } ?>
+    </div>
+    <p style="color:var(--muted);font-size:12.5px;margin-top:18px">Where call charges apply,
+      calls bill per second with a 1c minimum. International rates on request.</p>
+  </div>
+</section>
+
+<section style="text-align:center">
+  <div class="inner" style="max-width:1120px">
+    <div class="kicker">How it works</div>
+    <h2>Old number, <span class="grad">new tricks</span></h2>
+    <div class="hiw-track">
+      <div class="hiw-step">
+        <div class="hiw-ghost">01</div>
+        <div class="hiw-num">1</div>
+        <h3>Pick a plan</h3>
+        <p>Order online or call us. Tell us the number you want to bring across &mdash; or ask
+           for a fresh one if you're starting new.</p>
+        <div class="hiw-chip">&#9201;&#65038; two minutes online</div>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-ghost">02</div>
+        <div class="hiw-num">2</div>
+        <h3>We port your number</h3>
+        <p>You sign one authority form, we deal with your old provider. Your current phone keeps
+           working the whole time &mdash; the number moves in one clean cutover.</p>
+        <div class="hiw-chip">&#128737;&#65038; no gap in service</div>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-ghost">03</div>
+        <div class="hiw-num">3</div>
+        <h3>Plug in and talk</h3>
+        <p>Use a VoIP handset, or an adapter that makes your existing phone work over the NBN.
+           We'll help you set up whichever you choose.</p>
+        <div class="hiw-chip">&#128222;&#65038; sounds better than copper ever did</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="text-align:center;padding-top:16px">
+  <div class="inner">
+    <div class="kicker">Good to know</div>
+    <h2>Home phone <span class="grad">questions</span></h2>
+    <div class="faq">
+      <details>
+        <summary>Can I really keep my number?</summary>
+        <p>Almost always, yes &mdash; numbers port between providers under Australian porting
+           rules. We check yours before anything is ordered and confirm timing with you first.</p>
+      </details>
+      <details>
+        <summary>Do I need Korvix NBN for this?</summary>
+        <p>It's built to pair with our NBN plans &mdash; one bill, one support number, and we can
+           see both services when something needs fixing. It needs a reliable internet connection
+           to work.</p>
+      </details>
+      <details>
+        <summary>What happens in a power or internet outage?</summary>
+        <p>Straight answer: like all NBN-era phone services, it won't work if your power or
+           internet is down &mdash; and that includes 000 calls. Keep a charged mobile for
+           emergencies. This is true of every VoIP provider; we'd rather say it out loud.</p>
+      </details>
+      <details>
+        <summary>What gear do I need?</summary>
+        <p>Either a VoIP handset (plugs into your router) or a small adapter (ATA) that lets your
+           existing cordless phone keep working. We'll recommend the cheapest option that suits
+           your setup.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:10px">
+  <div class="inner"><div class="band">
+    <h2>Not sure if your number can move?</h2>
+    <p class="sub">Call <?php echo $e($phone); ?> with your current phone bill handy &mdash;
+      we'll tell you on the spot.</p>
+    <a class="btn" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
   </div></div>
 </section>
 
