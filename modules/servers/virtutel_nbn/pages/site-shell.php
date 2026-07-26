@@ -94,6 +94,19 @@ function kx_site_render(string $section, string $arg = ''): void
     } catch (\Throwable $ex) {
         $placesKey = '';
     }
+    // Same logo image the portal navbar shows (WHMCS uploaded logo);
+    // text-wordmark fallback only when no logo is configured.
+    $logoUrl = '';
+    try {
+        $logoUrl = (string) (Capsule::table('tblconfiguration')
+            ->where('setting', 'LogoURL')->value('value') ?? '');
+    } catch (\Throwable $ex) {
+        $logoUrl = '';
+    }
+    if ($logoUrl === '' && is_file(__DIR__ . '/../../../../assets/img/logo.png')) {
+        $logoUrl = '/assets/img/logo.png';
+    }
+
     // TEMPORARY number — revert to 1300 881 437 when it's live.
     $phone = '03 4130 5012';
     $tel = preg_replace('/\D/', '', $phone);
@@ -189,9 +202,10 @@ function kx_site_render(string $section, string $arg = ''): void
   .kx-nav .in { max-width:1200px; margin:0 auto; padding:18px 20px; display:flex;
                 align-items:center; gap:30px; flex-wrap:wrap; }
   .kx-nav .logo { font-size:24px; font-weight:900; color:#fff; letter-spacing:.02em; }
-  /* 36px matches the portal navbar logo (portal-dark.css) so the brand
-     doesn't jump size between logged-out and logged-in chrome */
-  .kx-nav .logo img { height:36px; display:block; filter:brightness(0) invert(1); }
+  /* same image, size and filter as the portal navbar logo (portal-dark.css)
+     so the brand doesn't change between logged-out and logged-in chrome */
+  .kx-nav .logo img { height:36px; display:block;
+                      filter:invert(1) hue-rotate(180deg) brightness(1.05); }
   .kx-nav .links { display:flex; gap:22px; flex-wrap:wrap; margin-left:auto; }
   .kx-nav .links a { color:#c7cede; font-weight:600; font-size:15px; }
   .kx-nav .links a:hover, .kx-nav .links a.on { color:#fff; }
@@ -420,7 +434,8 @@ function kx_site_render(string $section, string $arg = ''): void
 </div></div>
 
 <div class="kx-nav"><div class="in">
-  <a class="logo" href="/">KORVIX</a>
+  <a class="logo" href="/"><?php if ($logoUrl !== '') { ?><img src="<?php
+      echo $e($logoUrl); ?>" alt="Korvix"><?php } else { ?>KORVIX<?php } ?></a>
   <div class="links">
     <?php foreach ($nav as [$label, $url]) { ?>
       <a href="<?php echo $e($url); ?>"<?php echo $label === $active ? ' class="on"' : ''; ?>><?php echo $e($label); ?></a>
@@ -752,7 +767,12 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
 <footer class="kx-footer"><div class="in">
   <div class="grid">
     <div>
+      <?php if ($logoUrl !== '') { ?>
+      <img src="<?php echo $e($logoUrl); ?>" alt="Korvix" style="height:34px;display:block;
+        filter:brightness(0) invert(1);margin-bottom:14px">
+      <?php } else { ?>
       <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:12px">KORVIX</div>
+      <?php } ?>
       <p style="max-width:300px;margin:0 0 14px;line-height:1.7">Fast, local NBN and hosted services
         for Gippsland and beyond &mdash; no lock-ins, no runaround, real local support.</p>
       <a style="color:#e6e9f2;font-weight:700;font-size:16px" href="tel:<?php echo $e($tel); ?>">&#9742;&#65038;&nbsp;<?php echo $e($phone); ?></a>
