@@ -481,7 +481,7 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         . "document.addEventListener('DOMContentLoaded',function(){run();setTimeout(run,600);});"
         . "})();</script>";
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=21">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=22">'
         . '<meta name="color-scheme" content="dark">'
         . $whitewash;
 });
@@ -714,6 +714,9 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . 'font-weight:700;line-height:1;padding:3px 6px;border-radius:999px}'
         . '.kx-bellwrap{display:inline-flex !important;align-items:center;vertical-align:middle;'
         . 'margin-right:10px;position:relative}'
+        // The theme strip the notifications button came from (not our
+        // .kx-topbar). Its Logged-in-as block dies with it.
+        . 'div.topbar{display:none !important}'
         . '</style>'
         . "<script>document.addEventListener('DOMContentLoaded',function(){"
         . "var d=document.createElement('div');d.innerHTML={$json};"
@@ -732,44 +735,33 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . "if(pt.length>t.length+12){break;}box=box.parentElement;}"
         . "box.style.display='none';return;}}"
         . "hideBar(/^Logged in as:/i);"
-        // Relocate the notifications toggle into a bell beside the cart
-        // icon (moving the whole dropdown keeps its menu working), then
-        // collapse the strip it lived in. The theme renders this strip
-        // AFTER load, so keep retrying until it shows up.
+        // Relocate the theme's notifications button (#accountNotifications,
+        // inside div.topbar — exact markup confirmed from the live site)
+        // into a bell beside the header cart icon. The popover content div
+        // moves along with it so the notifications list keeps working;
+        // div.topbar is then hidden by the CSS above.
         . "var kxBellTries=0;"
         . "(function kxBell(){"
         . "if(document.querySelector('.kx-bell')){return;}"
-        // Deepest element whose text is exactly the notifications label —
-        // the toggle may be a div/span, not an anchor.
-        . "var deep=null,all=document.querySelectorAll('body *');"
-        . "for(var i=0;i<all.length;i++){var el=all[i];"
-        . "if(el.closest('.kx-topbar')||el.children.length>4){continue;}"
-        . "var t=(el.textContent||'').replace(/\\s+/g,' ').trim();"
-        . "if(/^\\d*\\s*Notifications?$/i.test(t)){deep=el;}}"
-        . "if(!deep){if(++kxBellTries<40){setTimeout(kxBell,400);}"
-        . "else{console.log('kxBell: notifications strip never found');}return;}"
-        . "var nt=deep.closest('a,button,[data-toggle],[data-bs-toggle],[onclick],[role=button]')||deep;"
-        . "var count=(nt.textContent.match(/\\d+/)||[''])[0];"
-        . "var wrap=nt.closest('.dropdown')||nt.parentElement;"
-        . "var mark=document.createElement('span');mark.style.display='none';"
-        . "wrap.parentElement.insertBefore(mark,wrap);"
+        . "var btn=document.getElementById('accountNotifications');"
+        . "var strip=document.querySelector('div.topbar');"
+        . "if(!btn){if(++kxBellTries<40){setTimeout(kxBell,400);}return;}"
+        . "var count=(btn.textContent.match(/\\d+/)||[''])[0];"
         . "var cart=null,cs=document.querySelectorAll('a[href*=\"cart.php\"]');"
         . "for(var j=0;j<cs.length;j++){var ct=(cs[j].textContent||'').replace(/\\s+/g,' ').trim();"
         . "if(/^\\d*$/.test(ct)&&!cs[j].closest('.kx-topbar')){cart=cs[j];break;}}"
-        . "if(cart){"
-        . "nt.innerHTML='<svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" "
+        . "if(!cart){if(strip){strip.style.setProperty('display','block','important');}return;}"
+        . "var wrap=document.createElement('span');wrap.className='kx-bellwrap';"
+        . "cart.parentElement.insertBefore(wrap,cart);"
+        . "btn.className='kx-bell';"
+        . "btn.innerHTML='<svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" "
         . "stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">"
         . "<path d=\"M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9\"/>"
         . "<path d=\"M13.7 21a2 2 0 0 1-3.4 0\"/></svg>'"
         . "+(count&&count!=='0'?'<span class=\"kx-bellbadge\">'+count+'</span>':'');"
-        . "nt.className='kx-bell';nt.removeAttribute('style');"
-        . "wrap.className='kx-bellwrap';wrap.removeAttribute('style');"
-        . "(cart.parentElement).insertBefore(wrap,cart);}"
-        . "var box=mark,guard=0;"
-        . "while(box.parentElement&&box.parentElement!==document.body&&guard++<6){"
-        . "var pt=(box.parentElement.textContent||'').replace(/\\s+/g,' ').trim();"
-        . "if(pt.length>24){break;}box=box.parentElement;}"
-        . "if(box!==mark){box.style.display='none';}else{mark.remove();}"
+        . "wrap.appendChild(btn);"
+        . "var cont=document.getElementById('accountNotificationsContent');"
+        . "if(cont){wrap.appendChild(cont);}"
         . "})();"
         . "});</script>";
 });

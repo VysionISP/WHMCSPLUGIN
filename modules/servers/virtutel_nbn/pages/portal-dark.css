@@ -361,6 +361,14 @@ html body .table > tbody > tr {
 table tbody tr:hover { background: var(--kx-surface-3) !important; }
 table tbody td small, table tbody td .text-muted { color: var(--kx-muted) !important; }
 
+/* Notifications popover (opens from the header bell) */
+.popover { background: var(--kx-surface-2) !important; border: 1px solid var(--kx-border) !important; }
+.popover .popover-body { color: var(--kx-text) !important; }
+.popover .arrow:after, .popover .arrow:before { border-bottom-color: var(--kx-surface-2) !important; }
+.client-alerts a { color: var(--kx-text) !important; }
+.client-alerts a:hover { color: #fff !important; }
+.client-alerts .message { color: var(--kx-muted) !important; }
+
 /* NBN details block inside the cart line item */
 .vt-nbn-inline { color: var(--kx-muted) !important; }
 .vt-nbn-inline span { color: var(--kx-muted) !important; }
