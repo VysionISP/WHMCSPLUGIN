@@ -296,6 +296,19 @@ hr { border-color: var(--kx-border); }
 table tbody tr, table tbody tr.odd, table tbody tr.even, .view-cart .item {
   background: var(--kx-surface) !important;
 }
+/* standard_cart's viewcart "rows" are DIVS, not table rows:
+   .view-cart-items > .item carries the white. */
+.view-cart-items { background: transparent !important; }
+.view-cart-items .item {
+  background: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.view-cart-items .item .item-title { color: var(--kx-text) !important; }
+.view-cart-items .item .item-group,
+.view-cart-items .item .cycle { color: var(--kx-muted) !important; }
+.view-cart-items .item .item-price,
+.view-cart-items .item .item-price span { color: var(--kx-text) !important; }
 table tbody tr:nth-of-type(even), table tbody tr.even { background: var(--kx-surface-2) !important; }
 table tbody td, table tbody th { color: var(--kx-text) !important; }
 /* Some templates (standard_cart's viewcart) paint the CELLS white or use
