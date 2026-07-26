@@ -13,7 +13,7 @@ use WHMCS\Database\Capsule;
  */
 class Migrations
 {
-    public const SCHEMA_VERSION = 4;
+    public const SCHEMA_VERSION = 5;
 
     private static bool $checkedThisRequest = false;
 
@@ -53,11 +53,54 @@ class Migrations
         if ($current < 4) {
             self::migrateToV4($schema);
         }
+        if ($current < 5) {
+            self::migrateToV5();
+        }
 
         Capsule::table('mod_virtutel_settings')->updateOrInsert(
             ['name' => 'schema_version'],
             ['value' => (string) self::SCHEMA_VERSION, 'updated_at' => date('Y-m-d H:i:s')]
         );
+    }
+
+    /**
+     * Branded global email header/footer (dark Korvix wrapper around every
+     * HTML mail WHMCS sends). Only installed into EMPTY settings — an
+     * admin-customised header/footer is never overwritten — and only for
+     * setting names that exist on this install (WHMCS naming varies by
+     * version; when absent, paste modules/servers/virtutel_nbn/data/email/*.html manually).
+     */
+    private static function migrateToV5(): void
+    {
+        $dir = __DIR__ . '/../data/email';
+        $pairs = [
+            'EmailGlobalHeader' => $dir . '/global-header.html',
+            'EmailGlobalFooter' => $dir . '/global-footer.html',
+        ];
+
+        foreach ($pairs as $setting => $file) {
+            try {
+                if (!is_file($file)) {
+                    continue;
+                }
+                $row = Capsule::table('tblconfiguration')->where('setting', $setting)->first();
+                if (!$row || trim((string) ($row->value ?? '')) !== '') {
+                    continue; // setting unknown on this install, or already customised
+                }
+                $html = (string) file_get_contents($file);
+                // strip the instructional comment block at the top
+                $html = trim((string) preg_replace('/^<!--.*?-->\s*/s', '', $html));
+                if ($html === '') {
+                    continue;
+                }
+                Capsule::table('tblconfiguration')->where('setting', $setting)->update([
+                    'value' => $html,
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+            } catch (\Throwable $e) {
+                // cosmetic — never block migration
+            }
+        }
     }
 
     /**

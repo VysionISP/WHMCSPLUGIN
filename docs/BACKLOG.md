@@ -106,8 +106,11 @@ once scoped. Nothing here is committed scope until agreed.
    (`https://backend.korvix.co`); the web server must serve the WHMCS
    docroot for that hostname with a valid CA-signed cert, and the hostname
    must be registered with Virtutel.
-4. **Billing start policy**: bill from order date or from activation date?
-   Pro-rata?
+4. ~~Billing start policy~~ — RESOLVED (2026-07-26): billing starts at
+   **activation** (the VTOrderCompleted webhook). The month paid at
+   checkout covers activation → activation + one cycle;
+   OrderCompletion::anchorBillingToActivation() pushes next due date /
+   next invoice date out accordingly (forward-only).
 5. **Copper-pair locations**: collect the existing phone number (FNN) at
    checkout for POTS Interconnect matching, or auto-select a pair?
 6. ~~Exact API endpoint paths~~ — RESOLVED: full Apiary export in

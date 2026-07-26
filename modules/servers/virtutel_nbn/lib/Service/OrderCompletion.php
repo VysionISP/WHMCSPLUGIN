@@ -94,6 +94,12 @@ class OrderCompletion
             ]));
         }
 
+        // Billing starts at ACTIVATION, not order date (decided 2026-07-26):
+        // the month paid at checkout covers activation -> activation + one
+        // cycle, so push the next due date out to that. Forward-only — an
+        // already-later due date (manual adjustment) is never pulled back.
+        $this->anchorBillingToActivation((int) $service->whmcs_service_id);
+
         if (function_exists('logActivity')) {
             logActivity(sprintf(
                 'Virtutel NBN: order %s complete — service #%d activated (AVC %s, VT %s)',
@@ -124,6 +130,59 @@ class OrderCompletion
                         'duedate' => date('Y-m-d'),
                     ]);
                 }
+            }
+        }
+    }
+
+    private function anchorBillingToActivation(int $whmcsServiceId): void
+    {
+        try {
+            $hosting = Capsule::table('tblhosting')->where('id', $whmcsServiceId)
+                ->first(['billingcycle', 'nextduedate', 'nextinvoicedate']);
+            if (!$hosting) {
+                return;
+            }
+
+            $interval = match (strtolower((string) ($hosting->billingcycle ?? ''))) {
+                'quarterly' => '+3 months',
+                'semi-annually' => '+6 months',
+                'annually' => '+1 year',
+                'biennially' => '+2 years',
+                'triennially' => '+3 years',
+                'free account', 'one time' => '',
+                default => '+1 month', // monthly (all residential plans)
+            };
+            if ($interval === '') {
+                return;
+            }
+
+            $newDue = date('Y-m-d', strtotime($interval));
+            $current = (string) ($hosting->nextduedate ?? '');
+            if ($current !== '' && $current !== '0000-00-00' && $current >= $newDue) {
+                return; // already at or beyond the activation-anchored date
+            }
+
+            Capsule::table('tblhosting')->where('id', $whmcsServiceId)->update([
+                'nextduedate' => $newDue,
+                'nextinvoicedate' => $newDue,
+            ]);
+
+            if (function_exists('logActivity')) {
+                logActivity(sprintf(
+                    'Virtutel NBN: billing anchored to activation for service #%d — next due date %s (was %s)',
+                    $whmcsServiceId,
+                    $newDue,
+                    $current !== '' ? $current : 'unset'
+                ));
+            }
+        } catch (\Throwable $e) {
+            // Billing adjustment must never block activation.
+            if (function_exists('logActivity')) {
+                logActivity(sprintf(
+                    'Virtutel NBN: could not anchor billing to activation for service #%d: %s',
+                    $whmcsServiceId,
+                    $e->getMessage()
+                ));
             }
         }
     }
