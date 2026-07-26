@@ -210,8 +210,21 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
     if (!res.ok) { return fail(res.body.error || 'Search failed.'); }
     var m = res.body.matches || [];
     if (!m.length) { return fail('We couldn’t find that address in the NBN database. Try adding your suburb and postcode, or contact us and we’ll check manually.'); }
-    if (m.length === 1) { return qualify(m[0].locId, m[0].address || fallbackLabel); }
-    var html = '<p class="spin">Select your exact address / unit:</p>';
+    // Auto-accept a single match ONLY when its street number agrees with
+    // what was typed — the NBN fuzzy search happily returns the nearest
+    // neighbour (type 23, get 21) and silently qualifying that would tell
+    // the customer the wrong house is serviceable.
+    var confirmOnly = false;
+    if (m.length === 1) {
+      var typedNum = ((fallbackLabel || '').match(/\d+[A-Za-z]?/) || [''])[0];
+      var numOk = typedNum === '' || new RegExp('(^|[\\s/])' + typedNum + '([\\s/,]|$)', 'i')
+        .test(m[0].address || '');
+      if (numOk) { return qualify(m[0].locId, m[0].address || fallbackLabel); }
+      confirmOnly = true;
+    }
+    var html = '<p class="spin">' + (confirmOnly
+      ? 'We couldn&rsquo;t find that exact address &mdash; this is the closest match in the NBN database. Please check it&rsquo;s yours:'
+      : 'Select your exact address / unit:') + '</p>';
     if (m.length > 8) {
       html += '<input type="text" id="matchFilter" class="matchfilter" '
         + 'placeholder="Type your unit / shop number to narrow it down, e.g. 1506">';
