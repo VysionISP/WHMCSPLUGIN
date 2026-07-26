@@ -608,6 +608,10 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
     var qInput = document.getElementById('address');
     if (qInput) { qInput.value = bootQ; }
     searchByText(bootQ);
+  } else if (COMPACT) {
+    // Popup opened without an address (plan card CTA): start typing.
+    var fInput = document.getElementById('address');
+    if (fInput) { fInput.focus(); }
   }
 })();
 </script>

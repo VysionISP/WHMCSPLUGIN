@@ -418,7 +418,8 @@ function kx_site_render(string $section): void
           <li>No lock-in contract</li>
           <li>BYO router (IPoE)</li>
         </ul>
-        <a class="btn<?php echo $i === $featured ? '' : ' ghost'; ?>" href="#check">Check availability</a>
+        <a class="btn<?php echo $i === $featured ? '' : ' ghost'; ?>" href="#check"
+           onclick="kxOpenCheck();return false">Check availability</a>
       </div>
       <?php } ?>
     </div>
@@ -453,11 +454,12 @@ function kx_site_render(string $section): void
 
 <script>
 function kxOpenCheck(a){
+  a=(a||'').trim();
   var m=document.createElement('div');m.className='kxm';
   m.innerHTML='<div class="panel"><div class="head"><span>Check your address</span>'
     +'<button type="button" aria-label="Close">&times;</button></div>'
-    +'<iframe src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark&compact=1&q='
-    +encodeURIComponent(a)+'" title="NBN address check"></iframe></div>';
+    +'<iframe src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark&compact=1'
+    +(a?'&q='+encodeURIComponent(a):'')+'" title="NBN address check"></iframe></div>';
   document.body.appendChild(m);
   document.body.style.overflow='hidden';
   // Popup hugs its content: track the embed's body height (shrinks too,
