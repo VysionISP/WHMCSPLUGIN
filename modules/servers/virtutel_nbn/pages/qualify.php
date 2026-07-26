@@ -50,6 +50,11 @@ header('Content-Type: text/html; charset=utf-8');
   /* Dark palette: follows the OS setting, or force with ?theme=dark (for
      embedding in the dark portal) / ?theme=light. */
   html.vt-dark {
+    /* Chrome paints an opaque white canvas behind a transparent iframe
+       whose color-scheme differs from the embedding page's (the dark
+       portal declares color-scheme: dark) — match it or the embed gets
+       a white halo. */
+    color-scheme: dark;
     --brand:#4d8dff; --ok:#2fbf71; --warn:#e2a336; --bad:#e2564a; --ink:#e6e9f2; --muted:#98a2b8;
     --page:#0f1420; --card:#171e2e; --line:#2a3347; --input:#0a0e18; --chip:#1e2739; --chipline:#2a3347;
     --okbg:#12301f; --okline:#1d5c38; --oktext:#7fdcaa;
@@ -58,6 +63,7 @@ header('Content-Type: text/html; charset=utf-8');
   }
   @media (prefers-color-scheme: dark) {
     html:not(.vt-light) {
+      color-scheme: dark;
       --brand:#4d8dff; --ok:#2fbf71; --warn:#e2a336; --bad:#e2564a; --ink:#e6e9f2; --muted:#98a2b8;
       --page:#0f1420; --card:#171e2e; --line:#2a3347; --input:#0a0e18; --chip:#1e2739; --chipline:#2a3347;
       --okbg:#12301f; --okline:#1d5c38; --oktext:#7fdcaa;
