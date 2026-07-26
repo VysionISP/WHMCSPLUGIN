@@ -459,6 +459,43 @@ function kx_site_render(string $section, string $arg = ''): void
     .hiw-track:before { top:6%; bottom:6%; left:50%; right:auto; width:2px; height:auto;
                background:linear-gradient(180deg,#4d8dff,#7a5cff 55%,#b16bff); }
   }
+  /* ---------- network map + FAQ (personal home) ---------- */
+  .net-grid { display:grid; grid-template-columns:1.1fr .9fr; gap:44px; align-items:center;
+              margin-top:38px; text-align:left; }
+  @media(max-width:860px){ .net-grid { grid-template-columns:1fr; gap:28px; } }
+  .net-map svg { width:100%; height:auto; display:block; overflow:visible; }
+  .net-land { fill:#141b2b; stroke:#2a3347; stroke-width:.6; stroke-linejoin:round; }
+  .net-line { fill:none; stroke:url(#kxNetGrad); stroke-width:.8; stroke-linecap:round;
+              stroke-dasharray:2 2.4; animation:kxFlow 1.4s linear infinite; }
+  @keyframes kxFlow { to { stroke-dashoffset:-8.8; } }
+  .net-node { stroke:#0b0f1a; stroke-width:.6; }
+  .net-node.c-b, .net-line { stroke-opacity:.9; }
+  .c-b { fill:#4d8dff; } .c-p { fill:#a88cff; } .c-g { fill:#2fbf71; }
+  .net-ring { fill:none; stroke-width:.7; opacity:.6; animation:kxPing 2.4s ease-out infinite; }
+  .net-ring.c-b { stroke:#4d8dff; fill:none; }
+  .net-ring.c-p { stroke:#a88cff; fill:none; animation-delay:.5s; }
+  .net-ring.c-g { stroke:#2fbf71; fill:none; animation-delay:1s; }
+  @keyframes kxPing { 0% { opacity:.65; } 100% { opacity:0; transform:scale(2.1); } }
+  .net-ring { transform-box:fill-box; transform-origin:center; }
+  .net-label { font-size:2.6px; font-weight:700; letter-spacing:.24px; fill:#98a2b8;
+               font-family:'Inter',-apple-system,sans-serif; }
+  .net-list { list-style:none; margin:0; padding:0; }
+  .net-list li { display:flex; gap:14px; margin-bottom:20px; }
+  .net-dot { flex:0 0 12px; width:12px; height:12px; border-radius:50%; margin-top:6px; }
+  .net-list strong { display:block; margin-bottom:4px; font-size:16px; }
+  .net-list p { margin:0; color:var(--muted); font-size:14px; line-height:1.65; }
+  .faq { max-width:760px; margin:34px auto 0; text-align:left; }
+  .faq details { background:var(--surface); border:1px solid var(--line); border-radius:12px;
+                 margin-bottom:10px; padding:0 20px;
+                 transition:border-color .2s ease, box-shadow .2s ease; }
+  .faq details[open] { border-color:var(--brand); box-shadow:0 10px 30px rgba(31,66,150,.18); }
+  .faq summary { cursor:pointer; font-weight:700; font-size:15.5px; padding:16px 30px 16px 0;
+                 list-style:none; position:relative; }
+  .faq summary::-webkit-details-marker { display:none; }
+  .faq summary:after { content:'+'; position:absolute; right:0; top:12px; font-size:22px;
+                 font-weight:400; color:var(--brand); transition:transform .2s ease; }
+  .faq details[open] summary:after { transform:rotate(45deg); }
+  .faq p { margin:0 0 18px; color:var(--muted); font-size:14.5px; line-height:1.7; }
   /* ---------- legal documents ---------- */
   .lg-head { padding:56px 20px 8px; }
   .lg-nav { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0 0; }
@@ -668,6 +705,121 @@ function kx_site_render(string $section, string $arg = ''): void
     </div>
   </div>
 </section>
+
+<?php if (!$isNbn) { ?>
+<section style="text-align:center;padding-top:26px">
+  <div class="inner" style="max-width:1120px">
+    <div class="kicker">Our network</div>
+    <h2>Local roots, <span class="grad">east-coast backbone</span></h2>
+    <p class="sub">We're not a badge on someone else's network. Korvix runs its own equipment in
+      Melbourne and Sydney, with Gippsland as home base &mdash; your traffic rides our gear from
+      the moment it leaves the NBN.</p>
+    <div class="net-grid">
+      <div class="net-map">
+        <svg viewBox="0 0 100 92" role="img" aria-label="Map of Australia showing the Korvix network">
+          <defs><linearGradient id="kxNetGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#4d8dff"/><stop offset="1" stop-color="#a88cff"/>
+          </linearGradient></defs>
+          <path class="net-land" d="M46,8 L52,13 55,16 58,9 60,7 62,14 63,20 66,24 69,28
+            74,32 79,38 84,45 87,52 88,57 87,62 84,66 81,68 78,68 75,67 71,65 66,64 60,62
+            53,60 46,59 39,58 33,57 28,53 23,47 20,39 20,32 23,25 28,19 34,13 40,9 Z"/>
+          <ellipse class="net-land" cx="79" cy="79" rx="3.4" ry="2.6"/>
+          <path class="net-line" d="M77.5,67.5 Q83,61 87.5,57.5"/>
+          <path class="net-line" d="M77.5,67.5 Q79.5,68.8 81.5,69"/>
+          <circle class="net-ring c-b" cx="77.5" cy="67.5" r="4"/>
+          <circle class="net-node c-b" cx="77.5" cy="67.5" r="2.4"/>
+          <circle class="net-ring c-p" cx="87.5" cy="57.5" r="4"/>
+          <circle class="net-node c-p" cx="87.5" cy="57.5" r="2.2"/>
+          <circle class="net-ring c-g" cx="81.5" cy="69" r="3.4"/>
+          <circle class="net-node c-g" cx="81.5" cy="69" r="1.9"/>
+          <text class="net-label" x="63" y="74">MELBOURNE</text>
+          <text class="net-label" x="89.5" y="55">SYDNEY</text>
+          <text class="net-label" x="83.5" y="73.5">GIPPSLAND</text>
+        </svg>
+      </div>
+      <ul class="net-list">
+        <li><span class="net-dot" style="background:#4d8dff;box-shadow:0 0 12px rgba(77,141,255,.7)"></span>
+          <div><strong>Melbourne &mdash; network core</strong>
+          <p>Where Korvix meets the NBN. Our core routing and provisioning gear lives here,
+             a short hop from most Victorian traffic.</p></div></li>
+        <li><span class="net-dot" style="background:#a88cff;box-shadow:0 0 12px rgba(168,140,255,.7)"></span>
+          <div><strong>Sydney &mdash; point of presence</strong>
+          <p>Our second site keeps east-coast routes short: transit, peering and redundancy,
+             so one bad day in one city doesn't take you offline.</p></div></li>
+        <li><span class="net-dot" style="background:#2fbf71;box-shadow:0 0 12px rgba(47,191,113,.7)"></span>
+          <div><strong>Gippsland &mdash; home base</strong>
+          <p>Where we live and where support answers from. When you call, you're talking to
+             someone on the same network &mdash; probably in the same postcode.</p></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section style="text-align:center">
+  <div class="inner" style="max-width:1120px">
+    <div class="kicker">Why Korvix</div>
+    <h2>Built the way an ISP <span class="grad">should be</span></h2>
+    <div class="cards" style="text-align:left">
+      <div class="card"><div class="ico">&#128222;&#65038;</div><h3>Local humans</h3>
+        <p>Support answers in Gippsland, not a script farm. The person fixing your fault can
+           see your actual line, live.</p></div>
+      <div class="card"><div class="ico">&#128736;&#65038;</div><h3>Self-serve everything</h3>
+        <p>Run real NBN line checks from your portal, book technicians yourself, and watch your
+           connection order progress step by step.</p></div>
+      <div class="card"><div class="ico">&#128200;</div><h3>Honest speeds</h3>
+        <p>We only show plans your address can actually deliver &mdash; checked against the NBN
+           database before you pay a cent.</p></div>
+      <div class="card"><div class="ico">&#128274;</div><h3>No traps</h3>
+        <p>Month-to-month, no lock-in, no exit fees, and your AVC ID is right there in your
+           portal if you ever want to leave. We'd rather earn the next month.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="text-align:center;padding-top:20px">
+  <div class="inner">
+    <div class="kicker">Good to know</div>
+    <h2>Questions people <span class="grad">actually ask</span></h2>
+    <div class="faq">
+      <details>
+        <summary>How long until I'm online?</summary>
+        <p>Switching from another provider is done remotely and often connects the same day.
+           A brand-new connection depends on your NBN technology &mdash; if a technician visit is
+           needed you'll pick the appointment time yourself, usually within a week or two.</p>
+      </details>
+      <details>
+        <summary>Do I need a technician visit?</summary>
+        <p>Usually not. If your address has had NBN before, switching is remote. The address
+           checker tells you upfront if your place needs an install &mdash; no surprises after
+           you've paid.</p>
+      </details>
+      <details>
+        <summary>What router do I need?</summary>
+        <p>Almost any modern router works. Korvix uses automatic (IPoE/DHCP) connections &mdash;
+           no username or password to type in. Plug it into the NBN box, set the WAN to
+           Automatic, done. Not sure about yours? Call us before you buy anything.</p>
+      </details>
+      <details>
+        <summary>Am I locked into a contract?</summary>
+        <p>No. Every plan is month-to-month. Cancel from your portal any time and the service
+           runs to the end of the period you've paid for &mdash; no exit fees, no "retention team".</p>
+      </details>
+      <details>
+        <summary>What actually happens on switch day?</summary>
+        <p>Your connection moves to us remotely &mdash; expect a brief dropout, usually minutes.
+           The moment it completes we email you, your portal flips to active, and billing starts
+           from that day, not from when you ordered.</p>
+      </details>
+      <details>
+        <summary>Is unlimited really unlimited?</summary>
+        <p>Yes &mdash; no data caps, no shaping schedules. Like every ISP we have an acceptable
+           use policy for genuinely abnormal use (running a data centre off a home plan), but
+           ordinary households never hit it. Stream, game, work &mdash; it's your connection.</p>
+      </details>
+    </div>
+  </div>
+</section>
+<?php } ?>
 
 <section style="padding-top:10px">
   <div class="inner"><div class="band">
