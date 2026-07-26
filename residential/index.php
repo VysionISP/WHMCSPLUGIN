@@ -1,3 +1,4 @@
 <?php
-require __DIR__ . '/../modules/servers/virtutel_nbn/pages/site-shell.php';
-kx_site_render('residential');
+// Legacy URL: this section moved to /personal/ — permanent redirect.
+header('Location: /personal/', true, 301);
+exit;

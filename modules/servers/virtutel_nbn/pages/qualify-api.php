@@ -54,7 +54,7 @@ if (str_contains((string) ($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json'))
 try {
     Migrations::ensure();
 
-    if (!RateLimiter::allow((string) ($_SERVER['REMOTE_ADDR'] ?? ''))) {
+    if (!RateLimiter::allow(RateLimiter::clientIp())) {
         $respond(429, ['error' => 'Too many requests — please try again shortly.']);
     }
 

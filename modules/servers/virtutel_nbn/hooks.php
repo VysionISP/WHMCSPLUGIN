@@ -128,6 +128,39 @@ add_hook('DailyCronJob', 1, function () {
     } catch (\Throwable $e) {
         logActivity('Virtutel NBN: stale-order sweep failed: ' . $e->getMessage());
     }
+
+    // Data hygiene: without pruning, callback events and the dated /
+    // per-test settings keys grow forever.
+    try {
+        $pruned = Capsule::table('mod_virtutel_callback_events')
+            ->where('created_at', '<', date('Y-m-d H:i:s', time() - 90 * 86400))
+            ->delete();
+
+        $settingsPrune = [
+            // prefix => days to keep (by updated_at)
+            'ctests_' => 7,        // daily customer-check counters
+            'outagechk_' => 7,     // hourly outage cache
+            'cancelreq_' => 1,     // two-click confirm flags
+            'linkmsg_' => 30,      // one-shot UI messages
+            'speedmsg_' => 30,
+            'ordermsg_' => 30,
+            'svctest_' => 60,      // test-id -> service mappings
+            'healthtest_' => 60,
+            'stalenudge_' => 120,  // nudge timestamps
+        ];
+        foreach ($settingsPrune as $prefix => $days) {
+            $pruned += Capsule::table('mod_virtutel_settings')
+                ->where('name', 'like', $prefix . '%')
+                ->where('updated_at', '<', date('Y-m-d H:i:s', time() - $days * 86400))
+                ->delete();
+        }
+
+        if ($pruned > 0) {
+            logActivity('Virtutel NBN: pruned ' . $pruned . ' expired rows (callback events + dated settings)');
+        }
+    } catch (\Throwable $e) {
+        logActivity('Virtutel NBN: data pruning failed: ' . $e->getMessage());
+    }
 });
 
 /**

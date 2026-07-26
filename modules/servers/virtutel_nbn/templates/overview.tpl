@@ -157,8 +157,8 @@
   if(!btn||btn.dataset.kxBound){return;}
   btn.dataset.kxBound='1';
   var base='/modules/servers/virtutel_nbn/pages/service-test-api.php?serviceid={/literal}{$vt_serviceid}{literal}';
-  function kxFetch(url){
-    return fetch(url,{credentials:'same-origin'}).then(function(r){
+  function kxFetch(url,method){
+    return fetch(url,{method:method||'GET',credentials:'same-origin'}).then(function(r){
       return r.text().then(function(t){
         try{return JSON.parse(t);}catch(e){}
         var m=t.match(/@@KXJSON@@([\s\S]*?)@@ENDKXJSON@@/);
@@ -195,7 +195,7 @@
       ov.querySelector('#vtCliMsg').textContent=msg;
       ov.querySelector('#vtCliSub').textContent='';
     }
-    kxFetch(base+'&do=run&testtype='+encodeURIComponent(type))
+    kxFetch(base+'&do=run&testtype='+encodeURIComponent(type),'POST')
       .then(function(j){
         if(!j.ok){fail(j.error||'The check could not be started.');return;}
         ov.querySelector('#vtCliMsg').textContent='Check running…';

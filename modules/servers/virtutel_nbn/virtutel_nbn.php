@@ -298,68 +298,14 @@ function virtutel_nbn_ClientAreaCustomButtonArray(): array
  * diagnostics). WHMCS only invokes these for services the logged-in
  * client owns.
  */
+/**
+ * Custom client-area actions. Diagnostics moved to the dedicated
+ * pages/service-test-api.php endpoint (the old runtest/teststatus
+ * functions are gone) — booking is the one modop=custom page left.
+ */
 function virtutel_nbn_ClientAreaAllowedFunctions(): array
 {
-    return ['runtest' => 'runtest', 'teststatus' => 'teststatus'];
-}
-
-/** Emits a sentinel-wrapped JSON payload for the client overlay and stops. */
-function virtutel_nbn_client_json(array $payload): void
-{
-    echo '@@KXJSON@@' . json_encode($payload) . '@@ENDKXJSON@@';
-    exit;
-}
-
-function virtutel_nbn_runtest(array $params): array
-{
-    try {
-        Migrations::ensure();
-        $serviceId = (int) $params['serviceid'];
-        $testType = strtoupper(trim((string) ($_REQUEST['testtype'] ?? '')));
-
-        $row = WHMCS\Database\Capsule::table('mod_virtutel_services')
-            ->where('whmcs_service_id', $serviceId)->first();
-        $allowed = $row ? WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::customerTests(
-            (string) ($row->technology_type ?? '')
-        ) : [];
-        if (!isset($allowed[$testType])) {
-            virtutel_nbn_client_json(['ok' => false, 'error' => 'That test isn\'t available for your service.']);
-        }
-
-        // 5 customer-initiated tests per service per day.
-        $key = 'ctests_' . $serviceId . '_' . date('Ymd');
-        $count = (int) (WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get($key, '0') ?? '0');
-        if ($count >= 5) {
-            virtutel_nbn_client_json(['ok' => false,
-                'error' => 'Daily test limit reached — contact us if you\'re still having trouble.']);
-        }
-        WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set($key, (string) ($count + 1));
-
-        virtutel_nbn_client_json(
-            WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::queue($serviceId, $testType)
-        );
-    } catch (\Throwable $e) {
-        virtutel_nbn_client_json(['ok' => false, 'error' => 'Test could not be started — please try again.']);
-    }
-
-    return []; // unreachable
-}
-
-function virtutel_nbn_teststatus(array $params): array
-{
-    try {
-        Migrations::ensure();
-        virtutel_nbn_client_json(
-            WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::statusHtml(
-                (int) $params['serviceid'],
-                (string) ($_REQUEST['testid'] ?? '')
-            )
-        );
-    } catch (\Throwable $e) {
-        virtutel_nbn_client_json(['done' => false, 'html' => '']);
-    }
-
-    return []; // unreachable
+    return ['bookappointment' => 'bookappointment'];
 }
 
 /**

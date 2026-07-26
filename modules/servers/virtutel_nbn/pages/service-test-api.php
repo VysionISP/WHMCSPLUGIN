@@ -43,6 +43,25 @@ try {
     $action = (string) ($_REQUEST['do'] ?? '');
 
     if ($action === 'run') {
+        // CSRF hardening: line resets are state-changing, so require POST
+        // and a same-origin Origin/Referer — a hostile page must not be
+        // able to drop a customer's connection via an embedded URL.
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            $respond(405, ['ok' => false, 'error' => 'POST required.']);
+        }
+        $ownHost = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
+        $srcHost = '';
+        foreach (['HTTP_ORIGIN', 'HTTP_REFERER'] as $header) {
+            $value = (string) ($_SERVER[$header] ?? '');
+            if ($value !== '') {
+                $srcHost = strtolower((string) (parse_url($value, PHP_URL_HOST) ?? ''));
+                break;
+            }
+        }
+        if ($ownHost === '' || $srcHost !== $ownHost) {
+            $respond(403, ['ok' => false, 'error' => 'Cross-origin request refused.']);
+        }
+
         $testType = strtoupper(trim((string) ($_REQUEST['testtype'] ?? '')));
 
         $row = Capsule::table('mod_virtutel_services')
