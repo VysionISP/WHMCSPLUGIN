@@ -82,6 +82,52 @@ add_hook('DailyCronJob', 1, function () {
     } catch (\Throwable $e) {
         logActivity('Virtutel NBN: daily token maintenance failed: ' . $e->getMessage());
     }
+
+    // Stale-order nudge: any order in flight for 7+ days raises a to-do,
+    // repeated weekly until it moves — dashboards only work when watched.
+    try {
+        $stale = Capsule::table('mod_virtutel_orders as o')
+            ->join('mod_virtutel_services as s', 's.id', '=', 'o.service_id')
+            ->whereIn('o.whmcs_status', ['pending', 'in_progress', 'action_required'])
+            ->where('o.created_at', '<', date('Y-m-d H:i:s', time() - 7 * 86400))
+            ->limit(50)
+            ->get(['o.id', 'o.vt_order_id', 'o.order_type', 'o.status',
+                'o.action_required', 'o.created_at', 's.whmcs_service_id']);
+
+        foreach ($stale as $order) {
+            $nudgeKey = 'stalenudge_' . (int) $order->id;
+            $lastNudge = (int) (WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get($nudgeKey, '0') ?? '0');
+            if ($lastNudge > time() - 7 * 86400) {
+                continue;
+            }
+            WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set($nudgeKey, (string) time());
+
+            $ageDays = (int) floor((time() - strtotime((string) $order->created_at)) / 86400);
+            localAPI('AddTodoItem', [
+                'date' => date('Y-m-d'),
+                'title' => sprintf(
+                    'STALE ORDER: %s in flight %d days',
+                    (string) ($order->vt_order_id ?: $order->order_type),
+                    $ageDays
+                ),
+                'description' => sprintf(
+                    '%s order %s for WHMCS service #%d has been in flight %d days (status %s%s). '
+                    . 'Chase Virtutel or resolve/cancel it from the service tab.',
+                    (string) $order->order_type,
+                    (string) ($order->vt_order_id ?: '(no VT id)'),
+                    (int) $order->whmcs_service_id,
+                    $ageDays,
+                    (string) ($order->status ?: 'NEW'),
+                    (string) ($order->action_required ?? '') !== ''
+                        ? ', action: ' . (string) $order->action_required : ''
+                ),
+                'status' => 'Pending',
+                'duedate' => date('Y-m-d'),
+            ]);
+        }
+    } catch (\Throwable $e) {
+        logActivity('Virtutel NBN: stale-order sweep failed: ' . $e->getMessage());
+    }
 });
 
 /**

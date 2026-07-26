@@ -446,6 +446,34 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 . ($wholesale !== ''
                     ? '<br><small style="color:#667">' . htmlspecialchars($wholesale) . '</small>' : '');
 
+            // Live margin: Virtutel wholesale (ex GST, from the raw record)
+            // vs the WHMCS recurring price. Monthly cycles only — that's
+            // every residential plan.
+            $marginHtml = '';
+            $wholesaleEx = is_array($raw) && is_numeric($raw['chargeExPerMonth'] ?? null)
+                ? (float) $raw['chargeExPerMonth'] : 0.0;
+            if ($wholesaleEx > 0) {
+                $hosting = WHMCS\Database\Capsule::table('tblhosting')
+                    ->where('id', $serviceId)->first(['amount', 'billingcycle']);
+                if ($hosting && strtolower((string) $hosting->billingcycle) === 'monthly'
+                    && (float) $hosting->amount > 0) {
+                    $retailInc = (float) $hosting->amount;
+                    $retailEx = $retailInc / 1.1;
+                    $margin = $retailEx - $wholesaleEx;
+                    $marginColor = $margin < 0 ? '#c0392b' : ($margin < 10 ? '#a3690e' : '#1d9e55');
+                    $marginHtml = sprintf(
+                        '<span style="color:%s;font-weight:700">$%.2f/mo</span>'
+                        . ' <small style="color:#667">retail $%.2f inc GST ($%.2f ex) &minus; wholesale $%.2f ex</small>%s',
+                        $marginColor,
+                        $margin,
+                        $retailInc,
+                        $retailEx,
+                        $wholesaleEx,
+                        $margin < 0 ? ' <strong style="color:#c0392b">UNDERWATER</strong>' : ''
+                    );
+                }
+            }
+
             $fields = [
                 'VT Service ID' => htmlspecialchars((string) ($row->vt_service_id ?? '—')),
                 'AVC ID' => htmlspecialchars((string) ($row->avc_id ?? '—')),
@@ -455,6 +483,7 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 ),
                 'Technology' => htmlspecialchars((string) ($row->technology_type ?? '—')),
                 'Plan' => $planHtml,
+                'Margin' => $marginHtml,
                 'POI' => htmlspecialchars($poi !== '' ? $poi : '—')
                     . ($csa !== '' ? ' <small style="color:#667">(CSA ' . htmlspecialchars($csa) . ')</small>' : ''),
                 'Carrier Status' => htmlspecialchars((string) ($row->carrier_status ?? '—')),
@@ -463,6 +492,9 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                     '0'
                 ) ?? '0') . ' of 5 <small>(reset with the Reset Daily Test Limit button below)</small>',
             ];
+            if ($marginHtml === '') {
+                unset($fields['Margin']);
+            }
             if (is_array($raw) && $raw !== []) {
                 $flat = [];
                 foreach ($raw as $rk => $rv) {

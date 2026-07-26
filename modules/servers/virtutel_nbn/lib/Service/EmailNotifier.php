@@ -11,6 +11,32 @@ use WHMCS\Database\Capsule;
 class EmailNotifier
 {
     public const TEMPLATE_APPOINTMENT = 'Virtutel NBN Appointment Required';
+    public const TEMPLATE_ACTIVATED = 'Virtutel NBN Service Activated';
+
+    /**
+     * "You're connected" welcome email with IPoE setup steps, sent once
+     * when the connect order completes.
+     *
+     * @param array<string,string> $vars nbn_avc / nbn_speed / nbn_address
+     */
+    public static function serviceActivated(int $whmcsServiceId, array $vars): void
+    {
+        if (!function_exists('localAPI')) {
+            return;
+        }
+
+        localAPI('SendEmail', [
+            'messagename' => self::TEMPLATE_ACTIVATED,
+            'id' => $whmcsServiceId,
+            'customvars' => base64_encode(serialize($vars)),
+        ]);
+
+        logActivity(sprintf(
+            'Virtutel NBN: activation welcome email sent for service #%d (AVC %s)',
+            $whmcsServiceId,
+            (string) ($vars['nbn_avc'] ?? '?')
+        ));
+    }
 
     /**
      * "Your NBN install needs an appointment — pick a time" with a link to

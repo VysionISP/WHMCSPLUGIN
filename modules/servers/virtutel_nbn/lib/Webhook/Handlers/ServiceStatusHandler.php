@@ -47,19 +47,40 @@ class ServiceStatusHandler
             ->update(['service_id' => $service->id]);
 
         if ($envelope->notificationType === 'ProductInstanceDisconnected' && function_exists('localAPI')) {
-            // Churn-away/disconnect: never keep billing a dead service — flag
-            // staff to cancel. (Automated cancellation policy is a step-4 item.)
+            // Churn-away/disconnect: never keep billing a dead service.
+            // Loud on purpose: to-do AND an admin email with the direct
+            // service link and a stop-billing prompt.
+            $userId = (int) (Capsule::table('tblhosting')
+                ->where('id', (int) $service->whmcs_service_id)->value('userid') ?? 0);
+            $svcUrl = 'clientsservices.php?userid=' . $userId . '&id=' . (int) $service->whmcs_service_id;
+            $reason = $envelope->reason !== '' ? $envelope->reason : 'no reason given';
+
             localAPI('AddTodoItem', [
                 'date' => date('Y-m-d'),
-                'title' => 'Virtutel NBN: service disconnected',
+                'title' => 'CHURNED AWAY: ' . $vtServiceId . ' — stop billing?',
                 'description' => sprintf(
-                    'Virtutel service %s (WHMCS service #%d) was disconnected/churned away: %s. Review billing/cancellation.',
+                    'Virtutel service %s (AVC %s, WHMCS service #%d — %s) was disconnected/churned away: %s. '
+                    . 'Decide: terminate the WHMCS service to stop billing, or investigate if unexpected.',
                     $vtServiceId,
+                    (string) ($service->avc_id ?? '?'),
                     $service->whmcs_service_id,
-                    $envelope->reason !== '' ? $envelope->reason : 'no reason given'
+                    $svcUrl,
+                    $reason
                 ),
                 'status' => 'Pending',
-                'duedate' => date('Y-m-d', strtotime('+1 day')),
+                'duedate' => date('Y-m-d'),
+            ]);
+
+            localAPI('SendAdminEmail', [
+                'customsubject' => 'Korvix NBN: customer churned away — ' . $vtServiceId,
+                'custommessage' => '<p><strong>' . htmlspecialchars($vtServiceId) . '</strong> (AVC '
+                    . htmlspecialchars((string) ($service->avc_id ?? '?'))
+                    . ') was disconnected/churned away carrier-side.</p>'
+                    . '<p>Reason: ' . htmlspecialchars($reason) . '</p>'
+                    . '<p>WHMCS service: <a href="' . htmlspecialchars($svcUrl) . '">#'
+                    . (int) $service->whmcs_service_id . '</a> — billing is still running until '
+                    . 'someone terminates it.</p>',
+                'type' => 'system',
             ]);
         }
 

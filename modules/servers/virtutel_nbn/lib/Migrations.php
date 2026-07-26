@@ -13,7 +13,7 @@ use WHMCS\Database\Capsule;
  */
 class Migrations
 {
-    public const SCHEMA_VERSION = 5;
+    public const SCHEMA_VERSION = 6;
 
     private static bool $checkedThisRequest = false;
 
@@ -55,6 +55,9 @@ class Migrations
         }
         if ($current < 5) {
             self::migrateToV5();
+        }
+        if ($current < 6) {
+            self::migrateToV6();
         }
 
         Capsule::table('mod_virtutel_settings')->updateOrInsert(
@@ -150,6 +153,49 @@ class Migrations
                 }
             }
         }
+    }
+
+    /** "You're connected" activation welcome email (admin-editable). */
+    private static function migrateToV6(): void
+    {
+        $name = 'Virtutel NBN Service Activated';
+        $exists = Capsule::table('tblemailtemplates')
+            ->where('type', 'product')->where('name', $name)->exists();
+        if ($exists) {
+            return;
+        }
+
+        Capsule::table('tblemailtemplates')->insert([
+            'type' => 'product',
+            'name' => $name,
+            'subject' => 'You\'re connected — your Korvix NBN is now active!',
+            'message' => '<p>Hi {$client_first_name},</p>'
+                . '<p>Great news — your NBN service is active and ready to go. '
+                . 'Getting online takes about two minutes:</p>'
+                . '<ol>'
+                . '<li><strong>Plug in your router.</strong> Connect its WAN/Internet port to the '
+                . 'NBN connection box (use port <strong>UNI-D 1</strong> unless we\'ve told you '
+                . 'otherwise). On FTTN/FTTB, plug the router\'s DSL port into the phone wall socket '
+                . 'instead.</li>'
+                . '<li><strong>No username or password.</strong> Set the router\'s internet/WAN mode '
+                . 'to <strong>DHCP / Automatic IP</strong> — Korvix connections authenticate '
+                . 'automatically.</li>'
+                . '<li><strong>Restart the router</strong> and give it a couple of minutes.</li>'
+                . '</ol>'
+                . '<p><strong>Your connection details</strong><br>'
+                . 'Plan speed: {$nbn_speed}<br>'
+                . 'Service ID (AVC): {$nbn_avc}<br>'
+                . 'Address: {$nbn_address}</p>'
+                . '<p>Keep your AVC ID handy — it identifies your line if you ever contact us '
+                . '(or another provider) about this service.</p>'
+                . '<p>Not online after 10 minutes? Reply to this email or call us and we\'ll get '
+                . 'you sorted.</p>'
+                . '<p>{$signature}</p>',
+            'custom' => 1,
+            'disabled' => 0,
+            'language' => '',
+            'plaintext' => 0,
+        ]);
     }
 
     /** Appointment-required customer email template (admin-editable). */

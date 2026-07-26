@@ -100,6 +100,27 @@ class OrderCompletion
         // already-later due date (manual adjustment) is never pulled back.
         $this->anchorBillingToActivation((int) $service->whmcs_service_id);
 
+        // One-time "you're connected" welcome email with IPoE setup steps
+        // (guarded — completion can fire from both callback and poll).
+        try {
+            $welcomeKey = 'welcomed_' . (int) $service->whmcs_service_id;
+            if ((string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get($welcomeKey, '') ?? '') === '') {
+                $tier = !empty($service->speed_tier)
+                    ? SpeedTier::describe((string) $service->speed_tier) : null;
+                EmailNotifier::serviceActivated((int) $service->whmcs_service_id, [
+                    'nbn_avc' => $avcId !== '' ? $avcId : (string) ($service->avc_id ?? ''),
+                    'nbn_speed' => (string) ($tier['label'] ?? ($service->speed_tier ?? '')),
+                    'nbn_address' => $address !== '' ? $address : (string) ($service->service_address ?? ''),
+                ]);
+                \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set($welcomeKey, (string) time());
+            }
+        } catch (\Throwable $e) {
+            if (function_exists('logActivity')) {
+                logActivity('Virtutel NBN: welcome email failed for service #'
+                    . $service->whmcs_service_id . ': ' . $e->getMessage());
+            }
+        }
+
         if (function_exists('logActivity')) {
             logActivity(sprintf(
                 'Virtutel NBN: order %s complete — service #%d activated (AVC %s, VT %s)',
