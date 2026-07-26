@@ -747,12 +747,19 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . "var strip=document.querySelector('div.topbar');"
         . "if(!btn){if(++kxBellTries<40){setTimeout(kxBell,400);}return;}"
         . "var count=(btn.textContent.match(/\\d+/)||[''])[0];"
-        . "var cart=null,cs=document.querySelectorAll('a[href*=\"cart.php\"]');"
+        // Cart icon: prefer the link containing a cart glyph, then any
+        // short-text cart link; final fallback is our own utility bar —
+        // the strip stays hidden regardless.
+        . "var ic=document.querySelector('a[href*=\"cart\"] i[class*=\"shopping\"],"
+        . "a[href*=\"cart\"] i[class*=\"cart\"],a[href*=\"cart\"] svg');"
+        . "var cart=ic?ic.closest('a'):null;"
+        . "if(!cart){var cs=document.querySelectorAll('a[href*=\"cart.php\"]');"
         . "for(var j=0;j<cs.length;j++){var ct=(cs[j].textContent||'').replace(/\\s+/g,' ').trim();"
-        . "if(/^\\d*$/.test(ct)&&!cs[j].closest('.kx-topbar')){cart=cs[j];break;}}"
-        . "if(!cart){if(strip){strip.style.setProperty('display','block','important');}return;}"
+        . "if(ct.length<=4&&!cs[j].closest('.kx-topbar')){cart=cs[j];break;}}}"
         . "var wrap=document.createElement('span');wrap.className='kx-bellwrap';"
-        . "cart.parentElement.insertBefore(wrap,cart);"
+        . "if(cart){cart.parentElement.insertBefore(wrap,cart);}"
+        . "else{var tbr=document.querySelector('.kx-topbar .r');"
+        . "if(tbr){tbr.insertBefore(wrap,tbr.firstChild);}else{return;}}"
         . "btn.className='kx-bell';"
         . "btn.innerHTML='<svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" "
         . "stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">"
