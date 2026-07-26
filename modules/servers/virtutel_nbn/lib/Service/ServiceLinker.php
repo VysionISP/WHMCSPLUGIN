@@ -137,11 +137,15 @@ class ServiceLinker
             // display-only cache
         }
 
-        CustomFields::writeServiceValues($whmcsServiceId, [
-            'Location ID' => (string) ($svc['locationId'] ?? ''),
-            'NTD ID' => (string) ($svc['cpiNtdId'] ?? ''),
-            'UNI-D Port' => (string) ($svc['uniDPortId'] ?? ''),
-        ]);
+        // NBN-only: the custom fields are NBN-shaped, and writing them
+        // would auto-create them on non-NBN (phone) products.
+        if ($serviceType === 'nbn') {
+            CustomFields::writeServiceValues($whmcsServiceId, [
+                'Location ID' => (string) ($svc['locationId'] ?? ''),
+                'NTD ID' => (string) ($svc['cpiNtdId'] ?? ''),
+                'UNI-D Port' => (string) ($svc['uniDPortId'] ?? ''),
+            ]);
+        }
     }
 
     /**
