@@ -428,6 +428,19 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 . '</small>';
         }
 
+        // On-prem equipment as last seen by NBN (health check extraction).
+        $cpe = \WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::cpe($serviceId);
+        if ($cpe !== null && !empty($cpe['items'])) {
+            $cpeParts = [];
+            foreach ($cpe['items'] as $label => $value) {
+                $cpeParts[] = '<span style="color:#667">' . htmlspecialchars($label) . ':</span> <code>'
+                    . htmlspecialchars($value) . '</code>';
+            }
+            $fields['CPE (on premises)'] = implode(' &middot; ', $cpeParts)
+                . ' <small style="color:#889">(from health check '
+                . date('Y-m-d H:i', (int) ($cpe['at'] ?? 0)) . ')</small>';
+        }
+
         // Diagnostic tests: per-technology picker (runs on Save Changes)
         // and the last few results.
         if ($row && (string) ($row->avc_id ?? '') !== '') {

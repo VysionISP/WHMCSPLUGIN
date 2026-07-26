@@ -41,6 +41,15 @@ class ServiceHealthHandler
                     ['action' => 'HealthReport']
                 );
                 $state['report'] = $report->data;
+
+                // Cache the on-prem equipment details for display.
+                $cpe = \WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::extractCpe($report->data);
+                if ($cpe !== []) {
+                    Settings::set('cpe_' . $serviceId, (string) json_encode([
+                        'items' => $cpe,
+                        'at' => time(),
+                    ]));
+                }
             } catch (\Throwable $e) {
                 $state['report_error'] = $e->getMessage();
             }

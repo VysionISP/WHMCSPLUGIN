@@ -128,6 +128,67 @@ class Diagnostics
         };
     }
 
+    /**
+     * Pulls the on-premises equipment details (CPE / NTD categories) out of
+     * a service health report as friendly label => value pairs.
+     *
+     * @return array<string,string>
+     */
+    public static function extractCpe(array $report): array
+    {
+        $out = [];
+        foreach ((array) ($report['healthCategory'] ?? []) as $category) {
+            $type = (string) ($category['type'] ?? '');
+            if (!preg_match('/cpe|ntd/i', $type)) {
+                continue;
+            }
+            foreach ((array) ($category['healthCategoryItem'] ?? []) as $item) {
+                $value = $item['value'] ?? null;
+                if (!is_scalar($value) || (string) $value === '') {
+                    continue;
+                }
+                $label = trim((string) ($item['id'] ?? ''));
+                // camelCase -> words; drop redundant Main prefixes.
+                $label = preg_replace('/(?<=[a-z0-9])(?=[A-Z])/', ' ', $label) ?? $label;
+                $label = trim(str_ireplace(['CPEMain', 'NTDMain', 'Main'], '', ucfirst($label)));
+                $label = $label !== '' ? ucwords(strtolower($label)) : 'Detail';
+                if ($label === 'Mac Address') {
+                    $label = 'Device MAC Address';
+                }
+                $out[$label] = (string) $value;
+            }
+        }
+
+        return array_slice($out, 0, 8, true);
+    }
+
+    /**
+     * Last known on-prem equipment details for a service: the cached
+     * extraction, else pulled live from the stored health report.
+     *
+     * @return array{items: array<string,string>, at: int}|null
+     */
+    public static function cpe(int $serviceId): ?array
+    {
+        $cached = json_decode((string) (Settings::get('cpe_' . $serviceId, '') ?? ''), true);
+        if (is_array($cached) && !empty($cached['items'])) {
+            return $cached;
+        }
+
+        $health = json_decode((string) (Settings::get('health_' . $serviceId, '') ?? ''), true);
+        if (is_array($health) && !empty($health['report']) && is_array($health['report'])) {
+            $items = self::extractCpe($health['report']);
+            if ($items !== []) {
+                $state = ['items' => $items, 'at' => (int) ($health['at'] ?? time())];
+                Settings::set('cpe_' . $serviceId, (string) json_encode($state));
+
+                return $state;
+            }
+        }
+
+        return null;
+    }
+
     public static function serviceType(string $subType): string
     {
         return match (strtoupper(trim($subType))) {

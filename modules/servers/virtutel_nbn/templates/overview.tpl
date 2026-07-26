@@ -107,6 +107,23 @@
   </div>
 </div>
 
+{* ---- on-premises equipment (from the last NBN health check) ---- *}
+{if $vt_cpe && $vt_cpe.items}
+<div style="background:#141b2b;border:1px solid #2a3347;border-radius:12px;padding:18px 20px;margin-bottom:18px;color:#e6e9f2">
+  <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#98a2b8;margin-bottom:10px">
+    Your equipment</div>
+  {foreach from=$vt_cpe.items key=vtCpeLabel item=vtCpeValue}
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
+      <span style="color:#98a2b8">{$vtCpeLabel|escape}</span>
+      <code style="background:#0a0e18;border-radius:6px;padding:1px 8px">{$vtCpeValue|escape}</code>
+    </div>
+  {/foreach}
+  <div style="color:#667;font-size:11.5px;margin-top:8px">
+    As seen by the NBN network on {$vt_cpe.at|date_format:'%e %b %Y'} — if this MAC address doesn't
+    match your router, the wrong device may be plugged into the NBN port.</div>
+</div>
+{/if}
+
 {* ---- connection tools ---- *}
 {if $vt_customer_tests}
 <div style="background:#141b2b;border:1px solid #2a3347;border-radius:12px;padding:18px 20px;margin-bottom:18px;color:#e6e9f2">

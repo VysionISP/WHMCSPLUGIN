@@ -53,6 +53,7 @@ class ClientAreaState
             'vt_is_reschedule' => $isReschedule,
             'vt_booking_url' => EmailNotifier::bookingUrl($whmcsServiceId),
             'vt_conn_state' => self::connectionState($service, $order),
+            'vt_cpe' => Diagnostics::cpe($whmcsServiceId),
             'vt_order_status_label' => isset($order->status)
                 ? ucwords(strtolower(str_replace('_', ' ', (string) $order->status))) : null,
             'vt_steps' => self::timeline($order, $appointment, $needsBooking, $isReschedule),
