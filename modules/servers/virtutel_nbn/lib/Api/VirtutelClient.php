@@ -69,9 +69,14 @@ class VirtutelClient
 
         $clientId = trim((string) ($params['serverusername'] ?? ''));
         $clientSecret = (string) ($params['serverpassword'] ?? '');
-        if ($clientId === '' || $clientSecret === '') {
-            throw new ApiException('client_id (username) and client_secret (password) must be set on the server record');
+        if ($clientId === '') {
+            throw new ApiException('client_id (username) must be set on the server record');
         }
+        // An empty secret is tolerated: the cached access token (cron keeps
+        // it warm for 30 days) authenticates requests without it. Contexts
+        // where WHMCS won't decrypt the password (client-area pages) still
+        // work; only generating a NEW token requires the secret, and that
+        // failure carries its own clear message.
 
         $environment = $port === self::SANDBOX_PORT ? 'sandbox' : 'production';
         $baseUrl = 'https://' . $host . ':' . $port . self::API_BASE_PATH;

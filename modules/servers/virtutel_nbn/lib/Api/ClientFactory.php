@@ -18,6 +18,17 @@ class ClientFactory
             $result = localAPI('DecryptPassword', ['password2' => (string) $server->password]);
             $password = (string) ($result['password'] ?? '');
         }
+        // DecryptPassword comes back empty from client-area page contexts;
+        // fall back to the legacy decrypt helper when present. An empty
+        // password past this point is fine — the cached bearer token
+        // authenticates without it.
+        if ($password === '' && (string) $server->password !== '' && function_exists('decrypt')) {
+            try {
+                $password = (string) decrypt((string) $server->password);
+            } catch (\Throwable $e) {
+                $password = '';
+            }
+        }
 
         try {
             return VirtutelClient::fromModuleParams([

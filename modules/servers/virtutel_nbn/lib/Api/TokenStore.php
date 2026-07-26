@@ -143,6 +143,15 @@ class TokenStore
             if (($result['result'] ?? '') === 'success' && !empty($result['password'])) {
                 return $result['password'];
             }
+            // localAPI can refuse admin-level commands in client-session
+            // contexts — the legacy helper encrypts identically.
+            if (function_exists('encrypt')) {
+                try {
+                    return (string) encrypt($value);
+                } catch (\Throwable $e) {
+                    // fall through
+                }
+            }
         }
 
         return base64_encode($value); // outside WHMCS (unit tests)
@@ -152,9 +161,23 @@ class TokenStore
     {
         if (function_exists('localAPI')) {
             $result = localAPI('DecryptPassword', ['password2' => $value]);
-            if (($result['result'] ?? '') === 'success') {
-                return (string) ($result['password'] ?? '');
+            if (($result['result'] ?? '') === 'success' && (string) ($result['password'] ?? '') !== '') {
+                return (string) $result['password'];
             }
+            if (function_exists('decrypt')) {
+                try {
+                    $plain = (string) decrypt($value);
+                    if ($plain !== '') {
+                        return $plain;
+                    }
+                } catch (\Throwable $e) {
+                    // fall through
+                }
+            }
+
+            // Inside WHMCS with both decrypt paths failed: return empty
+            // (caller regenerates) rather than base64 garbage as a token.
+            return '';
         }
 
         return (string) base64_decode($value, true);
