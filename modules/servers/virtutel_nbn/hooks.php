@@ -438,14 +438,25 @@ add_hook('ClientAreaHeadOutput', 5, function () {
  * sidebar, and theme stay. Non-NBN groups are untouched.
  */
 add_hook('ClientAreaHeadOutput', 6, function ($vars) {
-    if (($vars['filename'] ?? '') !== 'cart' || ($_GET['a'] ?? '') === 'add') {
+    if (($_GET['a'] ?? '') === 'add') {
         return '';
     }
 
-    $gid = (int) ($_REQUEST['gid'] ?? 0);
+    // Two entry points: a /store/<group-slug> landing page (any filename —
+    // WHMCS routes these outside cart.php) or cart.php?gid=N. Deeper
+    // /store/<group>/<product> URLs are product pages and stay untouched.
+    $gid = 0;
     $slug = '';
-    if (preg_match('#/store/([^/?]+)#', (string) ($_SERVER['REQUEST_URI'] ?? ''), $m)) {
-        $slug = strtolower($m[1]);
+    $uri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+    if (preg_match('#/store/([^/?\#]+)/?(?:[?\#]|$)#', $uri, $m)) {
+        $slug = preg_replace('/[^a-z0-9\-_]/', '', strtolower($m[1]));
+    } elseif (($vars['filename'] ?? '') === 'cart') {
+        $gid = (int) ($_REQUEST['gid'] ?? 0);
+    } else {
+        return '';
+    }
+    if ($gid === 0 && $slug === '') {
+        return '';
     }
     if ($gid === 0 && $slug !== '') {
         // Layered lookups: slug column (if present), then slugified name.
@@ -489,7 +500,8 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
         }
     }
     if ($gid === 0) {
-        return '';
+        // Marker so view-source shows why no embed happened.
+        return '<!-- vtq: no product group matched store slug "' . $slug . '" -->';
     }
 
     try {
@@ -499,7 +511,7 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
             ->where('hidden', 0)
             ->exists();
         if (!$isNbnGroup) {
-            return '';
+            return '<!-- vtq: group ' . $gid . ' has no visible virtutel_nbn products -->';
         }
         $dark = (string) (Capsule::table('tbladdonmodules')
             ->where('module', 'virtutel_nbn_admin')
@@ -512,7 +524,8 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
     $theme = in_array($dark, ['on', '1', 'yes'], true) ? 'dark' : 'light';
     $src = '/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=' . $theme;
 
-    return "<script>document.addEventListener('DOMContentLoaded',function(){"
+    return "<!-- vtq: embed gid={$gid} theme={$theme} -->"
+        . "<script>document.addEventListener('DOMContentLoaded',function(){"
         . "var grid=document.querySelector('.products,#products,.product-listing,.products-list');"
         . "if(!grid){var card=document.querySelector('.product,[class*=product-]');"
         . "if(card){grid=card.parentElement;}}"
