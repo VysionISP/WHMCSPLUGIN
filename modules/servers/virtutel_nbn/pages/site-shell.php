@@ -232,9 +232,10 @@ function kx_site_render(string $section, string $arg = ''): void
   .grad { background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff);
           -webkit-background-clip:text; background-clip:text; color:transparent; }
   .hero { text-align:center; padding-top:64px; position:relative; overflow:hidden; }
-  .hero .glow { position:absolute; border-radius:50%; filter:blur(100px); opacity:.32; pointer-events:none; }
-  .hero .g1 { width:440px; height:440px; background:#2b5cff; top:-160px; left:-100px; }
-  .hero .g2 { width:400px; height:400px; background:#7a5cff; top:-120px; right:-80px; }
+  .hero .glow, .hero2 .glow { position:absolute; border-radius:50%; filter:blur(100px);
+                              opacity:.32; pointer-events:none; }
+  .hero .g1, .hero2 .g1 { width:440px; height:440px; background:#2b5cff; top:-160px; left:-100px; }
+  .hero .g2, .hero2 .g2 { width:400px; height:400px; background:#7a5cff; top:-120px; right:-80px; }
   .hero .inner { position:relative; }
   .checker { max-width:760px; margin:30px auto 0; background:var(--surface); border:1px solid var(--line);
              border-radius:16px; padding:22px 22px 12px; box-shadow:0 18px 50px rgba(0,0,0,.35); text-align:left; }
@@ -243,30 +244,63 @@ function kx_site_render(string $section, string $arg = ''): void
   .checker iframe { width:100%; border:0; display:block; min-height:84px; background:transparent; }
   /* split hero: copy left, checker right */
   .hero2 { position:relative; overflow:hidden; padding:70px 20px 46px; }
+  /* faint engineering-grid texture, faded at the edges */
+  .hero2:before { content:''; position:absolute; inset:0; pointer-events:none;
+                  background-image:radial-gradient(rgba(122,146,200,.16) 1px, transparent 1.4px);
+                  background-size:26px 26px;
+                  -webkit-mask-image:radial-gradient(70% 70% at 50% 30%, #000 30%, transparent 100%);
+                  mask-image:radial-gradient(70% 70% at 50% 30%, #000 30%, transparent 100%); }
+  .hero2 .glow { animation:kxDrift 16s ease-in-out infinite; }
+  .hero2 .g2 { animation-delay:-8s; }
+  .hero2 .g3 { width:340px; height:340px; background:#b16bff; bottom:-160px; left:36%;
+               animation-delay:-4s; }
+  @keyframes kxDrift { 0%,100% { transform:translate(0,0); } 50% { transform:translate(26px,18px); } }
+  .grad { background-size:200% auto; animation:kxGrad 5s ease-in-out infinite alternate; }
+  @keyframes kxGrad { to { background-position:100% center; } }
   .hero2 .wrap { max-width:1120px; margin:0 auto; display:grid; position:relative;
                  grid-template-columns:1.05fr .95fr; gap:48px; align-items:center; }
   @media(max-width:960px){ .hero2 .wrap { grid-template-columns:1fr; gap:30px; } }
   .hero2 h1 { text-align:left; }
   .hero2 .sub { margin:0 0 22px; max-width:none; }
   .ticks { list-style:none; margin:0 0 24px; padding:0; }
-  .ticks li { margin-bottom:10px; color:#c7cede; font-size:15px; }
-  .ticks li:before { content:'\2713'; color:var(--ok); font-weight:800; margin-right:10px; }
+  .ticks li { display:flex; align-items:center; gap:12px; margin-bottom:12px;
+              color:#c7cede; font-size:15px; }
+  .ticks li:before { content:'\2713'; flex:0 0 22px; width:22px; height:22px; border-radius:50%;
+                     background:linear-gradient(135deg,#2fbf71,#1d9e55); color:#fff;
+                     font-size:12px; font-weight:800; line-height:22px; text-align:center;
+                     box-shadow:0 0 14px rgba(47,191,113,.4); }
   .techs { display:flex; gap:8px; flex-wrap:wrap; }
   .techs span { font-size:12px; font-weight:700; letter-spacing:.05em; color:var(--muted);
                 border:1px solid var(--line); border-radius:999px; padding:5px 12px;
-                background:rgba(20,27,43,.6); }
-  .checkwrap { padding:1px; border-radius:20px;
-               background:linear-gradient(135deg,rgba(77,141,255,.65),rgba(122,92,255,.35) 45%,rgba(42,51,71,.6)); }
+                background:rgba(20,27,43,.6);
+                transition:transform .2s ease, border-color .2s ease, color .2s ease,
+                           background .2s ease; }
+  .techs span:hover { transform:translateY(-2px); border-color:var(--brand); color:#fff;
+                      background:rgba(77,141,255,.14); }
+  .checkwrap { padding:1px; border-radius:20px; position:relative;
+               background:linear-gradient(135deg,rgba(77,141,255,.65),rgba(122,92,255,.35) 45%,rgba(42,51,71,.6));
+               box-shadow:0 34px 80px rgba(31,66,150,.35);
+               animation:kxBob 7s ease-in-out infinite; }
+  @keyframes kxBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
   .checkwrap .checker { margin:0; max-width:none; border:0; border-radius:19px; background:#10182a;
                         padding:26px 26px 16px; }
   .checkwrap .badge { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.1em;
                       text-transform:uppercase; color:#7fdcaa; background:rgba(47,191,113,.12);
                       border:1px solid rgba(47,191,113,.35); border-radius:999px; padding:4px 11px;
-                      margin-bottom:12px; }
+                      margin-bottom:12px; animation:kxPulse 2.6s ease-out infinite; }
+  @keyframes kxPulse { 0% { box-shadow:0 0 0 0 rgba(47,191,113,.35); }
+                       70%,100% { box-shadow:0 0 0 9px rgba(47,191,113,0); } }
   .srow { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
   .srow input { flex:1; min-width:220px; font-size:15.5px; padding:12px 14px; background:#0a0e18;
-                color:var(--text); border:1px solid var(--line); border-radius:10px; outline:none; }
-  .srow input:focus { border-color:var(--brand); }
+                color:var(--text); border:1px solid var(--line); border-radius:10px; outline:none;
+                transition:border-color .2s ease, box-shadow .2s ease; }
+  .srow input:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(77,141,255,.22); }
+  .chints { display:flex; gap:16px; flex-wrap:wrap; margin:12px 2px 4px;
+            color:var(--muted); font-size:11.5px; }
+  .chints span:before { content:'\2713'; color:var(--ok); font-weight:800; margin-right:6px; }
+  @media (prefers-reduced-motion: reduce) {
+    .hero2 .glow, .grad, .checkwrap, .checkwrap .badge, .hiw-step { animation:none; }
+  }
   /* the whole check flow lives in a fixed-size popup — no page reflow */
   .kxm { position:fixed; inset:0; z-index:1000; display:flex; align-items:center;
          justify-content:center; background:rgba(4,6,12,.74); backdrop-filter:blur(4px); }
@@ -369,6 +403,37 @@ function kx_site_render(string $section, string $arg = ''): void
   .kx-footer a:hover { color:#fff; }
   .kx-footer .legal { border-top:1px solid #1c2436; margin-top:40px; padding:18px 0; display:flex;
                       justify-content:space-between; gap:14px; flex-wrap:wrap; font-size:12.5px; }
+  /* ---------- how it works: glowing stepper ---------- */
+  .hiw-track { display:grid; grid-template-columns:repeat(3,1fr); gap:26px; margin-top:44px;
+               position:relative; text-align:left; }
+  .hiw-track:before { content:''; position:absolute; top:-16px; left:14%; right:14%; height:2px;
+               background:linear-gradient(90deg,#4d8dff,#7a5cff 55%,#b16bff); opacity:.5;
+               border-radius:99px; }
+  .hiw-step { position:relative; background:var(--surface); border:1px solid var(--line);
+              border-radius:18px; padding:26px 24px 22px; overflow:hidden;
+              transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+              animation:hiwFade .7s ease both; }
+  .hiw-step:nth-child(2) { animation-delay:.12s; }
+  .hiw-step:nth-child(3) { animation-delay:.24s; }
+  @keyframes hiwFade { from { opacity:0; } to { opacity:1; } }
+  .hiw-step:hover { transform:translateY(-6px); border-color:var(--brand);
+                    box-shadow:0 20px 46px rgba(28,60,140,.3); }
+  .hiw-num { width:44px; height:44px; margin:0 0 16px; border-radius:50%;
+             background:linear-gradient(135deg,#4d8dff,#7a5cff);
+             color:#fff; font-weight:800; font-size:18px; line-height:44px; text-align:center;
+             box-shadow:0 0 24px rgba(77,141,255,.55); }
+  .hiw-ghost { position:absolute; top:-6px; right:10px; font-size:88px; font-weight:900;
+               letter-spacing:-.04em; color:#fff; opacity:.045; pointer-events:none; }
+  .hiw-step h3 { margin:0 0 8px; font-size:18px; }
+  .hiw-step p { margin:0; color:var(--muted); font-size:14px; line-height:1.65; }
+  .hiw-chip { display:inline-block; margin-top:16px; font-size:12px; font-weight:600;
+              color:#9ec2ff; background:#0a0e18; border:1px solid #24314c;
+              border-radius:999px; padding:5px 13px; }
+  @media(max-width:860px){
+    .hiw-track { grid-template-columns:1fr; gap:34px; }
+    .hiw-track:before { top:6%; bottom:6%; left:50%; right:auto; width:2px; height:auto;
+               background:linear-gradient(180deg,#4d8dff,#7a5cff 55%,#b16bff); }
+  }
   /* ---------- legal documents ---------- */
   .lg-head { padding:56px 20px 8px; }
   .lg-nav { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0 0; }
@@ -468,7 +533,7 @@ function kx_site_render(string $section, string $arg = ''): void
 ?>
 
 <section class="hero2">
-  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
   <div class="wrap">
     <div>
       <div class="kicker"><?php echo $isNbn ? 'NBN Internet' : 'Personal'; ?></div>
@@ -498,6 +563,9 @@ function kx_site_render(string $section, string $arg = ''): void
                  autocorrect="off" autocapitalize="off">
           <button class="btn" type="submit">Check address</button>
         </form>
+        <div class="chints">
+          <span>No credit card</span><span>No obligation</span><span>Instant result</span>
+        </div>
       </div>
     </div>
   </div>
@@ -545,16 +613,33 @@ function kx_site_render(string $section, string $arg = ''): void
 <section style="text-align:center">
   <div class="inner">
     <div class="kicker">How it works</div>
-    <h2>Three steps to connected</h2>
-    <div class="cards">
-      <div class="card"><div class="ico">&#128205;</div><h3>1. Check your address</h3>
-        <p>We look up the NBN database and show your connection type, ports, and available speeds.</p></div>
-      <div class="card"><div class="ico">&#128179;</div><h3>2. Pick a plan &amp; order</h3>
-        <p>Only plans your address supports are shown. Switching provider? Your AVC ID transfers
-           the service remotely.</p></div>
-      <div class="card"><div class="ico">&#128640;</div><h3>3. Get online</h3>
-        <p>We lodge the order the moment payment clears and keep you posted &mdash; including
-           self-serve appointment booking if a technician is needed.</p></div>
+    <h2>Address to online in <span class="grad">three moves</span></h2>
+    <p class="sub">No paperwork, no phone queues, no "please hold" &mdash; the whole thing happens right here.</p>
+    <div class="hiw-track">
+      <div class="hiw-step">
+        <div class="hiw-ghost">01</div>
+        <div class="hiw-num">1</div>
+        <h3>Punch in your address</h3>
+        <p>We query the NBN database live and show exactly what your place can do &mdash;
+           connection type, ports, and the fastest speed your line supports.</p>
+        <div class="hiw-chip">&#9201;&#65038; takes about 30 seconds</div>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-ghost">02</div>
+        <div class="hiw-num">2</div>
+        <h3>Pick your speed</h3>
+        <p>Only plans your address can actually deliver are shown &mdash; no bait, no guesswork.
+           Already connected? Switching to us happens remotely, usually within a day.</p>
+        <div class="hiw-chip">&#128275;&#65038; no lock-in, ever</div>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-ghost">03</div>
+        <div class="hiw-num">3</div>
+        <h3>We handle the rest</h3>
+        <p>Your order is lodged the second payment clears. Track every step in your portal,
+           book the technician yourself if one's needed, and we'll email the moment you're live.</p>
+        <div class="hiw-chip">&#9889;&#65038; transfers often connect same-day</div>
+      </div>
     </div>
   </div>
 </section>
