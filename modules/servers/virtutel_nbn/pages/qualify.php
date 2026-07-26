@@ -482,6 +482,13 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         if (churnToggle) { churnToggle.parentNode.style.display = 'none'; }
         return box;
       }
+      // Choosing a fresh connection path hides the transfer box (and brings
+      // back its collapsed link when one exists).
+      function collapseChurn() {
+        var box = out.querySelector('.churn');
+        if (box) { box.style.display = 'none'; box.classList.remove('attention'); }
+        if (churnToggle) { churnToggle.parentNode.style.display = ''; }
+      }
       if (churnToggle) {
         churnToggle.addEventListener('click', function () {
           var box = expandChurn();
@@ -512,6 +519,7 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
             modeAuto.classList.add('active'); modeManual.classList.remove('active');
             diagram.style.display = 'none';
             clearSelection();
+            collapseChurn();
             applyAutoPort();
           });
         }
@@ -520,6 +528,7 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
           btn.addEventListener('click', function () {
             if (btn.getAttribute('data-free') === '1') {
               clearSelection();
+              collapseChurn();
               btn.classList.add('selected');
               var tileLabel = (btn.firstChild.textContent || btn.textContent || '').trim();
               updatePortParams(btn.getAttribute('data-cpi') === '1'
