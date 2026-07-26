@@ -21,6 +21,7 @@ unzip -oq "$ZIP" -d "$DOCROOT"
 echo "==> Fixing ownership and permissions"
 PATHS=(
   "$DOCROOT/modules/servers/virtutel_nbn"
+  "$DOCROOT/modules/servers/virtutel_phone"
   "$DOCROOT/modules/addons/virtutel_nbn_admin"
   "$DOCROOT/templates/korvix-dark"
   # marketing site + legal page stubs (top-level docroot dirs)

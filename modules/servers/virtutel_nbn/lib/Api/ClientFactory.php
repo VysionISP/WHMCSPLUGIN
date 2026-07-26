@@ -38,7 +38,7 @@ class ClientFactory
             ->where('id', $whmcsServiceId)->value('server') ?? 0);
 
         $query = Capsule::table('tblservers')
-            ->where('type', 'virtutel_nbn')
+            ->whereIn('type', ['virtutel_nbn', 'virtutel_phone'])
             ->where('disabled', 0);
         $server = $serverId > 0
             ? (Capsule::table('tblservers')->where('id', $serverId)->first()
