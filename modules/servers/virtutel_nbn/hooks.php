@@ -757,7 +757,10 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . "for(var j=0;j<cs.length;j++){var ct=(cs[j].textContent||'').replace(/\\s+/g,' ').trim();"
         . "if(ct.length<=4&&!cs[j].closest('.kx-topbar')){cart=cs[j];break;}}}"
         . "var wrap=document.createElement('span');wrap.className='kx-bellwrap';"
-        . "if(cart){cart.parentElement.insertBefore(wrap,cart);}"
+        . "if(cart){cart.parentElement.insertBefore(wrap,cart);"
+        // Lay bell and cart out side by side, whatever the container was.
+        . "var p=cart.parentElement;p.style.display='flex';p.style.alignItems='center';"
+        . "p.style.justifyContent='flex-end';p.style.gap='10px';}"
         . "else{var tbr=document.querySelector('.kx-topbar .r');"
         . "if(tbr){tbr.insertBefore(wrap,tbr.firstChild);}else{return;}}"
         . "btn.className='kx-bell';"
