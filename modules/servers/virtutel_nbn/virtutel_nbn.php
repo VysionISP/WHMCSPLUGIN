@@ -363,11 +363,13 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                     . htmlspecialchars($label) . '</option>';
             }
             $fields['Run Diagnostic Test'] =
-                '<select name="vt_test_type">' . $options . '</select>'
-                . '<br><small>Select a test and click Save Changes to queue it — results arrive '
-                . 'via callback and show below.'
+                '<select name="vt_test_type" id="vtTestSel">' . $options . '</select> '
+                . '<button type="button" class="btn btn-default btn-sm" id="vtRunTest">Run Test</button>'
+                . '<br><small>Runs live — a progress overlay shows until NBN returns the result '
+                . '(history below).'
                 . ($testMsg !== '' ? ' <strong>' . htmlspecialchars($testMsg) . '</strong>' : '')
-                . '</small>';
+                . '</small>'
+                . virtutel_nbn_test_overlay_js($serviceId);
 
             $tests = json_decode((string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
                 'tests_' . $serviceId,
@@ -497,6 +499,79 @@ function virtutel_nbn_render_health(array $r): string
 }
 
 /**
+ * Run Test button behaviour: queue via the addon AJAX endpoint, lock the
+ * screen with a progress overlay, poll until the callback delivers the
+ * result, then render it in place.
+ */
+function virtutel_nbn_test_overlay_js(int $serviceId): string
+{
+    $sid = (int) $serviceId;
+
+    return <<<HTML
+<script>
+(function(){
+  var btn=document.getElementById('vtRunTest');
+  if(!btn||btn.dataset.kxBound){return;}
+  btn.dataset.kxBound='1';
+  var base='addonmodules.php?module=virtutel_nbn_admin&serviceid={$sid}';
+  btn.addEventListener('click',function(){
+    var type=document.getElementById('vtTestSel').value;
+    if(!type){alert('Choose a diagnostic test first.');return;}
+    var ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;background:rgba(10,14,24,.7);z-index:99999;'
+      +'display:flex;align-items:center;justify-content:center';
+    ov.innerHTML='<div style="background:#fff;padding:26px 34px;border-radius:10px;text-align:center;'
+      +'max-width:560px;width:92%;max-height:80vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)">'
+      +'<div id="vtOvSpin" style="width:38px;height:38px;border:4px solid #dde3ee;'
+      +'border-top-color:#1a5fd0;border-radius:50%;margin:0 auto 14px;animation:vtspin 1s linear infinite"></div>'
+      +'<style>@keyframes vtspin{to{transform:rotate(360deg)}}</style>'
+      +'<div id="vtOvMsg" style="font-weight:600;color:#222">Queuing '+type+'&hellip;</div>'
+      +'<div id="vtOvSub" style="color:#667;font-size:12px;margin-top:6px">Results come back from NBN '
+      +'&mdash; usually under a couple of minutes.</div>'
+      +'<button type="button" id="vtOvClose" class="btn btn-default btn-sm" style="margin-top:14px">'
+      +'Run in background</button></div>';
+    document.body.appendChild(ov);
+    var closed=false;
+    function shut(){closed=true;ov.remove();}
+    document.getElementById('vtOvClose').addEventListener('click',shut);
+    function fail(msg){
+      document.getElementById('vtOvSpin').style.display='none';
+      document.getElementById('vtOvMsg').textContent=msg;
+      document.getElementById('vtOvClose').textContent='Close';
+    }
+    fetch(base+'&kxajax=run_test&testtype='+encodeURIComponent(type),{credentials:'same-origin'})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        if(!j.ok){fail('Failed: '+(j.error||'unknown error'));return;}
+        document.getElementById('vtOvMsg').textContent='Test '+j.id+' running…';
+        var tries=0;
+        (function poll(){
+          if(closed){return;}
+          if(++tries>60){fail('Still running — the result will appear in Recent Diagnostics.');return;}
+          fetch(base+'&kxajax=test_status&testid='+encodeURIComponent(j.id),{credentials:'same-origin'})
+            .then(function(r){return r.json();})
+            .then(function(s){
+              if(closed){return;}
+              if(s.done){
+                document.getElementById('vtOvSpin').style.display='none';
+                document.getElementById('vtOvMsg').innerHTML=s.html;
+                document.getElementById('vtOvSub').textContent='';
+                var c=document.getElementById('vtOvClose');
+                c.textContent='Close';
+                c.addEventListener('click',function(){location.reload();});
+              }else{setTimeout(poll,3000);}
+            })
+            .catch(function(){setTimeout(poll,4000);});
+        })();
+      })
+      .catch(function(){fail('Request failed — check the addon module is active.');});
+  });
+})();
+</script>
+HTML;
+}
+
+/**
  * Diagnostic tests by NBN technology (testType => label). The API's
  * serviceType is derived separately; unknown technologies get the full
  * catalogue so nothing is unreachable.
@@ -549,55 +624,14 @@ function virtutel_nbn_test_catalogue(string $subType): array
     return $all;
 }
 
-/** Maps the stored technology subtype to the API serviceType base. */
-function virtutel_nbn_service_type(string $subType): string
-{
-    return match (strtoupper(trim($subType))) {
-        'FTTP' => 'NFAS',
-        'HFC' => 'NHAS',
-        'FW', 'FIXED WIRELESS' => 'NWAS',
-        default => 'NCAS', // FTTN / FTTB / FTTC copper family
-    };
-}
-
 /** Renders the recent diagnostics list with per-test results. */
 function virtutel_nbn_render_tests(array $tests): string
 {
-    $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
     $html = '';
     foreach ($tests as $test) {
-        $status = (string) ($test['status'] ?? '?');
-        $col = match ($status) {
-            'TestCompleted' => '#27ae60',
-            'TestCancelled', 'TestRejected' => '#c0392b',
-            default => '#e67e22',
-        };
-        $html .= '<div style="border-left:4px solid ' . $col . ';background:#f6f8fb;'
-            . 'padding:6px 12px;margin-bottom:8px;border-radius:0 4px 4px 0;font-size:12.5px">'
-            . '<strong>' . $e($test['type'] ?? '?') . '</strong> &mdash; ' . $e($status)
-            . ' <span style="color:#889">(' . $e($test['id'] ?? '')
-            . (isset($test['at']) ? ', ' . date('Y-m-d H:i', (int) $test['at']) : '') . ')</span>';
-        if (!empty($test['results'])) {
-            $pretty = (string) json_encode($test['results'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-            $flat = [];
-            foreach ((array) $test['results'] as $result) {
-                foreach ((array) $result as $key => $value) {
-                    if (is_scalar($value) && (string) $value !== '') {
-                        $flat[] = '<span style="color:#667">' . $e($key) . ':</span> <strong>'
-                            . $e($value) . '</strong>';
-                    }
-                }
-            }
-            if ($flat !== []) {
-                $html .= '<br>' . implode(' &middot; ', array_slice($flat, 0, 10));
-            }
-            $html .= '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:11.5px;'
-                . 'color:#667">Full result</summary><pre style="max-height:200px;overflow:auto;'
-                . 'font-size:11px;background:#fff;border:1px solid #dde3ee;padding:6px;'
-                . 'border-radius:4px">' . $e(substr($pretty, 0, 8000)) . '</pre></details>';
-        }
-        $html .= '</div>';
+        $html .= \WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::renderOne($test);
     }
+
     return '<div style="max-height:340px;overflow:auto;margin-top:4px">' . $html . '</div>';
 }
 
@@ -660,64 +694,13 @@ function virtutel_nbn_handle_test_request(int $serviceId): void
 
     try {
         Migrations::ensure();
-        $row = WHMCS\Database\Capsule::table('mod_virtutel_services')
-            ->where('whmcs_service_id', $serviceId)
-            ->first();
-        if (!$row || (string) ($row->avc_id ?? '') === '') {
-            \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
-                'testmsg_' . $serviceId,
-                'Not linked to a Virtutel service with an AVC — link it first.'
-            );
-            return;
-        }
-
-        $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
-        $response = $client->request('POST', '/service-tests', [
-            'action' => 'RequestServiceTest',
-            'json' => [
-                'serviceType' => virtutel_nbn_service_type((string) ($row->technology_type ?? '')),
-                'avcId' => (string) $row->avc_id,
-                'testType' => $testType,
-            ],
-        ]);
-
-        $testId = strtoupper((string) $response->get('id', ''));
-        if ($testId === '') {
-            \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
-                'testmsg_' . $serviceId,
-                'Test rejected: ' . ($response->vtErrorDesc() ?: $response->vtShortError() ?: 'unknown error')
-            );
-            return;
-        }
-
-        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set('svctest_' . $testId, (string) $serviceId);
-
-        $tests = json_decode((string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
-            'tests_' . $serviceId,
-            ''
-        ) ?? ''), true);
-        $tests = is_array($tests) ? $tests : [];
-        array_unshift($tests, [
-            'id' => $testId,
-            'type' => $testType,
-            'status' => 'Requested',
-            'at' => time(),
-        ]);
-        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
-            'tests_' . $serviceId,
-            (string) json_encode(array_slice($tests, 0, 10))
-        );
+        $result = \WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics::queue($serviceId, $testType);
         \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
             'testmsg_' . $serviceId,
-            'Test ' . $testId . ' (' . $testType . ') queued — results arrive via callback.'
+            $result['ok']
+                ? 'Test ' . $result['id'] . ' (' . $testType . ') queued — results arrive via callback.'
+                : 'Test rejected: ' . ($result['error'] ?? 'unknown error')
         );
-        logActivity(sprintf(
-            'Virtutel NBN: diagnostic test %s (%s) requested for service #%d (%s)',
-            $testId,
-            $testType,
-            $serviceId,
-            (string) $row->avc_id
-        ));
     } catch (\Throwable $e) {
         \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
             'testmsg_' . $serviceId,
