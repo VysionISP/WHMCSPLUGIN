@@ -123,6 +123,9 @@ function kx_site_render(string $section): void
     $title = $titles[$section] ?? 'Korvix';
 
     header('Content-Type: text/html; charset=utf-8');
+    // These pages change with every plugin release — never let the
+    // browser serve a stale copy.
+    header('Cache-Control: no-store, max-age=0');
     ?>
 <!doctype html>
 <html lang="en">
