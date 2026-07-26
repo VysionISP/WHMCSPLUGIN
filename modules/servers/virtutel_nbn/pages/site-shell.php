@@ -532,7 +532,8 @@ function kx_site_render(string $section, string $arg = ''): void
           <li>BYO router (IPoE)</li>
         </ul>
         <a class="btn<?php echo $i === $featured ? '' : ' ghost'; ?>" href="#check"
-           onclick="kxOpenCheck();return false">Check availability</a>
+           onclick="kxOpenCheck('',{n:<?php echo htmlspecialchars(json_encode((string) $name), ENT_QUOTES); ?>,
+           d:<?php echo (int) $down; ?>});return false">Check availability</a>
       </div>
       <?php } ?>
     </div>
@@ -567,13 +568,17 @@ function kx_site_render(string $section, string $arg = ''): void
 </section>
 
 <script>
-function kxOpenCheck(a){
+function kxOpenCheck(a,plan){
   a=(a||'').trim();
+  // plan = {n:name, d:down} when opened from a plan card: the verdict
+  // inside the popup answers for THAT plan specifically.
+  var planQ='';
+  if(plan&&plan.n){planQ='&vt_plan='+encodeURIComponent(plan.n)+'&vt_down='+(plan.d||0);}
   var m=document.createElement('div');m.className='kxm';
   m.innerHTML='<div class="panel"><div class="head"><span>Check your address</span>'
     +'<button type="button" aria-label="Close">&times;</button></div>'
     +'<iframe src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark&compact=1'
-    +(a?'&q='+encodeURIComponent(a):'')+'" title="NBN address check"></iframe></div>';
+    +planQ+(a?'&q='+encodeURIComponent(a):'')+'" title="NBN address check"></iframe></div>';
   document.body.appendChild(m);
   document.body.style.overflow='hidden';
   // Popup hugs its content: track the embed's body height (shrinks too,

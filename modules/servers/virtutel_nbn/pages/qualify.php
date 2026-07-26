@@ -346,29 +346,87 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
       if (!res.ok) { return fail(res.body.error || 'Check failed.'); }
       var q = res.body;
 
-      // Compact mode (landing-page hero): just the verdict + a View
-      // Plans button into the onboarding page — no ports, no plans here.
+      // Compact mode (landing-page hero / plan-card popup): just the
+      // verdict + a View Plans button into the onboarding page. When the
+      // popup was opened from a plan card (vt_plan/vt_down params), the
+      // verdict answers for THAT plan: confirmed with alternatives, or
+      // "not at your address, but here's what is".
       if (COMPACT) {
         var ok = q.readiness && q.readiness.code !== 'not_available';
         var go = '/personal/nbn/signup/?vt_locid=' + encodeURIComponent(locId)
           + '&vt_addr=' + encodeURIComponent(label);
+
+        var selName = (PARAMS.get('vt_plan') || '').trim();
+        var selDown = parseInt(PARAMS.get('vt_down') || '0', 10) || 0;
+        var avail = q.plans || [];
+        var sel = null;
+        avail.forEach(function (p) {
+          if (!sel && selName && String(p.name).toLowerCase() === selName.toLowerCase()) { sel = p; }
+        });
+        if (!sel && selDown) {
+          avail.forEach(function (p) { if (!sel && p.down === selDown) { sel = p; } });
+        }
+
+        // One row per plan: name + tier left, price right, whole row orders.
+        function planRows(list) {
+          return '<div style="margin:14px auto 0;max-width:420px;text-align:left">'
+            + list.map(function (p) {
+              return '<a href="' + esc(p.orderUrl) + '" style="display:flex;justify-content:space-between;'
+                + 'align-items:center;gap:12px;border:1px solid var(--line);border-radius:10px;'
+                + 'padding:10px 14px;margin-top:8px;text-decoration:none;color:var(--ink)">'
+                + '<span><strong>' + esc(p.name) + '</strong>'
+                + '<span style="display:block;color:var(--muted);font-size:12.5px">' + esc(p.speedLabel) + '</span></span>'
+                + '<strong style="white-space:nowrap">' + esc(p.price) + '</strong></a>';
+            }).join('') + '</div>';
+        }
+
+        var head, body;
+        if (!ok) {
+          head = 'We can&rsquo;t connect this address just yet';
+          body = '<p class="desc" style="margin:10px 0 0">' + esc(q.readiness.description) + '</p>'
+            + '<div style="margin:20px 0 0"><a class="btn" style="display:inline-block;'
+            + 'text-decoration:none;padding:13px 34px;font-size:16px" href="/contact.php">Contact us</a></div>';
+        } else if ((selName || selDown) && avail.length && sel) {
+          // The plan they clicked is supported here.
+          var others = avail.filter(function (p) { return p !== sel; });
+          head = 'Good news &mdash; we can connect you on ' + esc(sel.name) + '!';
+          body = '<p class="desc" style="margin:10px 0 0">' + esc(q.technology)
+            + ' is available at your place and supports the plan you picked.</p>'
+            + '<div style="margin:18px 0 0"><a class="btn" style="display:inline-block;'
+            + 'text-decoration:none;padding:13px 34px;font-size:16px" href="' + esc(sel.orderUrl)
+            + '">Get ' + esc(sel.name) + ' &mdash; ' + esc(sel.price) + ' &rarr;</a></div>'
+            + (others.length
+              ? '<p class="desc" style="margin:22px 0 0">We can also offer you:</p>' + planRows(others)
+              : '');
+        } else if ((selName || selDown) && avail.length && !sel) {
+          // Qualified, but not for the tier they clicked.
+          head = 'Sorry &mdash; ' + esc(selName || selDown + ' Mbps')
+            + ' isn&rsquo;t available at your address';
+          body = '<p class="desc" style="margin:10px 0 0">Your ' + esc(q.technology)
+            + ' connection can&rsquo;t reach that speed tier, but we can offer these plans:</p>'
+            + planRows(avail);
+        } else {
+          // Generic verdict (hero checker, or no orderable plan list —
+          // e.g. an active service that goes through transfer validation).
+          head = 'Good news &mdash; we can service your address!';
+          body = '<p class="desc" style="margin:10px 0 0">' + esc(q.technology)
+            + (q.readiness.code === 'existing_service'
+              ? ' &mdash; there&rsquo;s already an active service here, and switching to us happens remotely (no technician visit).'
+              : ' is available at your place.') + '</p>'
+            + '<div style="margin:20px 0 0"><a class="btn" style="display:inline-block;'
+            + 'text-decoration:none;padding:13px 34px;font-size:16px" href="' + esc(go)
+            + '">View plans for my address &rarr;</a></div>';
+        }
+
         show('<div class="card" style="text-align:center;padding:28px 22px 20px">'
           + '<span class="status ' + esc(q.readiness.code) + '">' + esc(q.readiness.label) + '</span>'
-          + (ok
-            ? '<h3 style="margin:16px 0 4px;font-size:21px">Good news &mdash; we can service your address!</h3>'
-            : '<h3 style="margin:16px 0 4px;font-size:21px">We can&rsquo;t connect this address just yet</h3>')
+          + '<h3 style="margin:16px 0 4px;font-size:21px">' + head + '</h3>'
           + '<div style="color:var(--muted,#667);font-size:13.5px">' + esc(label) + '</div>'
-          + (ok
-            ? '<p class="desc" style="margin:10px 0 0">' + esc(q.technology)
-              + (q.readiness.code === 'existing_service'
-                ? ' &mdash; there&rsquo;s already an active service here, and switching to us happens remotely (no technician visit).'
-                : ' is available at your place.') + '</p>'
-              + '<div style="margin:20px 0 0"><a class="btn" style="display:inline-block;'
-              + 'text-decoration:none;padding:13px 34px;font-size:16px" href="' + esc(go)
-              + '">View plans for my address &rarr;</a></div>'
-            : '<p class="desc" style="margin:10px 0 0">' + esc(q.readiness.description) + '</p>'
-              + '<div style="margin:20px 0 0"><a class="btn" style="display:inline-block;'
-              + 'text-decoration:none;padding:13px 34px;font-size:16px" href="/contact.php">Contact us</a></div>')
+          + body
+          + (ok && (selName || selDown)
+            ? '<div style="margin-top:14px"><a href="' + esc(go)
+              + '" style="font-size:13px">View all plans for my address &rarr;</a></div>'
+            : '')
           + '<div style="margin-top:6px"><button type="button" class="again" '
           + 'onclick="vtReset()">Check a different address</button></div>'
           + '</div>');
