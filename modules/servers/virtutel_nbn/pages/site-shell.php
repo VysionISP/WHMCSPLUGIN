@@ -251,12 +251,27 @@ function kx_site_render(string $section): void
   .pac-matched { color:#4d8dff; }
   .pac-icon { filter:invert(.6); }
   .pac-logo:after { filter:grayscale(1) invert(.8); }
-  /* pricing row */
-  .pgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:16px;
-           margin-top:34px; align-items:stretch; }
+  /* pricing slider: one row, snap-scrolled, arrows on desktop */
+  .pslider { position:relative; margin-top:26px; }
+  .pgrid { display:flex; gap:16px; overflow-x:auto; scroll-snap-type:x mandatory;
+           padding:24px 6px 18px; align-items:stretch;
+           scrollbar-width:thin; scrollbar-color:#2a3347 transparent; }
+  .pgrid::-webkit-scrollbar { height:8px; }
+  .pgrid::-webkit-scrollbar-thumb { background:#2a3347; border-radius:99px; }
+  .pgrid::-webkit-scrollbar-track { background:transparent; }
+  .pnav { position:absolute; top:50%; transform:translateY(-50%); z-index:5; width:44px; height:44px;
+          border-radius:50%; border:1px solid var(--line); background:rgba(16,24,42,.92);
+          color:#e6e9f2; font-size:19px; cursor:pointer; display:flex; align-items:center;
+          justify-content:center; box-shadow:0 8px 26px rgba(0,0,0,.4); }
+  .pnav:hover { border-color:var(--brand); color:#fff; }
+  .pnav.prev { left:-16px; }
+  .pnav.next { right:-16px; }
+  @media(max-width:700px){ .pnav { display:none; } }
   .pcard { background:var(--surface); border:1px solid var(--line); border-radius:18px;
            padding:28px 22px 24px; display:flex; flex-direction:column; align-items:center;
-           position:relative; transition:transform .15s,border-color .15s; }
+           position:relative; transition:transform .15s,border-color .15s;
+           flex:0 0 256px; scroll-snap-align:center; }
+  @media(max-width:700px){ .pcard { flex-basis:78vw; } }
   .pcard:hover { transform:translateY(-4px); border-color:var(--brand); }
   .pcard .nm { font-weight:800; font-size:17px; }
   .pcard .sp { color:var(--muted); font-size:13px; margin:4px 0 12px; }
@@ -400,6 +415,9 @@ function kx_site_render(string $section): void
     <h2>Simple monthly pricing</h2>
     <p class="sub">Month-to-month, unlimited data. Your address decides which tiers are available
       &mdash; check it above and order the one that fits.</p>
+    <div class="pslider">
+    <button class="pnav prev" type="button" aria-label="Previous plans">&larr;</button>
+    <button class="pnav next" type="button" aria-label="More plans">&rarr;</button>
     <div class="pgrid">
       <?php foreach ($plans as $i => [$name, $price, $down, $up]) {
           $pct = $down !== '' ? max(14, (int) round(sqrt((int) $down) / sqrt($maxDown) * 100)) : 50;
@@ -422,6 +440,7 @@ function kx_site_render(string $section): void
            onclick="kxOpenCheck();return false">Check availability</a>
       </div>
       <?php } ?>
+    </div>
     </div>
   </div>
 </section>
@@ -488,6 +507,18 @@ function kxOpenCheck(a){
     if(a.length<8){return;}
     kxOpenCheck(a);
   });
+})();
+// Plan slider: arrow paging, and open centred on the featured card.
+(function(){
+  var g=document.querySelector('.pgrid');
+  if(!g){return;}
+  document.querySelectorAll('.pnav').forEach(function(b){
+    b.addEventListener('click',function(){
+      g.scrollBy({left:(b.classList.contains('next')?1:-1)*288,behavior:'smooth'});
+    });
+  });
+  var f=g.querySelector('.pcard.feat');
+  if(f){g.scrollLeft=Math.max(0,f.offsetLeft-(g.clientWidth-f.offsetWidth)/2);}
 })();
 // Google Places on the hero input: picking a suggestion opens the popup
 // immediately with the full formatted address.
