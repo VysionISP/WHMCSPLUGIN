@@ -887,3 +887,51 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         . "var img=h.cloneNode(true);img.removeAttribute('style');img.removeAttribute('width');"
         . "img.removeAttribute('height');slot.replaceWith(img);}});</script>";
 });
+
+/**
+ * Split main nav: logged-in clients keep the stock portal nav (Services,
+ * Billing, Support, Open Ticket); visitors get a marketing nav built live
+ * from the visible product groups (store slug links when present) plus
+ * Contact. Groups whose name contains "addon" are skipped.
+ */
+add_hook('ClientAreaPrimaryNavbar', 1, function ($primaryNavbar) {
+    if (!empty($_SESSION['uid'])) {
+        return;
+    }
+
+    try {
+        foreach (array_keys((array) $primaryNavbar->getChildren()) as $name) {
+            if (strcasecmp((string) $name, 'Home') !== 0) {
+                $primaryNavbar->removeChild($name);
+            }
+        }
+
+        $order = 10;
+        $hasSlug = Capsule::schema()->hasColumn('tblproductgroups', 'slug');
+        $groups = Capsule::table('tblproductgroups')
+            ->where('hidden', 0)->orderBy('order')->get(['id', 'name', 'slug']);
+        foreach ($groups as $g) {
+            $label = (string) $g->name;
+            if (stripos($label, 'addon') !== false) {
+                continue;
+            }
+            $uri = ($hasSlug && (string) ($g->slug ?? '') !== '')
+                ? '/store/' . $g->slug
+                : '/cart.php?gid=' . (int) $g->id;
+            $primaryNavbar->addChild('kxGroup' . (int) $g->id, [
+                'label' => $label,
+                'uri' => $uri,
+                'order' => $order,
+            ]);
+            $order += 10;
+        }
+
+        $primaryNavbar->addChild('kxContact', [
+            'label' => 'Contact',
+            'uri' => '/contact.php',
+            'order' => $order,
+        ]);
+    } catch (\Throwable $e) {
+        // Any failure leaves the stock nav in place.
+    }
+});
