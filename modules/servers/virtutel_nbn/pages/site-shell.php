@@ -80,12 +80,12 @@ function kx_site_render(string $section): void
     $groups = kx_site_groups();
 
     $sections = [
-        'residential' => ['Residential', '/residental/'],
+        'residential' => ['Personal', '/personal/'],
         'business' => ['Business', '/business/'],
     ];
 
     $titles = [
-        'residential' => 'Residential NBN — Korvix',
+        'residential' => 'Personal NBN — Korvix',
         'business' => 'Business Internet & Services — Korvix',
     ];
     $title = $titles[$section] ?? 'Korvix';
@@ -107,6 +107,11 @@ function kx_site_render(string $section): void
   a { color:var(--brand); text-decoration:none; }
   .inner { max-width:1080px; margin:0 auto; padding:0 20px; }
   /* chrome */
+  .kx-switch { background:#04060c; font-size:12.5px; }
+  .kx-switch .in { max-width:1200px; margin:0 auto; padding:0 20px; display:flex; gap:2px; }
+  .kx-switch a { color:#98a2b8; font-weight:600; padding:8px 16px; display:inline-block; }
+  .kx-switch a:hover { color:#e6e9f2; }
+  .kx-switch a.on { color:#fff; background:#0b0f1a; border-top:2px solid var(--brand); }
   .kx-topbar { background:#070a12; border-bottom:1px solid #1c2436; font-size:12.5px; }
   .kx-topbar .in { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between;
                    align-items:center; padding:7px 20px; gap:14px; flex-wrap:wrap; }
@@ -181,6 +186,12 @@ function kx_site_render(string $section): void
 </style>
 </head>
 <body>
+
+<div class="kx-switch"><div class="in">
+  <?php foreach ($sections as $key => [$label, $url]) { ?>
+    <a href="<?php echo $e($url); ?>"<?php echo $key === $section ? ' class="on"' : ''; ?>><?php echo $e($label); ?></a>
+  <?php } ?>
+</div></div>
 
 <div class="kx-topbar"><div class="in">
   <div class="l">

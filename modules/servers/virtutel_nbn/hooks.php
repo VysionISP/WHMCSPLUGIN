@@ -683,7 +683,10 @@ add_hook('ClientAreaHeadOutput', 4, function () {
     }
     $tel = preg_replace('/\D/', '', $phone);
 
-    $bar = '<div class="kx-topbar"><div class="in">'
+    $bar = '<div class="kx-switch"><div class="in">'
+        . '<a href="/personal/">Personal</a><a href="/business/">Business</a>'
+        . '</div></div>'
+        . '<div class="kx-topbar"><div class="in">'
         . '<div class="l">' . $left . '</div>'
         . '<div class="r">'
         . '<a class="ph" href="tel:' . $tel . '">&#9742;&nbsp;' . htmlspecialchars($phone, ENT_QUOTES) . '</a>'
@@ -694,6 +697,12 @@ add_hook('ClientAreaHeadOutput', 4, function () {
     $json = json_encode($bar, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
     return '<style>'
+        . '.kx-switch{background:#04060c;font-size:12.5px;'
+        . 'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}'
+        . '.kx-switch .in{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;gap:2px}'
+        . '.kx-switch a{color:#98a2b8;font-weight:600;padding:7px 16px;display:inline-block;'
+        . 'text-decoration:none;transition:color .15s}'
+        . '.kx-switch a:hover{color:#e6e9f2;text-decoration:none}'
         . '.kx-topbar{background:#070a12;border-bottom:1px solid #1c2436;font-size:12.5px;'
         . 'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}'
         . '.kx-topbar .in{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;'
