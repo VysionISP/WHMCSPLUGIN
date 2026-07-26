@@ -401,6 +401,37 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
 
         $fields = [];
         if ($row) {
+            // Full raw API record (captured at link time): the source of
+            // truth for mapping service types we haven't hardcoded yet
+            // (voice / mobile numbers) and for details we don't column-ise
+            // (POI, VLAN tags). Services linked before raw capture existed
+            // are back-filled with one lookup, then cached.
+            $raw = json_decode((string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
+                'svcraw_' . $serviceId,
+                ''
+            ) ?? ''), true);
+            if ((!is_array($raw) || $raw === []) && (string) ($row->vt_service_id ?? '') !== '') {
+                try {
+                    $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
+                    $svc = \WHMCS\Module\Server\VirtutelNbn\Service\ServiceLinker::lookup(
+                        $client,
+                        (string) $row->vt_service_id
+                    );
+                    if (is_array($svc) && $svc !== []) {
+                        $raw = $svc;
+                        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
+                            'svcraw_' . $serviceId,
+                            (string) json_encode($svc)
+                        );
+                    }
+                } catch (\Throwable $e) {
+                    $raw = null; // tab still renders without it
+                }
+            }
+
+            $poi = is_array($raw) ? trim((string) ($raw['poiId'] ?? '')) : '';
+            $csa = is_array($raw) ? trim((string) ($raw['csaId'] ?? '')) : '';
+
             $fields = [
                 'VT Service ID' => htmlspecialchars((string) ($row->vt_service_id ?? '—')),
                 'AVC ID' => htmlspecialchars((string) ($row->avc_id ?? '—')),
@@ -409,19 +440,14 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                     (string) (($row->service_address ?? '') !== '' ? $row->service_address : '—')
                 ),
                 'Technology' => htmlspecialchars((string) ($row->technology_type ?? '—')),
+                'POI' => htmlspecialchars($poi !== '' ? $poi : '—')
+                    . ($csa !== '' ? ' <small style="color:#667">(CSA ' . htmlspecialchars($csa) . ')</small>' : ''),
                 'Carrier Status' => htmlspecialchars((string) ($row->carrier_status ?? '—')),
                 'Customer Checks Today' => (int) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
                     'ctests_' . $serviceId . '_' . date('Ymd'),
                     '0'
                 ) ?? '0') . ' of 5 <small>(reset with the Reset Daily Test Limit button below)</small>',
             ];
-            // Full raw API record (captured at link time): the source of
-            // truth for mapping service types we haven't hardcoded yet
-            // (voice / mobile numbers).
-            $raw = json_decode((string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
-                'svcraw_' . $serviceId,
-                ''
-            ) ?? ''), true);
             if (is_array($raw) && $raw !== []) {
                 $flat = [];
                 foreach ($raw as $rk => $rv) {
