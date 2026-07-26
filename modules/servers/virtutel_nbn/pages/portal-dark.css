@@ -309,6 +309,29 @@ table tbody tr, table tbody tr.odd, table tbody tr.even, .view-cart .item {
 .view-cart-items .item .cycle { color: var(--kx-muted) !important; }
 .view-cart-items .item .item-price,
 .view-cart-items .item .item-price span { color: var(--kx-text) !important; }
+/* Empty Cart: quiet ghost button, not a glowing pill jammed on the
+   divider — it's a destructive afterthought, not a call to action. */
+#btnEmptyCart,
+button[onclick*="emptyCart"], a[onclick*="emptyCart"],
+.btn-empty-cart {
+  background: transparent !important;
+  background-image: none !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 8px !important;
+  color: var(--kx-muted) !important;
+  font-size: 12.5px !important;
+  padding: 5px 14px !important;
+  margin-top: 12px !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+}
+#btnEmptyCart:hover,
+button[onclick*="emptyCart"]:hover, a[onclick*="emptyCart"]:hover,
+.btn-empty-cart:hover {
+  color: #e2564a !important;
+  border-color: rgba(226, 86, 74, .5) !important;
+  background: rgba(226, 86, 74, .08) !important;
+}
 table tbody tr:nth-of-type(even), table tbody tr.even { background: var(--kx-surface-2) !important; }
 table tbody td, table tbody th { color: var(--kx-text) !important; }
 /* Some templates (standard_cart's viewcart) paint the CELLS white or use

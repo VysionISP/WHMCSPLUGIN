@@ -477,7 +477,7 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         . "document.addEventListener('DOMContentLoaded',function(){run();setTimeout(run,600);});"
         . "})();</script>";
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=20">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=21">'
         . '<meta name="color-scheme" content="dark">'
         . $whitewash;
 });
