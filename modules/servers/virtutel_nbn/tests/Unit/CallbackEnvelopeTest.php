@@ -39,7 +39,8 @@ class CallbackEnvelopeTest extends TestCase
         $this->assertSame('appointment', $make('AppointmentStateChangeNotification')->family());
         $this->assertSame('service', $make('ProductRemoveNotification')->family());
         $this->assertSame('service', $make('ProductAttributeValueChangeNotification')->family());
-        $this->assertSame('other', $make('ServiceHealthStateChangeNotification')->family());
+        $this->assertSame('health', $make('ServiceHealthStateChangeNotification')->family());
+        $this->assertSame('other', $make('OutageNotification')->family());
     }
 
     public function testRejectsMissingUuid(): void
