@@ -345,7 +345,9 @@ HTML;
         $rows[] = ['Connection method', 'Transfer of your existing service (' . $signup['Churn AVC']
             . ') — done remotely, no technician visit'];
     } elseif (!empty($signup['UNI-D Port'])) {
-        $rows[] = ['NBN box port', $signup['UNI-D Port'] . ' (your selection)'];
+        $portName = $signup['Port Label'] ?? $signup['UNI-D Port'];
+        $rows[] = ['NBN box port', $portName
+            . (!empty($signup['Port Auto']) ? ' (auto-selected for you)' : ' (your selection)')];
     } else {
         $rows[] = ['NBN box port', 'Auto-selected for you'];
     }
@@ -461,7 +463,7 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         return '';
     }
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=18">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=19">'
         . '<meta name="color-scheme" content="dark">';
 });
 
@@ -573,5 +575,29 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
         . "if(!mb){return;}mb.insertBefore(f,mb.firstChild);}"
         . "setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;"
         . "if(h>200&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);"
+        . "});</script>";
+});
+
+/**
+ * The order-form sidebar's "Actions / View Cart" panel is dead weight in
+ * the address-first flow — hide it on cart and store pages. Matched by
+ * header text since standard_cart hardcodes the panel markup.
+ */
+add_hook('ClientAreaHeadOutput', 8, function ($vars) {
+    $isCart = (($vars['filename'] ?? '') === 'cart');
+    $isStore = (bool) preg_match('#/store/#', (string) ($_SERVER['REQUEST_URI'] ?? ''));
+    if (!$isCart && !$isStore) {
+        return '';
+    }
+
+    return '<style>[menuitemname="Actions"]{display:none !important}</style>'
+        . "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "var els=document.querySelectorAll('.card-header,.panel-heading,h2,h3,h4,div,span');"
+        . "for(var i=0;i<els.length;i++){var el=els[i];"
+        . "if(el.childElementCount>3){continue;}"
+        . "var t=(el.textContent||'').replace(/\\s+/g,' ').trim().toLowerCase();"
+        . "if(t==='actions'||t==='+ actions'){"
+        . "var box=el.closest('.card,.panel,.sidebar-collapsible,.section')||el.parentElement;"
+        . "if(box){box.style.display='none';break;}}}"
         . "});</script>";
 });

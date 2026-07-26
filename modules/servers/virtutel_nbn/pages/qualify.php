@@ -352,17 +352,35 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
 
       // Port map interactions: green ports select for the order; orange
       // ports steer into the transfer flow; the mode toggle returns to
-      // auto-pick. The chosen port rides along on the order links.
-      function updatePortParams(ntd, port) {
+      // auto-pick. The chosen port rides along on the order links — in
+      // auto mode too, so the cart can name the port we picked.
+      function updatePortParams(ntd, port, label, auto) {
         out.querySelectorAll('.plan a.btn').forEach(function (a) {
           var url = a.getAttribute('href')
-            .replace(/&vt_ntd=[^&]*/g, '').replace(/&vt_port=[^&]*/g, '');
+            .replace(/&vt_ntd=[^&]*/g, '').replace(/&vt_port=[^&]*/g, '')
+            .replace(/&vt_portlabel=[^&]*/g, '').replace(/&vt_auto=[^&]*/g, '');
           if (ntd && port) {
-            url += '&vt_ntd=' + encodeURIComponent(ntd) + '&vt_port=' + encodeURIComponent(port);
+            url += '&vt_ntd=' + encodeURIComponent(ntd) + '&vt_port=' + encodeURIComponent(port)
+              + (label ? '&vt_portlabel=' + encodeURIComponent(label) : '')
+              + (auto ? '&vt_auto=1' : '');
           }
           a.setAttribute('href', url);
         });
       }
+
+      // The port auto-select picks the first free port; ride it on the
+      // order links up front so checkout shows which port it will be.
+      var autoPort = null;
+      (q.portMap || []).some(function (box) {
+        return (box.ports || []).some(function (p) {
+          if (p.free) { autoPort = {ntd: box.ntdId || p.ntdId, port: p.portId, label: p.label}; return true; }
+          return false;
+        });
+      });
+      function applyAutoPort() {
+        if (autoPort) { updatePortParams(autoPort.ntd, autoPort.port, autoPort.label, true); }
+      }
+      applyAutoPort();
 
       // Collapsed transfer box expands on demand.
       var churnToggle = document.getElementById('churnToggle');
@@ -402,6 +420,7 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
             modeAuto.classList.add('active'); modeManual.classList.remove('active');
             diagram.style.display = 'none';
             clearSelection();
+            applyAutoPort();
           });
         }
 
@@ -410,7 +429,8 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
             if (btn.getAttribute('data-free') === '1') {
               clearSelection();
               btn.classList.add('selected');
-              updatePortParams(btn.getAttribute('data-ntd'), btn.getAttribute('data-port'));
+              updatePortParams(btn.getAttribute('data-ntd'), btn.getAttribute('data-port'),
+                (btn.firstChild.textContent || btn.textContent || '').trim(), false);
               if (hint) {
                 hint.innerHTML = 'Your new connection will use <strong>'
                   + esc(btn.firstChild.textContent || btn.textContent) + '</strong>.';

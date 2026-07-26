@@ -34,6 +34,15 @@ class SignupCapture
         if (preg_match('/^NTD[0-9A-Z]{6,20}$/', $ntd) && preg_match('/^[0-9A-Z][0-9A-Z-]{0,19}$/', $port)) {
             $signup['NTD ID'] = $ntd;
             $signup['UNI-D Port'] = $port;
+            // Display-only: the human port name ("UNI-D 1") and whether the
+            // auto-select picked it rather than the customer.
+            $plabel = trim((string) ($get['vt_portlabel'] ?? ''));
+            if (preg_match('/^[0-9A-Za-z][0-9A-Za-z \/-]{0,29}$/', $plabel)) {
+                $signup['Port Label'] = $plabel;
+            }
+            if (($get['vt_auto'] ?? '') === '1') {
+                $signup['Port Auto'] = '1';
+            }
         }
 
         // Display-only extras for the cart card (never written to fields —

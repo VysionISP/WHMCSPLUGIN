@@ -306,6 +306,22 @@ table tbody td, table tbody th {
   background-image: none !important;
   box-shadow: none !important;
 }
+/* ...and the white can sit on the TABLE / tbody / wrapper element itself
+   (standard_cart gives the whole table a white canvas), which shows
+   straight through transparent rows and cells. */
+table, .table, tbody, tfoot,
+.table-responsive, .view-cart-tables, .view-cart-items {
+  background-color: transparent !important;
+}
+/* Template stripe rules like .table-striped>tbody>tr:nth-of-type(odd)
+   carry more specificity than a bare `table tbody tr`, and when both are
+   !important the more specific one wins — outrank them outright. */
+html body table > tbody > tr,
+html body .table-striped > tbody > tr:nth-of-type(odd),
+html body .table-striped > tbody > tr:nth-of-type(even),
+html body .table > tbody > tr {
+  background-color: var(--kx-surface) !important;
+}
 table tbody tr:hover { background: var(--kx-surface-3) !important; }
 table tbody td small, table tbody td .text-muted { color: var(--kx-muted) !important; }
 
