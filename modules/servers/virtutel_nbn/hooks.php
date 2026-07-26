@@ -717,6 +717,9 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         // The theme strip the notifications button came from (not our
         // .kx-topbar). Its Logged-in-as block dies with it.
         . 'div.topbar{display:none !important}'
+        // Breadcrumbs add nothing here — the nav covers it.
+        . '.breadcrumb,.breadcrumbs,ol.breadcrumb,nav[aria-label*="breadcrumb" i]'
+        . '{display:none !important}'
         . '</style>'
         . "<script>document.addEventListener('DOMContentLoaded',function(){"
         . "var d=document.createElement('div');d.innerHTML={$json};"
@@ -774,4 +777,109 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . "if(cont){wrap.appendChild(cont);}"
         . "})();"
         . "});</script>";
+});
+
+/**
+ * Full site footer: logo + blurb + phone, live product categories from
+ * the store, support and account links, legal bar with Terms of Service
+ * (pulled from the WHMCS setting when present). The theme's own footer
+ * is hidden; ours renders via ClientAreaFooterOutput on every page.
+ */
+add_hook('ClientAreaFooterOutput', 5, function ($vars) {
+    $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
+
+    // Product categories, friendly /store/ links when slugs exist.
+    $cats = [];
+    try {
+        $hasSlug = Capsule::schema()->hasColumn('tblproductgroups', 'slug');
+        $groups = Capsule::table('tblproductgroups')
+            ->where('hidden', 0)->orderBy('order')->limit(6)
+            ->get(['id', 'name', 'slug']);
+        foreach ($groups as $g) {
+            $url = ($hasSlug && (string) ($g->slug ?? '') !== '')
+                ? '/store/' . $g->slug
+                : '/cart.php?gid=' . (int) $g->id;
+            $cats[] = [(string) $g->name, $url];
+        }
+    } catch (\Throwable $ex) {
+        $cats = [];
+    }
+
+    $tos = '';
+    try {
+        $tos = (string) (Capsule::table('tblconfiguration')
+            ->whereIn('setting', ['TermsOfServiceURL', 'TermsofServiceURL'])
+            ->value('value') ?? '');
+    } catch (\Throwable $ex) {
+        $tos = '';
+    }
+
+    $support = [
+        ['Knowledgebase', '/knowledgebase.php'],
+        ['Network Status', '/serverstatus.php'],
+        ['Announcements', '/announcements.php'],
+        ['Open a Ticket', '/submitticket.php'],
+        ['Contact Us', '/contact.php'],
+    ];
+    $account = [
+        ['Client Area', '/clientarea.php'],
+        ['Pay an Invoice', '/clientarea.php?action=invoices'],
+        ['Order New Services', '/cart.php'],
+        ['Check NBN Availability', '/index.php#kx-check'],
+    ];
+
+    $col = function (string $title, array $links) use ($e) {
+        $out = '<div class="col"><h4>' . $e($title) . '</h4><ul>';
+        foreach ($links as [$label, $href]) {
+            $out .= '<li><a href="' . $e($href) . '">' . $e($label) . '</a></li>';
+        }
+        return $out . '</ul></div>';
+    };
+
+    $legal = '<a href="' . $e($tos !== '' ? $tos : '/terms') . '">Terms of Service</a>'
+        . '<a href="/privacy">Privacy Policy</a>';
+
+    return '<style>'
+        . 'footer:not(.kx-footer),.footer:not(.kx-footer),#footer:not(.kx-footer)'
+        . '{display:none !important}'
+        . '.kx-footer{background:#070a12;border-top:1px solid #1c2436;margin-top:64px;'
+        . 'color:#98a2b8;font-size:14px;'
+        . "font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}"
+        . '.kx-footer .in{max-width:1200px;margin:0 auto;padding:48px 20px 0}'
+        . '.kx-footer .grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:32px}'
+        . '@media(max-width:860px){.kx-footer .grid{grid-template-columns:1fr 1fr}}'
+        . '@media(max-width:520px){.kx-footer .grid{grid-template-columns:1fr}}'
+        . '.kx-footer .brand img{height:34px;filter:brightness(0) invert(1);margin-bottom:14px}'
+        . '.kx-footer .brand .txtlogo{font-size:26px;font-weight:900;letter-spacing:.02em;'
+        . 'color:#fff;margin-bottom:14px}'
+        . '.kx-footer .brand p{margin:0 0 14px;line-height:1.7;max-width:300px}'
+        . '.kx-footer .brand .ph{color:#e6e9f2;font-weight:700;text-decoration:none;font-size:16px}'
+        . '.kx-footer h4{color:#e6e9f2;font-size:13px;letter-spacing:.1em;text-transform:uppercase;'
+        . 'margin:4px 0 14px;font-weight:700}'
+        . '.kx-footer ul{list-style:none;margin:0;padding:0}'
+        . '.kx-footer li{margin-bottom:9px}'
+        . '.kx-footer a{color:#98a2b8;text-decoration:none;transition:color .15s}'
+        . '.kx-footer a:hover{color:#fff;text-decoration:none}'
+        . '.kx-footer .legal{border-top:1px solid #1c2436;margin-top:40px;padding:18px 0;'
+        . 'display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;'
+        . 'font-size:12.5px}'
+        . '.kx-footer .legal .links{display:flex;gap:20px}'
+        . '</style>'
+        . '<footer class="kx-footer"><div class="in"><div class="grid">'
+        . '<div class="col brand"><div id="kxFooterLogo" class="txtlogo">KORVIX</div>'
+        . '<p>Fast, local NBN and hosted services for Gippsland and beyond &mdash; '
+        . 'no lock-ins, no runaround, real local support.</p>'
+        . '<a class="ph" href="tel:1300881437">&#9742;&nbsp;1300 881 437</a></div>'
+        . ($cats !== [] ? $col('Services', $cats) : '')
+        . $col('Support', $support)
+        . $col('Account', $account)
+        . '</div><div class="legal">'
+        . '<div>&copy; ' . date('Y') . ' Korvix. All rights reserved.</div>'
+        . '<div class="links">' . $legal . '</div>'
+        . '</div></div></footer>'
+        . "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "var h=document.querySelector('header img,nav img,.navbar-brand img,a[href=\"/\"] img');"
+        . "if(h){var slot=document.getElementById('kxFooterLogo');"
+        . "var img=h.cloneNode(true);img.removeAttribute('style');img.removeAttribute('width');"
+        . "img.removeAttribute('height');slot.replaceWith(img);}});</script>";
 });
