@@ -473,6 +473,10 @@ function kx_site_render(string $section, string $arg = ''): void
   .net-node { stroke:#0b0f1a; stroke-width:.6; }
   .net-node.c-b, .net-line { stroke-opacity:.9; }
   .c-b { fill:#4d8dff; } .c-p { fill:#a88cff; } .c-g { fill:#2fbf71; }
+  /* coming-soon sites: hollow nodes, faint dashed static links */
+  .c-s { fill:#0b0f1a; stroke:#5b6879; stroke-width:.7; stroke-dasharray:1 .8; }
+  .net-line.soon { stroke:#5b6879; stroke-opacity:.45; animation:none; stroke-dasharray:1.2 2; }
+  .net-label.soon { fill:#5b6879; }
   .net-ring { fill:none; stroke-width:.7; opacity:.6; animation:kxPing 2.4s ease-out infinite; }
   .net-ring.c-b { stroke:#4d8dff; fill:none; }
   .net-ring.c-p { stroke:#a88cff; fill:none; animation-delay:.5s; }
@@ -735,6 +739,12 @@ function kx_site_render(string $section, string $arg = ''): void
           </g>
           <path class="net-line" d="M78.6,75.8 Q87,68 94.1,64.8"/>
           <path class="net-line" d="M78.6,75.8 Q81.2,77.2 83.8,76.7"/>
+          <path class="net-line soon" d="M94.1,64.8 Q98.5,56 98.6,46.9"/>
+          <path class="net-line soon" d="M78.6,75.8 Q40,72 6.3,59.5"/>
+          <circle class="net-node c-s" cx="98.6" cy="46.9" r="1.8"/>
+          <circle class="net-node c-s" cx="6.3" cy="59.5" r="1.8"/>
+          <text class="net-label soon" x="96.4" y="45" text-anchor="end">BRISBANE &middot; SOON</text>
+          <text class="net-label soon" x="8.4" y="57.6">PERTH &middot; SOON</text>
           <circle class="net-ring c-b" cx="78.6" cy="75.8" r="4"/>
           <circle class="net-node c-b" cx="78.6" cy="75.8" r="2.2"/>
           <circle class="net-ring c-p" cx="94.1" cy="64.8" r="4"/>
@@ -759,6 +769,9 @@ function kx_site_render(string $section, string $arg = ''): void
           <div><strong>Gippsland &mdash; home base</strong>
           <p>Where we live and where support answers from. When you call, you're talking to
              someone on the same network &mdash; probably in the same postcode.</p></div></li>
+        <li><span class="net-dot" style="background:transparent;border:2px dashed #5b6879"></span>
+          <div><strong style="color:#98a2b8">Perth &amp; Brisbane &mdash; coming soon</strong>
+          <p>The next two sites on the roadmap, extending the network national.</p></div></li>
       </ul>
     </div>
   </div>
