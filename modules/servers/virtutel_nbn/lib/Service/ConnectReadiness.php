@@ -50,6 +50,29 @@ class ConnectReadiness
             ];
         }
 
+        // Copper (FTTN/FTTB/FTTC) equivalent: every pair already carries an
+        // active NBN service (NBNServiceStatus "Line In Use") — same story,
+        // this is a provider switch, not a new install.
+        $pairs = (array) ($q['copper_pairs'] ?? []);
+        if ($q['ntds'] === [] && $pairs !== []) {
+            $freePairs = 0;
+            foreach ($pairs as $pair) {
+                if (!preg_match('/in ?use/i', (string) ($pair['status'] ?? ''))) {
+                    $freePairs++;
+                }
+            }
+            if ($freePairs === 0) {
+                return [
+                    'code' => 'existing_service',
+                    'label' => 'Active service at this address',
+                    'description' => 'The line at this address already has an active NBN service. Switching from '
+                        . 'another provider? Your connection transfers to us remotely — no technician visit '
+                        . 'needed. Enter your AVC ID below to get started. (Need an extra, separate line '
+                        . 'instead? Contact us and we\'ll arrange it.)',
+                ];
+            }
+        }
+
         return match (true) {
             // FTTP: NTD on the wall with a free port = plug and play.
             $type === 'nfas' && $class === 3 && $freePorts > 0 => self::connectNow(),

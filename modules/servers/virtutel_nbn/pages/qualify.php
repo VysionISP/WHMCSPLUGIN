@@ -321,7 +321,10 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
             : '<h3 style="margin:16px 0 4px;font-size:21px">We can&rsquo;t connect this address just yet</h3>')
           + '<div style="color:var(--muted,#667);font-size:13.5px">' + esc(label) + '</div>'
           + (ok
-            ? '<p class="desc" style="margin:10px 0 0">' + esc(q.technology) + ' is available at your place.</p>'
+            ? '<p class="desc" style="margin:10px 0 0">' + esc(q.technology)
+              + (q.readiness.code === 'existing_service'
+                ? ' &mdash; there&rsquo;s already an active service here, and switching to us happens remotely (no technician visit).'
+                : ' is available at your place.') + '</p>'
               + '<div style="margin:20px 0 0"><a class="btn" style="display:inline-block;'
               + 'text-decoration:none;padding:13px 34px;font-size:16px" href="' + esc(go)
               + '">View plans for my address &rarr;</a></div>'
