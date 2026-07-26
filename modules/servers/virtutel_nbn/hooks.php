@@ -683,7 +683,10 @@ add_hook('ClientAreaHeadOutput', 4, function () {
     }
     $tel = preg_replace('/\D/', '', $phone);
 
-    $bar = '<div class="kx-switch"><div class="in">'
+    // One wrapper element: the injector inserts d.firstChild, so sibling
+    // top-level divs would lose everything after the first.
+    $bar = '<div class="kx-chrome">'
+        . '<div class="kx-switch"><div class="in">'
         . '<a href="/personal/">Personal</a><a href="/business/">Business</a>'
         . '</div></div>'
         . '<div class="kx-topbar"><div class="in">'
@@ -692,7 +695,7 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . '<a class="ph" href="tel:' . $tel . '">&#9742;&nbsp;' . htmlspecialchars($phone, ENT_QUOTES) . '</a>'
         . '<a class="cp" href="' . htmlspecialchars($portal[1], ENT_QUOTES) . '">'
         . htmlspecialchars($portal[0], ENT_QUOTES) . '</a>'
-        . '</div></div></div>';
+        . '</div></div></div></div>';
 
     $json = json_encode($bar, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
