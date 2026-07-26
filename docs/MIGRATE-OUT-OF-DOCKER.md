@@ -1,5 +1,26 @@
 # Moving WHMCS out of Docker onto the host (Ubuntu/Debian)
 
+## Discovery results for kvx-mel1-server01-whmcs01 (2026-07-26)
+
+- Web container **`whmcs`** → bind mount `/home/korvix/whmcs/whmcs` →
+  `/var/www/html`, published on **127.0.0.1:8080 only** — so a host-level
+  web server (or another proxy) already owns ports 80/443 and proxies to
+  8080. Identify it FIRST (step 0b); the vhost step changes from "create
+  a site" to "repoint the existing site at PHP-FPM".
+- DB container **`whmcs-db`** (mariadb:10.6), `db_host = 'mariadb'`,
+  db/user `whmcs` — dump/import per step 4, then set db_host to
+  `localhost` and ROTATE this password (it has been shared in chat).
+- **`proton-bridge`** container publishes SMTP on **127.0.0.1:1025** —
+  after cutover, WHMCS runs on the host, so its Mail settings must point
+  at `127.0.0.1:1025` (inside Docker it may currently use the container
+  name). Check Configuration → System Settings → Mail after cutover and
+  send a test email. Leave this container RUNNING — it is not part of
+  the migration.
+- Login banner shows `Failed to connect to changelogs.ubuntu.com ...
+  proxy settings` — verify HOST outbound HTTPS before cutting over
+  (step 0c); if the host itself can't reach out, moving off Docker won't
+  fix payment/API calls.
+
 Same server, same public IP, same domains — so the Virtutel firewall
 registration, callback URL, SSL hostnames, and Stripe config all survive
 unchanged. The move is: install the stack on the host, copy files + DB
