@@ -525,41 +525,30 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 ->where('service_id', (int) $row->id)
                 ->orderByDesc('id')->limit(25)->get();
 
-            // Cancel an in-flight order: the API has NO self-serve order
-            // cancel (only appointments can be DELETEd), so this cancels
-            // any booked appointment, flags the order cancel-requested,
-            // and raises a to-do to contact Virtutel — honestly labelled.
-            $inFlightOrders = [];
-            foreach ($orders as $order) {
-                if (in_array((string) $order->whmcs_status, ['pending', 'in_progress', 'action_required'], true)
-                    && (string) ($order->action_required ?? '') !== 'cancel_requested') {
-                    $inFlightOrders[] = $order;
-                }
-            }
-            if ($inFlightOrders !== []) {
-                $cancelSelect = '<select name="vt_cancel_order"><option value="">— select an order —</option>';
-                foreach ($inFlightOrders as $order) {
-                    $cancelSelect .= '<option value="' . htmlspecialchars((string) ($order->vt_order_id ?? '')) . '">'
-                        . htmlspecialchars((string) $order->order_type . ' — '
-                            . (string) ($order->vt_order_id ?? 'no ID yet')
-                            . ' (' . (string) ($order->status ?? 'NEW') . ')')
-                        . '</option>';
-                }
-                $orderMsg = (string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
-                    'ordermsg_' . $serviceId,
-                    ''
-                ) ?? '');
-                $fields['Cancel In-flight Order'] = $cancelSelect . '</select>'
-                    . '<br><small>Virtutel\'s API has no self-serve order cancel: Save Changes cancels any '
-                    . 'booked appointment, marks the order cancel-requested, and raises a to-do to contact '
-                    . 'Virtutel support to withdraw it.'
-                    . ($orderMsg !== '' ? ' <strong>' . htmlspecialchars($orderMsg) . '</strong>' : '')
-                    . '</small>';
-            }
-
             if (count($orders) > 0) {
+                // Cancel button per in-flight row. The API has NO
+                // self-serve order cancel (only appointments DELETE), so
+                // the handler cancels any booked appointment, flags the
+                // order cancel-requested, and raises a contact-Virtutel
+                // to-do. The tab renders inside the service form, so a
+                // named submit button drives the Save handler directly.
+                $hasInFlight = false;
                 $orderRows = '';
                 foreach ($orders as $order) {
+                    $inFlight = in_array((string) $order->whmcs_status, ['pending', 'in_progress', 'action_required'], true);
+                    $cancelRequested = (string) ($order->action_required ?? '') === 'cancel_requested';
+                    $hasInFlight = $hasInFlight || ($inFlight && !$cancelRequested);
+                    $cancelCell = '';
+                    if ($inFlight && !$cancelRequested && (string) ($order->vt_order_id ?? '') !== '') {
+                        $cancelCell = '<button type="submit" name="vt_cancel_order" value="'
+                            . htmlspecialchars((string) $order->vt_order_id) . '" '
+                            . 'class="btn btn-danger btn-xs" onclick="return confirm(\'Cancel '
+                            . htmlspecialchars((string) $order->vt_order_id) . '? This cancels any booked '
+                            . 'appointment, marks the order cancel-requested, and raises a to-do to contact '
+                            . 'Virtutel (their API has no direct order cancel).\')">Cancel</button>';
+                    } elseif ($cancelRequested) {
+                        $cancelCell = '<span style="color:#a3690e;font-size:11px">cancel requested</span>';
+                    }
                     $orderRows .= '<tr>'
                         . '<td style="padding:2px 12px 2px 0">' . htmlspecialchars((string) $order->order_type) . '</td>'
                         . '<td style="padding:2px 12px 2px 0"><code>' . htmlspecialchars((string) ($order->vt_order_id ?? '—')) . '</code></td>'
@@ -567,16 +556,24 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                         . ' <span style="color:#667">(' . htmlspecialchars((string) $order->whmcs_status) . ')</span></td>'
                         . '<td style="padding:2px 12px 2px 0;color:#667">' . htmlspecialchars(substr((string) $order->created_at, 0, 16))
                         . ($order->completed_at ? ' &rarr; ' . htmlspecialchars(substr((string) $order->completed_at, 0, 16)) : '')
-                        . '</td></tr>';
+                        . '</td>'
+                        . '<td style="padding:2px 0">' . $cancelCell . '</td></tr>';
                 }
-                $fields['Order History'] = '<details' . (count($orders) <= 3 ? ' open' : '') . '>'
+                $orderMsg = (string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
+                    'ordermsg_' . $serviceId,
+                    ''
+                ) ?? '');
+                $fields['Order History'] = '<details' . ((count($orders) <= 3 || $hasInFlight) ? ' open' : '') . '>'
                     . '<summary style="cursor:pointer">' . count($orders) . ' order'
                     . (count($orders) === 1 ? '' : 's') . '</summary>'
+                    . ($orderMsg !== ''
+                        ? '<div style="margin:6px 0"><strong>' . htmlspecialchars($orderMsg) . '</strong></div>' : '')
                     . '<table style="font-size:12px;margin-top:6px;text-align:left">'
                     . '<tr style="color:#667"><th style="text-align:left;padding-right:12px">Type</th>'
                     . '<th style="text-align:left;padding-right:12px">VT Order</th>'
                     . '<th style="text-align:left;padding-right:12px">Status</th>'
-                    . '<th style="text-align:left">Lodged &rarr; Completed</th></tr>'
+                    . '<th style="text-align:left;padding-right:12px">Lodged &rarr; Completed</th>'
+                    . '<th></th></tr>'
                     . $orderRows . '</table></details>';
             }
         } else {
