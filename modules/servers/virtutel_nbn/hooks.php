@@ -458,10 +458,27 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
             $gid = 0;
         }
         if ($gid === 0) {
+            // Slugified-name match, tolerating small typos in the stored
+            // slug (e.g. /store/residental-internet vs "Residential
+            // Internet") — but only among groups that actually contain
+            // visible Virtutel NBN products, so a near-miss can never
+            // hijack an unrelated group.
             try {
+                $nbnGids = Capsule::table('tblproducts')
+                    ->where('servertype', 'virtutel_nbn')
+                    ->where('hidden', 0)
+                    ->pluck('gid');
+                $nbnGids = array_map('intval', is_array($nbnGids) ? $nbnGids : $nbnGids->all());
                 foreach (Capsule::table('tblproductgroups')->get(['id', 'name']) as $group) {
                     $nameSlug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower((string) $group->name)), '-');
                     if ($nameSlug === $slug) {
+                        $gid = (int) $group->id;
+                        break;
+                    }
+                    if (in_array((int) $group->id, $nbnGids, true)
+                        && $nameSlug !== ''
+                        && levenshtein($nameSlug, $slug) <= 2
+                    ) {
                         $gid = (int) $group->id;
                         break;
                     }
