@@ -172,6 +172,69 @@ function virtutel_nbn_admin_output(array $vars): void
     $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
     $self = 'addonmodules.php?module=virtutel_nbn_admin';
 
+    // ---------------- Ops dashboard: the fleet at a glance ----------------
+    try {
+        Migrations::ensure();
+
+        $inflight = Capsule::table('mod_virtutel_orders as o')
+            ->join('mod_virtutel_services as s', 's.id', '=', 'o.service_id')
+            ->leftJoin('tblhosting as h', 'h.id', '=', 's.whmcs_service_id')
+            ->whereIn('o.whmcs_status', ['pending', 'in_progress', 'action_required'])
+            ->orderBy('o.created_at')
+            ->limit(50)
+            ->get(['o.order_type', 'o.vt_order_id', 'o.status', 'o.whmcs_status',
+                'o.action_required', 'o.created_at', 's.whmcs_service_id', 's.avc_id', 'h.userid']);
+
+        $lastPoll = (int) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get('order_poll_last_run', '0') ?? '0');
+        $events24h = Capsule::table('mod_virtutel_callback_events')
+            ->where('created_at', '>=', date('Y-m-d H:i:s', time() - 86400))->count();
+        $eventsFailed = Capsule::table('mod_virtutel_callback_events')
+            ->where('created_at', '>=', date('Y-m-d H:i:s', time() - 86400))
+            ->whereNotIn('status', ['processed', 'received'])->count();
+
+        echo '<div style="background:#fff;border:1px solid #d9deea;border-radius:8px;padding:16px 18px;margin-bottom:18px">'
+            . '<h3 style="margin:0 0 4px">Operations</h3>'
+            . '<div style="color:#667;font-size:12.5px;margin-bottom:10px">'
+            . 'Callback poll backstop last ran: '
+            . ($lastPoll > 0 ? $e(date('Y-m-d H:i', $lastPoll)) : '<span style="color:#c0392b">never</span>')
+            . ' &nbsp;·&nbsp; Callbacks last 24h: ' . (int) $events24h
+            . ($eventsFailed > 0
+                ? ' &nbsp;·&nbsp; <span style="color:#c0392b;font-weight:bold">' . (int) $eventsFailed . ' unprocessed</span>'
+                : '')
+            . '</div>';
+
+        if (count($inflight) === 0) {
+            echo '<div style="color:#1d9e55;font-weight:600">No in-flight orders — nothing waiting.</div>';
+        } else {
+            echo '<table class="datatable" width="100%" style="font-size:12.5px">'
+                . '<tr><th align="left">Service</th><th align="left">AVC</th><th align="left">Type</th>'
+                . '<th align="left">VT Order</th><th align="left">Status</th><th align="left">Action</th>'
+                . '<th align="left">Age</th></tr>';
+            foreach ($inflight as $order) {
+                $ageDays = (int) floor((time() - strtotime((string) $order->created_at)) / 86400);
+                $ageColor = $ageDays >= 7 ? '#c0392b' : ($ageDays >= 3 ? '#a3690e' : '#667');
+                $svcUrl = 'clientsservices.php?userid=' . (int) $order->userid . '&id=' . (int) $order->whmcs_service_id;
+                echo '<tr>'
+                    . '<td><a href="' . $e($svcUrl) . '">#' . (int) $order->whmcs_service_id . '</a></td>'
+                    . '<td>' . $e((string) ($order->avc_id ?: '—')) . '</td>'
+                    . '<td>' . $e((string) $order->order_type) . '</td>'
+                    . '<td><code>' . $e((string) ($order->vt_order_id ?: '—')) . '</code></td>'
+                    . '<td>' . $e((string) ($order->status ?: 'NEW'))
+                    . ' <span style="color:#667">(' . $e((string) $order->whmcs_status) . ')</span></td>'
+                    . '<td>' . ((string) ($order->action_required ?? '') !== ''
+                        ? '<span style="color:#a3690e;font-weight:600">' . $e((string) $order->action_required) . '</span>'
+                        : '—') . '</td>'
+                    . '<td style="color:' . $ageColor . ';font-weight:' . ($ageDays >= 3 ? '700' : '400') . '">'
+                    . $ageDays . 'd</td>'
+                    . '</tr>';
+            }
+            echo '</table>';
+        }
+        echo '</div>';
+    } catch (\Throwable $ex) {
+        echo '<div style="color:#c0392b">Ops dashboard error: ' . $e($ex->getMessage()) . '</div>';
+    }
+
     $address = trim((string) ($_REQUEST['vt_address'] ?? ''));
     $locationId = strtoupper(trim((string) ($_REQUEST['vt_locid'] ?? '')));
     $churnAvc = strtoupper(trim((string) ($_REQUEST['vt_churn_avc'] ?? '')));

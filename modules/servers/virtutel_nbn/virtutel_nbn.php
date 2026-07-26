@@ -525,6 +525,81 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 ->where('service_id', (int) $row->id)
                 ->orderByDesc('id')->limit(25)->get();
 
+            // Appointment for the latest order: slot + status + the
+            // customer's self-booking link (copyable for phone support).
+            $latestOrder = $orders->first();
+            $appt = $latestOrder ? WHMCS\Database\Capsule::table('mod_virtutel_appointments')
+                ->where('order_id', (int) $latestOrder->id)
+                ->orderByDesc('id')->first() : null;
+            if ($appt || ($latestOrder && in_array((string) ($latestOrder->action_required ?? ''), ['appointment', 'appointment_reschedule'], true))) {
+                $bookUrl = \WHMCS\Module\Server\VirtutelNbn\Service\EmailNotifier::bookingUrl($serviceId);
+                $apptHtml = '';
+                if ($appt) {
+                    $slot = $appt->slot_start
+                        ? date('D j M Y, g:ia', strtotime((string) $appt->slot_start))
+                            . ($appt->slot_end ? ' &ndash; ' . date('g:ia', strtotime((string) $appt->slot_end)) : '')
+                        : 'no slot reserved yet';
+                    $apptHtml = '<code>' . htmlspecialchars((string) ($appt->appointment_id ?: '(pending)')) . '</code> '
+                        . htmlspecialchars(ucwords(str_replace('_', ' ', (string) $appt->status)))
+                        . ' &mdash; ' . $slot . '<br>';
+                } else {
+                    $apptHtml = '<span style="color:#a3690e">Booking required — no appointment reserved yet.</span><br>';
+                }
+                $fields['Appointment'] = $apptHtml
+                    . '<input type="text" readonly value="' . htmlspecialchars($bookUrl) . '" size="46" '
+                    . 'onclick="this.select()" style="font-size:11px"> '
+                    . '<button type="button" class="btn btn-default btn-xs" '
+                    . 'onclick="var i=this.previousElementSibling;i.select();'
+                    . 'navigator.clipboard.writeText(i.value);this.textContent=\'Copied\'">Copy link</button>'
+                    . '<br><small>Customer self-booking/reschedule link — paste into a ticket or read out.</small>';
+            }
+
+            // Live outage check by AVC (GET /outages?search=), cached an
+            // hour so the tab doesn't hit the API on every load. Only
+            // rendered when something is actually affecting the service.
+            if ((string) ($row->avc_id ?? '') !== '') {
+                $outCacheKey = 'outagechk_' . $serviceId;
+                $outCache = json_decode((string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
+                    $outCacheKey,
+                    ''
+                ) ?? ''), true);
+                if (!is_array($outCache) || (int) ($outCache['at'] ?? 0) < time() - 3600) {
+                    $outages = is_array($outCache) ? (array) ($outCache['outages'] ?? []) : [];
+                    try {
+                        $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
+                        $outResp = $client->request('GET', '/outages', [
+                            'action' => 'OutageCheck',
+                            'query' => ['search' => (string) $row->avc_id],
+                            'timeout' => 12,
+                            'attempts' => 1,
+                        ]);
+                        $outages = (array) $outResp->get('outages', []);
+                    } catch (\Throwable $e) {
+                        // keep last known list; retry after the hour
+                    }
+                    $outCache = ['at' => time(), 'outages' => $outages];
+                    \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
+                        $outCacheKey,
+                        (string) json_encode($outCache)
+                    );
+                }
+                $outList = (array) ($outCache['outages'] ?? []);
+                if ($outList !== []) {
+                    $outRows = '';
+                    foreach (array_slice($outList, 0, 8) as $outage) {
+                        $outRows .= '<tr>'
+                            . '<td style="padding:2px 12px 2px 0">' . htmlspecialchars((string) ($outage['type'] ?? '')) . '</td>'
+                            . '<td style="padding:2px 12px 2px 0"><code>' . htmlspecialchars((string) ($outage['id'] ?? '')) . '</code></td>'
+                            . '<td style="padding:2px 12px 2px 0">' . htmlspecialchars((string) ($outage['status'] ?? '')) . '</td>'
+                            . '<td style="padding:2px 0;color:#667">' . htmlspecialchars(substr((string) ($outage['created'] ?? ''), 0, 10)) . '</td></tr>';
+                    }
+                    $fields['Outages'] = '<span style="color:#c0392b;font-weight:bold">'
+                        . count($outList) . ' outage' . (count($outList) === 1 ? '' : 's')
+                        . ' affecting this service</span>'
+                        . '<table style="font-size:12px;margin-top:4px;text-align:left">' . $outRows . '</table>';
+                }
+            }
+
             if (count($orders) > 0) {
                 // Cancel button per in-flight row. The API has NO
                 // self-serve order cancel (only appointments DELETE), so
@@ -538,6 +613,26 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                     $inFlight = in_array((string) $order->whmcs_status, ['pending', 'in_progress', 'action_required'], true);
                     $cancelRequested = (string) ($order->action_required ?? '') === 'cancel_requested';
                     $hasInFlight = $hasInFlight || ($inFlight && !$cancelRequested);
+                    // Action-required orders the API can resolve directly:
+                    // approve the charge / confirm liability / resume.
+                    $resolveCell = '';
+                    $resolveLabels = [
+                        'install_fee' => 'Approve install fee',
+                        'development_charge' => 'Approve NDC',
+                        'fibre_upgrade_liability' => 'Confirm liability',
+                        'rsp_action' => 'Resume order',
+                        'device_online' => 'Resume order',
+                    ];
+                    $actReq = (string) ($order->action_required ?? '');
+                    if ($inFlight && isset($resolveLabels[$actReq]) && (string) ($order->vt_order_id ?? '') !== '') {
+                        $resolveCell = '<button type="submit" name="vt_order_resolve" value="'
+                            . htmlspecialchars((string) $order->vt_order_id) . '" '
+                            . 'class="btn btn-success btn-xs" onclick="return confirm(\''
+                            . htmlspecialchars($resolveLabels[$actReq]) . ' for '
+                            . htmlspecialchars((string) $order->vt_order_id) . '? This tells Virtutel/NBN '
+                            . 'to continue the order.\')">' . htmlspecialchars($resolveLabels[$actReq]) . '</button> ';
+                    }
+
                     $cancelCell = '';
                     if ($inFlight && !$cancelRequested && (string) ($order->vt_order_id ?? '') !== '') {
                         $cancelCell = '<button type="submit" name="vt_cancel_order" value="'
@@ -557,7 +652,7 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                         . '<td style="padding:2px 12px 2px 0;color:#667">' . htmlspecialchars(substr((string) $order->created_at, 0, 16))
                         . ($order->completed_at ? ' &rarr; ' . htmlspecialchars(substr((string) $order->completed_at, 0, 16)) : '')
                         . '</td>'
-                        . '<td style="padding:2px 0">' . $cancelCell . '</td></tr>';
+                        . '<td style="padding:2px 0;white-space:nowrap">' . $resolveCell . $cancelCell . '</td></tr>';
                 }
                 $orderMsg = (string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
                     'ordermsg_' . $serviceId,
@@ -575,6 +670,58 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                     . '<th style="text-align:left;padding-right:12px">Lodged &rarr; Completed</th>'
                     . '<th></th></tr>'
                     . $orderRows . '</table></details>';
+            }
+
+            // Recent callbacks: what Virtutel actually sent us for this
+            // service — ends "did the webhook arrive?" debugging.
+            $orderVtIds = [];
+            foreach ($orders as $order) {
+                if ((string) ($order->vt_order_id ?? '') !== '') {
+                    $orderVtIds[] = (string) $order->vt_order_id;
+                }
+            }
+            $events = WHMCS\Database\Capsule::table('mod_virtutel_callback_events')
+                ->where(function ($q) use ($row, $serviceId, $orderVtIds) {
+                    $q->where('service_id', (int) $row->id)
+                        ->orWhere('service_id', $serviceId);
+                    if ((string) ($row->vt_service_id ?? '') !== '') {
+                        $q->orWhere('vt_object_id', (string) $row->vt_service_id);
+                    }
+                    if ((string) ($row->avc_id ?? '') !== '') {
+                        $q->orWhere('vt_object_id', (string) $row->avc_id);
+                    }
+                    if ($orderVtIds !== []) {
+                        $q->orWhereIn('vt_object_id', $orderVtIds);
+                    }
+                })
+                ->orderByDesc('id')->limit(15)->get();
+            if (count($events) > 0) {
+                $eventRows = '';
+                foreach ($events as $event) {
+                    $payload = trim((string) ($event->payload ?? ''));
+                    $eventRows .= '<tr>'
+                        . '<td style="padding:2px 12px 2px 0;color:#667;white-space:nowrap">'
+                        . htmlspecialchars(substr((string) ($event->event_time ?: $event->created_at), 0, 16)) . '</td>'
+                        . '<td style="padding:2px 12px 2px 0">' . htmlspecialchars((string) ($event->notification_type ?: $event->event_type)) . '</td>'
+                        . '<td style="padding:2px 12px 2px 0"><code>' . htmlspecialchars((string) ($event->vt_object_id ?? '')) . '</code></td>'
+                        . '<td style="padding:2px 12px 2px 0">' . htmlspecialchars((string) $event->status) . '</td>'
+                        . '<td style="padding:2px 0">'
+                        . ($payload !== ''
+                            ? '<details><summary style="cursor:pointer;font-size:11px;color:#667">payload</summary>'
+                                . '<pre style="max-height:180px;overflow:auto;font-size:10.5px;max-width:560px">'
+                                . htmlspecialchars(substr($payload, 0, 2000)) . '</pre></details>'
+                            : '')
+                        . '</td></tr>';
+                }
+                $fields['Recent Callbacks'] = '<details><summary style="cursor:pointer">'
+                    . count($events) . ' event' . (count($events) === 1 ? '' : 's')
+                    . ' received</summary>'
+                    . '<table style="font-size:12px;margin-top:6px;text-align:left">'
+                    . '<tr style="color:#667"><th style="text-align:left;padding-right:12px">When</th>'
+                    . '<th style="text-align:left;padding-right:12px">Notification</th>'
+                    . '<th style="text-align:left;padding-right:12px">Object</th>'
+                    . '<th style="text-align:left;padding-right:12px">Status</th><th></th></tr>'
+                    . $eventRows . '</table></details>';
             }
         } else {
             $fields['Virtutel'] = 'Not linked to a Virtutel service yet — paste an ID below and Save Changes.';
@@ -948,6 +1095,7 @@ function virtutel_nbn_AdminServicesTabFieldsSave(array $params): void
     virtutel_nbn_handle_test_request((int) $params['serviceid']);
     virtutel_nbn_handle_speed_change((int) $params['serviceid']);
     virtutel_nbn_handle_order_cancel((int) $params['serviceid']);
+    virtutel_nbn_handle_order_resolve((int) $params['serviceid']);
 
     $ref = trim((string) ($_REQUEST['vt_link_ref'] ?? ''));
     if ($ref === '') {
@@ -991,6 +1139,99 @@ function virtutel_nbn_AdminServicesTabFieldsSave(array $params): void
  * Queues the diagnostic test selected on the admin tab (POST
  * /service-tests); results arrive via ServiceTestStateChangeNotification.
  */
+/**
+ * Approve/Resume buttons on action-required orders. The PATCH keys come
+ * from the API docs: newDevelopmentsChargeConfirmed and
+ * fibreUpgradeLiabilityConfirmed on the order update, ?resume=true for
+ * RSP-action continuation. The install-fee key isn't documented — the
+ * closest schema name is tried and any rejection (which names the
+ * allowed attributes) is surfaced verbatim.
+ */
+function virtutel_nbn_handle_order_resolve(int $serviceId): void
+{
+    $vtOrderId = strtoupper(trim((string) ($_REQUEST['vt_order_resolve'] ?? '')));
+    if ($vtOrderId === '') {
+        return;
+    }
+
+    $msg = function (string $text) use ($serviceId): void {
+        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set('ordermsg_' . $serviceId, $text);
+    };
+
+    try {
+        Migrations::ensure();
+        $link = WHMCS\Database\Capsule::table('mod_virtutel_services')
+            ->where('whmcs_service_id', $serviceId)->first();
+        $order = $link ? WHMCS\Database\Capsule::table('mod_virtutel_orders')
+            ->where('service_id', (int) $link->id)
+            ->where('vt_order_id', $vtOrderId)
+            ->first() : null;
+        if (!$order) {
+            $msg('Order ' . $vtOrderId . ' not found on this service.');
+
+            return;
+        }
+
+        $action = (string) ($order->action_required ?? '');
+        $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
+        $path = VirtutelClient::PATH_PRODUCT_ORDERS . '/' . rawurlencode($vtOrderId);
+
+        switch ($action) {
+            case 'development_charge':
+                $client->request('PATCH', $path, [
+                    'action' => 'ApproveNdc',
+                    'json' => ['newDevelopmentsChargeConfirmed' => true],
+                ]);
+                $done = 'New Development Charge approved';
+                break;
+            case 'fibre_upgrade_liability':
+                $client->request('PATCH', $path, [
+                    'action' => 'ConfirmFibreLiability',
+                    'json' => ['fibreUpgradeLiabilityConfirmed' => true],
+                ]);
+                $done = 'Fibre upgrade liability confirmed';
+                break;
+            case 'install_fee':
+                $client->request('PATCH', $path, [
+                    'action' => 'ApproveInstallFee',
+                    'json' => ['subsequentInstallationChargeConfirmed' => true],
+                ]);
+                $done = 'Install fee approved';
+                break;
+            case 'rsp_action':
+            case 'device_online':
+                $client->request('PATCH', $path, [
+                    'action' => 'ResumeOrder',
+                    'query' => ['resume' => 'true'],
+                ]);
+                $done = 'Resume requested — NBN will continue the order';
+                break;
+            default:
+                $msg('Order ' . $vtOrderId . ' has no API-resolvable action (' . $action . ').');
+
+                return;
+        }
+
+        WHMCS\Database\Capsule::table('mod_virtutel_orders')
+            ->where('id', (int) $order->id)
+            ->update([
+                'action_required' => null,
+                'whmcs_status' => 'in_progress',
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+
+        logActivity(sprintf(
+            'Virtutel NBN: %s for order %s (service #%d)',
+            $done,
+            $vtOrderId,
+            $serviceId
+        ));
+        $msg($done . ' for ' . $vtOrderId . '.');
+    } catch (\Throwable $e) {
+        $msg('Action failed for ' . $vtOrderId . ': ' . $e->getMessage());
+    }
+}
+
 /**
  * Cancel-in-flight-order dropdown: cancels the booked appointment (the
  * only cancel the API supports), flags the order cancel-requested, and
@@ -1149,9 +1390,84 @@ function virtutel_nbn_AdminCustomButtonArray(array $params = []): array
     return [
         'Run Service Health Check' => 'runhealthcheck',
         'Refresh from Virtutel' => 'refreshfromvt',
+        'AVC Utilisation' => 'avcutil',
         'Reset Daily Test Limit' => 'resetdailytests',
         'Cancel Service (Disconnect)' => 'cancelservice',
     ];
+}
+
+/**
+ * Latest AVC utilisation for this service from Virtutel's (beta) daily
+ * reports: finds the newest report, scans it for the AVC, returns a
+ * one-line summary. Requires the read:avc-utilisation scope.
+ */
+function virtutel_nbn_avcutil(array $params): string
+{
+    $serviceId = (int) $params['serviceid'];
+    try {
+        Migrations::ensure();
+        $row = WHMCS\Database\Capsule::table('mod_virtutel_services')
+            ->where('whmcs_service_id', $serviceId)->first();
+        $avc = (string) ($row->avc_id ?? '');
+        if ($avc === '') {
+            return 'No AVC ID on file for this service.';
+        }
+
+        $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
+
+        $list = $client->request('GET', '/avc-utilisation/list-reports', [
+            'action' => 'UtilListReports',
+            'query' => ['limit' => 10],
+            'timeout' => 20,
+            'attempts' => 1,
+        ]);
+        $newest = null;
+        foreach ((array) $list->get('reports', []) as $report) {
+            if ($newest === null || (string) ($report['createdUtc'] ?? '') > (string) ($newest['createdUtc'] ?? '')) {
+                $newest = $report;
+            }
+        }
+        $uuid = (string) ($newest['uuid'] ?? '');
+        if ($uuid === '') {
+            return 'No utilisation reports available yet (beta — check the scope is enabled).';
+        }
+
+        for ($page = 1; $page <= 6; $page++) {
+            $records = $client->request('GET', '/avc-utilisation/by-uuid/' . rawurlencode($uuid), [
+                'action' => 'UtilRecords',
+                'query' => ['page' => $page, 'limit' => 500],
+                'timeout' => 25,
+                'attempts' => 1,
+            ]);
+            $rows = (array) $records->get('reports', []);
+            foreach ($rows as $record) {
+                if (strcasecmp((string) ($record['avcId'] ?? ''), $avc) !== 0) {
+                    continue;
+                }
+                $pct = fn ($v) => is_numeric($v) ? round((float) $v * 100, 2) . '%' : '?';
+
+                return sprintf(
+                    'Utilisation for %s (report %s): AVC peak %s at %s, during CSA peak (%s) %s, overage %s, breach: %s.',
+                    $avc,
+                    (string) ($newest['reportDate'] ?? '?'),
+                    $pct($record['avcUtilAvcPeakHr'] ?? null),
+                    (string) ($record['avcPeakHour'] ?? '?'),
+                    (string) ($record['csaPeakHour'] ?? '?'),
+                    $pct($record['avcUtilCsaPeakHr'] ?? null),
+                    (string) ($record['overage'] ?? '0'),
+                    !empty($record['breach']) ? 'YES' : 'no'
+                );
+            }
+            if (count($rows) < 500) {
+                break; // last page
+            }
+        }
+
+        return 'AVC ' . $avc . ' not found in the latest report ('
+            . (string) ($newest['reportDate'] ?? '?') . ') — it may predate the service.';
+    } catch (\Throwable $e) {
+        return 'Utilisation lookup failed: ' . $e->getMessage();
+    }
 }
 
 /**
