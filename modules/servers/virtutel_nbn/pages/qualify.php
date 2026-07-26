@@ -77,7 +77,7 @@ header('Content-Type: text/html; charset=utf-8');
   /* Embedded in the WHMCS store page: blend in — no own heading,
      transparent background, full width. */
   html.vt-embed, html.vt-embed body { background: transparent !important; }
-  html.vt-embed .wrap { max-width: 100%; padding: 4px 2px 30px; }
+  html.vt-embed .wrap { max-width: 100%; padding: 4px 2px 10px; }
   html.vt-embed h1, html.vt-embed p.lead { display: none; }
   * { box-sizing:border-box; }
   body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
@@ -177,6 +177,8 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
   var api = 'qualify-api.php';
   var out = document.getElementById('out');
   var btn = document.getElementById('searchBtn');
+  var PARAMS = new URLSearchParams(location.search);
+  var COMPACT = PARAMS.get('compact') === '1';
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -297,6 +299,30 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
     post(req).then(function (res) {
       if (!res.ok) { return fail(res.body.error || 'Check failed.'); }
       var q = res.body;
+
+      // Compact mode (landing-page hero): just the verdict + a View
+      // Plans button into the onboarding page — no ports, no plans here.
+      if (COMPACT) {
+        var ok = q.readiness && q.readiness.code !== 'not_available';
+        var go = '/personal/nbn/signup/?vt_locid=' + encodeURIComponent(locId)
+          + '&vt_addr=' + encodeURIComponent(label);
+        show('<div class="card" style="text-align:center">'
+          + '<span class="status ' + esc(q.readiness.code) + '">' + esc(q.readiness.label) + '</span>'
+          + (ok
+            ? '<h3 style="margin:14px 0 4px;font-size:20px">Good news &mdash; we can service your address!</h3>'
+            : '<h3 style="margin:14px 0 4px;font-size:20px">We can&rsquo;t connect this address just yet</h3>')
+          + '<div style="color:var(--muted,#667);font-size:13.5px">' + esc(label) + '</div>'
+          + (ok
+            ? '<p class="desc" style="margin:10px 0 18px">' + esc(q.technology) + ' is available at your place.</p>'
+              + '<a class="btn" style="display:inline-block;text-decoration:none" href="' + esc(go)
+              + '">View plans for my address &rarr;</a>'
+            : '<p class="desc" style="margin:10px 0 18px">' + esc(q.readiness.description) + '</p>'
+              + '<a class="btn" style="display:inline-block;text-decoration:none" href="/contact.php">Contact us</a>')
+          + '<button type="button" class="again" onclick="location.reload()">Check a different address</button>'
+          + '</div>');
+        return;
+      }
+
       var html = '<div class="card">'
         + '<span class="status ' + esc(q.readiness.code) + '">' + esc(q.readiness.label) + '</span>'
         + '<div class="tech">' + esc(q.technology) + '</div>'
@@ -529,6 +555,17 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         });
       }
     }).catch(function () { fail('Something went wrong — please try again.'); });
+  }
+
+  // Onboarding hand-off: arriving with ?vt_locid= (and vt_addr=) skips the
+  // search and qualifies immediately — the landing page's compact checker
+  // links here with the address it already validated.
+  var bootLoc = (PARAMS.get('vt_locid') || '').toUpperCase();
+  var bootAddr = PARAMS.get('vt_addr') || '';
+  if (/^LOC\d{9,15}$/.test(bootLoc)) {
+    var addrInput = document.getElementById('address');
+    if (addrInput && bootAddr) { addrInput.value = bootAddr; }
+    qualify(bootLoc, bootAddr || bootLoc);
   }
 })();
 </script>

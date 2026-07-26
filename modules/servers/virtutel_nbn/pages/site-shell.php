@@ -98,6 +98,7 @@ function kx_site_render(string $section): void
         $active = [
             'residential' => 'Home',
             'nbn' => 'NBN Internet',
+            'signup' => 'NBN Internet',
             'mobile' => 'Mobile',
             'homephone' => 'Home Phone',
         ][$section] ?? '';
@@ -114,6 +115,7 @@ function kx_site_render(string $section): void
     $titles = [
         'residential' => 'Personal NBN — Korvix',
         'nbn' => 'NBN Internet Plans — Korvix',
+        'signup' => 'Get Connected — Korvix',
         'mobile' => 'Mobile — Korvix',
         'homephone' => 'Home Phone — Korvix',
         'business' => 'Business Internet & Services — Korvix',
@@ -321,7 +323,7 @@ function kx_site_render(string $section): void
       <h1><?php echo $isNbn
           ? 'The right NBN plan<br>for <span class="grad">your address</span>'
           : 'Fast, local NBN<br>without the <span class="grad">runaround</span>'; ?></h1>
-      <p class="sub">Enter your address and we\'ll show your connection type and exactly which
+      <p class="sub">Enter your address and we'll show your connection type and exactly which
         plans and speeds your place supports &mdash; then order in a couple of clicks.</p>
       <ul class="ticks">
         <li>Unlimited data on every plan</li>
@@ -338,7 +340,7 @@ function kx_site_render(string $section): void
         <span class="badge">&#9679; Live NBN lookup</span>
         <p class="t">Check your address</p>
         <p class="s">Straight from the NBN database &mdash; takes about ten seconds.</p>
-        <iframe id="kxQ" src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark"
+        <iframe id="kxQ" src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark&compact=1"
                 scrolling="no" title="NBN address checker"></iframe>
       </div>
     </div>
@@ -398,9 +400,41 @@ function kx_site_render(string $section): void
 <section style="padding-top:10px">
   <div class="inner"><div class="band">
     <h2>Not sure what you need?</h2>
-    <p class="sub">Call us on <?php echo $e($phone); ?> and talk to a local &mdash; we\'ll sort it in one call.</p>
+    <p class="sub">Call us on <?php echo $e($phone); ?> and talk to a local &mdash; we'll sort it in one call.</p>
     <a class="btn" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
   </div></div>
+</section>
+
+<script>
+(function(){var f=document.getElementById('kxQ');if(!f){return;}
+setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;
+if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);})();
+</script>
+
+<?php } elseif ($section === 'signup') {
+    // Onboarding start: the landing page's compact checker links here with
+    // the validated LOC ID + address; the full experience (plans, port
+    // selection, provider transfer) runs against it immediately.
+    $bootLoc = strtoupper(trim((string) ($_GET['vt_locid'] ?? '')));
+    $bootAddr = trim((string) ($_GET['vt_addr'] ?? ''));
+    $signupSrc = '/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark';
+    if (preg_match('/^LOC\d{9,15}$/', $bootLoc)) {
+        $signupSrc .= '&vt_locid=' . rawurlencode($bootLoc)
+            . '&vt_addr=' . rawurlencode(mb_substr($bootAddr, 0, 120));
+    }
+?>
+
+<section style="padding:48px 20px 40px">
+  <div class="inner" style="max-width:880px">
+    <div class="kicker">Get connected</div>
+    <h1 style="font-size:clamp(26px,4vw,36px)">Let&rsquo;s get you <span class="grad">online</span></h1>
+    <p class="sub" style="margin:0 0 24px">Pick the plan that suits &mdash; port selection and
+      switching from your current provider are all handled right here, and your address details
+      carry straight through to checkout.</p>
+    <div class="checkwrap"><div class="checker" style="padding:26px 26px 16px">
+      <iframe id="kxQ" src="<?php echo $e($signupSrc); ?>" scrolling="no" title="NBN signup"></iframe>
+    </div></div>
+  </div>
 </section>
 
 <script>
