@@ -73,6 +73,17 @@ function kx_site_plans(): array
 function kx_site_render(string $section): void
 {
     $e = 'kx_site_e';
+    // Google Places key (same addon setting the qualifier uses); empty key
+    // degrades to plain text search.
+    $placesKey = '';
+    try {
+        $placesKey = (string) (Capsule::table('tbladdonmodules')
+            ->where('module', 'virtutel_nbn_admin')
+            ->where('setting', 'google_places_key')
+            ->value('value') ?? '');
+    } catch (\Throwable $ex) {
+        $placesKey = '';
+    }
     // TEMPORARY number — revert to 1300 881 437 when it's live.
     $phone = '03 4130 5012';
     $tel = preg_replace('/\D/', '', $phone);
@@ -228,6 +239,17 @@ function kx_site_render(string $section): void
                       cursor:pointer; line-height:1; padding:0 2px; }
   .kxm .head button:hover { color:#fff; }
   .kxm iframe { flex:1; width:100%; border:0; }
+  /* Google Places dropdown, dark */
+  .pac-container { background:#141b2b; border:1px solid #2a3347; border-radius:12px;
+                   box-shadow:0 18px 50px rgba(0,0,0,.5); font-family:inherit; margin-top:6px; }
+  .pac-item { border-top:1px solid #1c2436; padding:9px 13px; color:#98a2b8; cursor:pointer;
+              font-size:13.5px; }
+  .pac-item:first-child { border-top:0; }
+  .pac-item:hover, .pac-item-selected { background:#1a2338; }
+  .pac-item-query { color:#e6e9f2; font-size:14.5px; }
+  .pac-matched { color:#4d8dff; }
+  .pac-icon { filter:invert(.6); }
+  .pac-logo:after { filter:grayscale(1) invert(.8); }
   /* pricing row */
   .pgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:16px;
            margin-top:34px; align-items:stretch; }
@@ -360,8 +382,9 @@ function kx_site_render(string $section): void
         <p class="t">Check your address</p>
         <p class="s">Straight from the NBN database &mdash; takes about ten seconds.</p>
         <form id="kxForm" class="srow">
-          <input id="kxAddr" type="text" placeholder="e.g. 546 Flinders St Melbourne VIC 3000"
-                 required minlength="8" autocomplete="street-address">
+          <input id="kxAddr" type="text" placeholder="Start typing your address&hellip;"
+                 required minlength="8" autocomplete="off" spellcheck="false"
+                 autocorrect="off" autocapitalize="off">
           <button class="btn" type="submit">Check address</button>
         </form>
       </div>
@@ -428,6 +451,20 @@ function kx_site_render(string $section): void
 </section>
 
 <script>
+function kxOpenCheck(a){
+  var m=document.createElement('div');m.className='kxm';
+  m.innerHTML='<div class="panel"><div class="head"><span>Check your address</span>'
+    +'<button type="button" aria-label="Close">&times;</button></div>'
+    +'<iframe src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark&compact=1&q='
+    +encodeURIComponent(a)+'" title="NBN address check"></iframe></div>';
+  document.body.appendChild(m);
+  document.body.style.overflow='hidden';
+  function close(){m.remove();document.body.style.overflow='';}
+  m.addEventListener('click',function(e){if(e.target===m){close();}});
+  m.querySelector('.head button').addEventListener('click',close);
+  document.addEventListener('keydown',function esc(e){
+    if(e.key==='Escape'){close();document.removeEventListener('keydown',esc);}});
+}
 (function(){
   var form=document.getElementById('kxForm');
   if(!form){return;}
@@ -435,21 +472,32 @@ function kx_site_render(string $section): void
     ev.preventDefault();
     var a=document.getElementById('kxAddr').value.trim();
     if(a.length<8){return;}
-    var m=document.createElement('div');m.className='kxm';
-    m.innerHTML='<div class="panel"><div class="head"><span>Check your address</span>'
-      +'<button type="button" aria-label="Close">&times;</button></div>'
-      +'<iframe src="/modules/servers/virtutel_nbn/pages/qualify.php?embed=1&theme=dark&compact=1&q='
-      +encodeURIComponent(a)+'" title="NBN address check"></iframe></div>';
-    document.body.appendChild(m);
-    document.body.style.overflow='hidden';
-    function close(){m.remove();document.body.style.overflow='';}
-    m.addEventListener('click',function(e){if(e.target===m){close();}});
-    m.querySelector('.head button').addEventListener('click',close);
-    document.addEventListener('keydown',function esc(e){
-      if(e.key==='Escape'){close();document.removeEventListener('keydown',esc);}});
+    kxOpenCheck(a);
   });
 })();
+// Google Places on the hero input: picking a suggestion opens the popup
+// immediately with the full formatted address.
+function kxInitPlaces(){
+  var input=document.getElementById('kxAddr');
+  if(!input||!window.google||!google.maps||!google.maps.places){return;}
+  var ac=new google.maps.places.Autocomplete(input,{
+    componentRestrictions:{country:'au'},
+    fields:['formatted_address'],
+    types:['address']
+  });
+  ac.addListener('place_changed',function(){
+    var p=ac.getPlace();
+    var a=(p&&p.formatted_address)||input.value.trim();
+    if(a.length<8){return;}
+    input.value=a;
+    kxOpenCheck(a);
+  });
+}
 </script>
+<?php if ($placesKey !== '') { ?>
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key=<?php echo $e(rawurlencode($placesKey)); ?>&libraries=places&region=AU&callback=kxInitPlaces"></script>
+<?php } ?>
 
 <?php } elseif ($section === 'signup') {
     // Onboarding start: the landing page's compact checker links here with
