@@ -94,17 +94,28 @@ function kx_site_render(string $section, string $arg = ''): void
     } catch (\Throwable $ex) {
         $placesKey = '';
     }
-    // Same logo image the portal navbar shows (WHMCS uploaded logo);
-    // text-wordmark fallback only when no logo is configured.
+    // Same logo image the portal navbar shows. The uploaded-logo file on
+    // disk is preferred (guaranteed servable from this host); LogoURL is
+    // the fallback, normalised to an absolute path so it can't break on
+    // subdirectory pages like /terms/. Text wordmark when neither exists,
+    // or (via onerror) when the image fails to load anyway.
     $logoUrl = '';
-    try {
-        $logoUrl = (string) (Capsule::table('tblconfiguration')
-            ->where('setting', 'LogoURL')->value('value') ?? '');
-    } catch (\Throwable $ex) {
-        $logoUrl = '';
+    foreach (['assets/img/logo.png', 'assets/img/logo.jpg'] as $cand) {
+        if (is_file(__DIR__ . '/../../../../' . $cand)) {
+            $logoUrl = '/' . $cand;
+            break;
+        }
     }
-    if ($logoUrl === '' && is_file(__DIR__ . '/../../../../assets/img/logo.png')) {
-        $logoUrl = '/assets/img/logo.png';
+    if ($logoUrl === '') {
+        try {
+            $logoUrl = trim((string) (Capsule::table('tblconfiguration')
+                ->where('setting', 'LogoURL')->value('value') ?? ''));
+        } catch (\Throwable $ex) {
+            $logoUrl = '';
+        }
+        if ($logoUrl !== '' && !preg_match('#^(https?:)?//#i', $logoUrl) && $logoUrl[0] !== '/') {
+            $logoUrl = '/' . $logoUrl;
+        }
     }
 
     // TEMPORARY number — revert to 1300 881 437 when it's live.
@@ -435,7 +446,8 @@ function kx_site_render(string $section, string $arg = ''): void
 
 <div class="kx-nav"><div class="in">
   <a class="logo" href="/"><?php if ($logoUrl !== '') { ?><img src="<?php
-      echo $e($logoUrl); ?>" alt="Korvix"><?php } else { ?>KORVIX<?php } ?></a>
+      echo $e($logoUrl); ?>" alt="Korvix"
+      onerror="this.closest('a').textContent='KORVIX'"><?php } else { ?>KORVIX<?php } ?></a>
   <div class="links">
     <?php foreach ($nav as [$label, $url]) { ?>
       <a href="<?php echo $e($url); ?>"<?php echo $label === $active ? ' class="on"' : ''; ?>><?php echo $e($label); ?></a>
@@ -769,7 +781,8 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
     <div>
       <?php if ($logoUrl !== '') { ?>
       <img src="<?php echo $e($logoUrl); ?>" alt="Korvix" style="height:34px;display:block;
-        filter:brightness(0) invert(1);margin-bottom:14px">
+        filter:brightness(0) invert(1);margin-bottom:14px"
+        onerror="this.outerHTML='<div style=&quot;font-size:24px;font-weight:900;color:#fff;margin-bottom:12px&quot;>KORVIX</div>'">
       <?php } else { ?>
       <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:12px">KORVIX</div>
       <?php } ?>
