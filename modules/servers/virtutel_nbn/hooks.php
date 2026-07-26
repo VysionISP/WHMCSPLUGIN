@@ -638,8 +638,13 @@ add_hook('ClientAreaHeadOutput', 9, function ($vars) {
     }
 
     return '<style>#main-body{opacity:0;transition:opacity .2s}'
-        . 'html{scroll-behavior:smooth}#kx-check{scroll-margin-top:90px}</style>'
+        . 'html{scroll-behavior:smooth}#kx-check{scroll-margin-top:90px}'
+        // The knowledgebase search has no business on a marketing homepage.
+        . 'form:has(input[placeholder*="knowledgebase" i]){display:none !important}'
+        . '</style>'
         . "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "var kb=document.querySelector('input[placeholder*=\"knowledgebase\" i]');"
+        . "if(kb){(kb.closest('form')||kb.parentElement).style.display='none';}"
         . "var mb=document.getElementById('main-body')||document.querySelector('.main-content');"
         . "if(!mb){return;}"
         . "fetch('/modules/servers/virtutel_nbn/pages/home-landing.php')"
