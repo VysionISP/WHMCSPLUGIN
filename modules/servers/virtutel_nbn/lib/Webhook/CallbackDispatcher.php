@@ -5,6 +5,7 @@ namespace WHMCS\Module\Server\VirtutelNbn\Webhook;
 use WHMCS\Database\Capsule;
 use WHMCS\Module\Server\VirtutelNbn\Webhook\Handlers\AppointmentHandler;
 use WHMCS\Module\Server\VirtutelNbn\Webhook\Handlers\OrderStatusHandler;
+use WHMCS\Module\Server\VirtutelNbn\Webhook\Handlers\ServiceHealthHandler;
 use WHMCS\Module\Server\VirtutelNbn\Webhook\Handlers\ServiceStatusHandler;
 
 /**
@@ -45,6 +46,7 @@ class CallbackDispatcher
                 'order' => (new OrderStatusHandler())->handle($envelope),
                 'appointment' => (new AppointmentHandler())->handle($envelope),
                 'service' => (new ServiceStatusHandler())->handle($envelope),
+                'health' => (new ServiceHealthHandler())->handle($envelope),
                 default => false,
             };
 

@@ -305,22 +305,158 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
     try {
         Migrations::ensure();
 
+        $serviceId = (int) $params['serviceid'];
         $row = WHMCS\Database\Capsule::table('mod_virtutel_services')
-            ->where('whmcs_service_id', (int) $params['serviceid'])
+            ->where('whmcs_service_id', $serviceId)
             ->first();
 
-        if (!$row) {
-            return ['Virtutel' => 'Not linked to a Virtutel service yet.'];
+        $fields = [];
+        if ($row) {
+            $fields = [
+                'VT Service ID' => htmlspecialchars((string) ($row->vt_service_id ?? '—')),
+                'AVC ID' => htmlspecialchars((string) ($row->avc_id ?? '—')),
+                'NBN Location ID' => htmlspecialchars((string) ($row->nbn_location_id ?? '—')),
+                'Technology' => htmlspecialchars((string) ($row->technology_type ?? '—')),
+                'Carrier Status' => htmlspecialchars((string) ($row->carrier_status ?? '—')),
+            ];
+        } else {
+            $fields['Virtutel'] = 'Not linked to a Virtutel service yet — paste an ID below and Save Changes.';
         }
 
-        return [
-            'VT Service ID' => htmlspecialchars((string) ($row->vt_service_id ?? '—')),
-            'AVC ID' => htmlspecialchars((string) ($row->avc_id ?? '—')),
-            'NBN Location ID' => htmlspecialchars((string) ($row->nbn_location_id ?? '—')),
-            'Technology' => htmlspecialchars((string) ($row->technology_type ?? '—')),
-            'Carrier Status' => htmlspecialchars((string) ($row->carrier_status ?? '—')),
-        ];
+        // Link / re-link an existing Virtutel service by ID (no order
+        // lodged): the Save handler looks it up via GET /services.
+        $linkMsg = (string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
+            'linkmsg_' . $serviceId,
+            ''
+        ) ?? '');
+        $fields['Link Virtutel Service'] =
+            '<input type="text" name="vt_link_ref" size="34" value="" '
+            . 'placeholder="VT... / PRI... / AVC..." autocomplete="off" />'
+            . '<br><small>Paste a Virtutel VT / PRI / AVC ID and click Save Changes to link this '
+            . 'service (no order is lodged).'
+            . ($linkMsg !== '' ? ' <strong>' . htmlspecialchars($linkMsg) . '</strong>' : '')
+            . '</small>';
+
+        // Last service health check (requested via the module button).
+        $health = json_decode((string) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
+            'health_' . $serviceId,
+            ''
+        ) ?? ''), true);
+        if (is_array($health) && !empty($health['id'])) {
+            $html = 'Status: <strong>' . htmlspecialchars((string) ($health['status'] ?? '?'))
+                . '</strong> &mdash; ' . htmlspecialchars((string) $health['id'])
+                . (isset($health['at']) ? ', ' . date('Y-m-d H:i', (int) $health['at']) : '');
+            if (!empty($health['report_error'])) {
+                $html .= '<br><span style="color:#c0392b">Report fetch failed: '
+                    . htmlspecialchars((string) $health['report_error']) . '</span>';
+            }
+            if (!empty($health['report'])) {
+                $pretty = (string) json_encode($health['report'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                $html .= '<br><pre style="max-height:280px;overflow:auto;font-size:11px;'
+                    . 'background:#f6f8fb;border:1px solid #dde3ee;padding:8px;border-radius:4px">'
+                    . htmlspecialchars(substr($pretty, 0, 8000))
+                    . (strlen($pretty) > 8000 ? "\n… (truncated)" : '')
+                    . '</pre>';
+            }
+            $fields['Service Health'] = $html;
+        }
+
+        return $fields;
     } catch (\Throwable $e) {
         return ['Virtutel' => 'Error: ' . htmlspecialchars($e->getMessage())];
+    }
+}
+
+/**
+ * Save handler for the tab fields: performs the link when an ID was pasted.
+ */
+function virtutel_nbn_AdminServicesTabFieldsSave(array $params): void
+{
+    $ref = trim((string) ($_REQUEST['vt_link_ref'] ?? ''));
+    if ($ref === '') {
+        return;
+    }
+
+    $serviceId = (int) $params['serviceid'];
+    try {
+        Migrations::ensure();
+        $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
+        $svc = \WHMCS\Module\Server\VirtutelNbn\Service\ServiceLinker::lookup($client, $ref);
+        if ($svc === null) {
+            \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
+                'linkmsg_' . $serviceId,
+                'No unambiguous Virtutel match for "' . $ref . '" — check the ID.'
+            );
+            return;
+        }
+
+        \WHMCS\Module\Server\VirtutelNbn\Service\ServiceLinker::link($serviceId, $svc);
+        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
+            'linkmsg_' . $serviceId,
+            'Linked to ' . (string) ($svc['vtServiceId'] ?? '?') . ' / '
+            . (string) ($svc['avcId'] ?? '?') . ' (' . (string) ($svc['description'] ?? '') . ').'
+        );
+        logActivity(sprintf(
+            'Virtutel NBN: service #%d linked to %s / %s by admin',
+            $serviceId,
+            (string) ($svc['vtServiceId'] ?? '?'),
+            (string) ($svc['avcId'] ?? '?')
+        ));
+    } catch (\Throwable $e) {
+        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
+            'linkmsg_' . $serviceId,
+            'Link failed: ' . $e->getMessage()
+        );
+    }
+}
+
+/**
+ * Admin buttons on the service: request an async NBN health check for the
+ * linked service (result arrives via callback and shows in the tab).
+ */
+function virtutel_nbn_AdminCustomButtonArray(): array
+{
+    return ['Run Service Health Check' => 'runhealthcheck'];
+}
+
+function virtutel_nbn_runhealthcheck(array $params): string
+{
+    $serviceId = (int) $params['serviceid'];
+    try {
+        Migrations::ensure();
+        $row = WHMCS\Database\Capsule::table('mod_virtutel_services')
+            ->where('whmcs_service_id', $serviceId)
+            ->first();
+        if (!$row || (string) ($row->vt_service_id ?? '') === '') {
+            return 'Not linked to a Virtutel service — link it on the module tab first.';
+        }
+
+        $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($serviceId);
+        $response = $client->request('POST', '/service-health-checks', [
+            'action' => 'RequestHealthCheck',
+            'json' => ['vtServiceId' => (string) $row->vt_service_id],
+        ]);
+
+        $testId = strtoupper((string) $response->get('id', ''));
+        if ($testId === '') {
+            return 'Health check request rejected: ' . $response->vtErrorDesc();
+        }
+
+        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set('healthtest_' . $testId, (string) $serviceId);
+        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set('health_' . $serviceId, (string) json_encode([
+            'id' => $testId,
+            'status' => (string) $response->get('status', 'Requested'),
+            'at' => time(),
+        ]));
+        logActivity(sprintf(
+            'Virtutel NBN: health check %s requested for service #%d (%s)',
+            $testId,
+            $serviceId,
+            (string) $row->vt_service_id
+        ));
+
+        return 'success';
+    } catch (\Throwable $e) {
+        return 'Health check failed: ' . $e->getMessage();
     }
 }
