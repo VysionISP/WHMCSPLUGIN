@@ -79,13 +79,37 @@ function kx_site_render(string $section): void
     $loggedIn = !empty($_SESSION['uid']);
     $groups = kx_site_groups();
 
-    $sections = [
-        'residential' => ['Personal', '/personal/'],
+    // Personal/Business switcher (top strip) works on section FAMILIES;
+    // the main nav below is family-specific.
+    $families = [
+        'personal' => ['Personal', '/personal/'],
         'business' => ['Business', '/business/'],
     ];
+    $family = $section === 'business' ? 'business' : 'personal';
+
+    if ($family === 'personal') {
+        $nav = [
+            ['Home', '/personal/'],
+            ['NBN Internet', '/store/residental-internet'],
+            ['Mobile', '/personal/mobile/'],
+            ['Home Phone', '/personal/home-phone/'],
+            ['Contact', '/contact.php'],
+        ];
+        $active = ['residential' => 'Home', 'mobile' => 'Mobile', 'homephone' => 'Home Phone'][$section] ?? '';
+    } else {
+        $nav = [
+            ['Home', '/'],
+            ['Personal', '/personal/'],
+            ['Business', '/business/'],
+            ['Contact', '/contact.php'],
+        ];
+        $active = 'Business';
+    }
 
     $titles = [
         'residential' => 'Personal NBN — Korvix',
+        'mobile' => 'Mobile — Korvix',
+        'homephone' => 'Home Phone — Korvix',
         'business' => 'Business Internet & Services — Korvix',
     ];
     $title = $titles[$section] ?? 'Korvix';
@@ -189,8 +213,8 @@ function kx_site_render(string $section): void
 <body>
 
 <div class="kx-switch"><div class="in">
-  <?php foreach ($sections as $key => [$label, $url]) { ?>
-    <a href="<?php echo $e($url); ?>"<?php echo $key === $section ? ' class="on"' : ''; ?>><?php echo $e($label); ?></a>
+  <?php foreach ($families as $key => [$label, $url]) { ?>
+    <a href="<?php echo $e($url); ?>"<?php echo $key === $family ? ' class="on"' : ''; ?>><?php echo $e($label); ?></a>
   <?php } ?>
 </div></div>
 
@@ -213,11 +237,9 @@ function kx_site_render(string $section): void
 <div class="kx-nav"><div class="in">
   <a class="logo" href="/">KORVIX</a>
   <div class="links">
-    <a href="/">Home</a>
-    <?php foreach ($sections as $key => [$label, $url]) { ?>
-      <a href="<?php echo $e($url); ?>"<?php echo $key === $section ? ' class="on"' : ''; ?>><?php echo $e($label); ?></a>
+    <?php foreach ($nav as [$label, $url]) { ?>
+      <a href="<?php echo $e($url); ?>"<?php echo $label === $active ? ' class="on"' : ''; ?>><?php echo $e($label); ?></a>
     <?php } ?>
-    <a href="/contact.php">Contact</a>
   </div>
 </div></div>
 
@@ -272,6 +294,33 @@ function kx_site_render(string $section): void
 setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;
 if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);})();
 </script>
+
+<?php } elseif ($section === 'mobile' || $section === 'homephone') {
+    $isMobile = $section === 'mobile';
+?>
+
+<section class="hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker"><?php echo $isMobile ? 'Mobile' : 'Home Phone'; ?></div>
+    <h1><?php echo $isMobile
+        ? 'Mobile plans are<br><span class="grad">on the way</span>'
+        : 'Home phone,<br><span class="grad">simplified</span>'; ?></h1>
+    <p class="sub"><?php echo $isMobile
+        ? 'We\'re putting the finishing touches on Korvix Mobile — plans on a major Australian network with the same local support as our NBN.'
+        : 'Keep your home number without the copper line — VoIP home phone that rides your NBN connection. Launching soon.'; ?></p>
+    <a class="btn" href="/contact.php">Register your interest</a>
+  </div>
+</section>
+
+<section>
+  <div class="inner"><div class="band">
+    <h2>Want it sooner?</h2>
+    <p class="sub">Call <?php echo $e($phone); ?> and tell us what you need &mdash; early access
+      goes to the people who ask.</p>
+    <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
+  </div></div>
+</section>
 
 <?php } elseif ($section === 'business') { ?>
 
