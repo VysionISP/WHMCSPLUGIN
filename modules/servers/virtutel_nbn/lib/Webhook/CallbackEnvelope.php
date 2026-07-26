@@ -69,6 +69,7 @@ class CallbackEnvelope
             // ProductAttributeValueChangeNotification / ProductRemoveNotification
             str_starts_with($type, 'Product') => 'service',
             str_starts_with($type, 'ServiceHealth') => 'health',
+            str_starts_with($type, 'ServiceTest') => 'test',
             default => 'other',
         };
     }

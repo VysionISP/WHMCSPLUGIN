@@ -7,6 +7,7 @@ use WHMCS\Module\Server\VirtutelNbn\Webhook\Handlers\AppointmentHandler;
 use WHMCS\Module\Server\VirtutelNbn\Webhook\Handlers\OrderStatusHandler;
 use WHMCS\Module\Server\VirtutelNbn\Webhook\Handlers\ServiceHealthHandler;
 use WHMCS\Module\Server\VirtutelNbn\Webhook\Handlers\ServiceStatusHandler;
+use WHMCS\Module\Server\VirtutelNbn\Webhook\Handlers\ServiceTestHandler;
 
 /**
  * Persists inbound callbacks idempotently and routes them to handlers.
@@ -47,6 +48,7 @@ class CallbackDispatcher
                 'appointment' => (new AppointmentHandler())->handle($envelope),
                 'service' => (new ServiceStatusHandler())->handle($envelope),
                 'health' => (new ServiceHealthHandler())->handle($envelope),
+                'test' => (new ServiceTestHandler())->handle($envelope),
                 default => false,
             };
 
