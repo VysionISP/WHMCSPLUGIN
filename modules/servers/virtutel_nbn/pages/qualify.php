@@ -304,6 +304,8 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         + '<p class="desc">' + esc(q.readiness.description) + '</p>';
 
       var hasPortMap = q.portMap && q.portMap.length > 0;
+      var isCopper = hasPortMap && q.portMap.every(function (b) { return b.copper; });
+      var portNoun = isCopper ? 'copper pair' : 'port';
       if (hasPortMap) {
         var totalPorts = 0;
         q.portMap.forEach(function (b) { totalPorts += b.ports.length; });
@@ -311,12 +313,13 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
 
         html += '<div style="margin-top:16px">'
           + '<p class="desc" style="margin:0">' + (q.freePorts || 0) + ' of ' + totalPorts
-          + ' ports available on the NBN equipment at this address.</p>';
+          + (isCopper ? ' copper pairs available at this address.'
+            : ' ports available on the NBN equipment at this address.') + '</p>';
 
         if (anyFree) {
           html += '<div class="portmode">'
-            + '<button type="button" id="modeAuto" class="modebtn active">Auto-select port (recommended)</button>'
-            + '<button type="button" id="modeManual" class="modebtn">Choose port manually</button>'
+            + '<button type="button" id="modeAuto" class="modebtn active">Auto-select ' + portNoun + ' (recommended)</button>'
+            + '<button type="button" id="modeManual" class="modebtn">Choose ' + portNoun + ' manually</button>'
             + '</div>';
         }
 
@@ -326,6 +329,7 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
           box.ports.forEach(function (p) {
             html += '<button type="button" class="portbtn ' + (p.free ? 'free' : 'used') + '"'
               + ' data-free="' + (p.free ? '1' : '0') + '"'
+              + (p.copper ? ' data-cpi="1" title="' + esc(p.id || p.portId) + '"' : '')
               + ' data-ntd="' + esc(p.ntdId) + '" data-port="' + esc(p.portId) + '">'
               + esc(p.label)
               + '<span class="portstate">' + (p.free ? 'Available' : 'In use') + '</span>'
@@ -339,9 +343,11 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
       if (q.plans && q.plans.length && q.readiness.code !== 'not_available') {
         html += '<div class="plans">';
         q.plans.forEach(function (p) {
+          var singleCopper = q.copperPair
+            && !(q.portMap || []).some(function (b) { return b.copper; });
           var orderUrl = p.orderUrl + '&vt_addr=' + encodeURIComponent(label)
             + '&vt_tech=' + encodeURIComponent(q.technology)
-            + (q.copperPair ? '&vt_cpi=' + encodeURIComponent(q.copperPair.id) + '&vt_auto=1' : '');
+            + (singleCopper ? '&vt_cpi=' + encodeURIComponent(q.copperPair.id) + '&vt_auto=1' : '');
           html += '<div class="plan">'
             + '<div class="pname">' + esc(p.name) + '</div>'
             + '<div class="pspeed">' + esc(p.speedLabel) + '</div>'
@@ -387,35 +393,44 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
       html += '<button type="button" class="again" onclick="location.reload()">Check a different address</button></div>';
       show(html);
 
-      // Port map interactions: green ports select for the order; orange
-      // ports steer into the transfer flow; the mode toggle returns to
-      // auto-pick. The chosen port rides along on the order links — in
-      // auto mode too, so the cart can name the port we picked.
-      function updatePortParams(ntd, port, label, auto) {
+      // Port map interactions: green ports/pairs select for the order;
+      // orange ones steer into the transfer flow; the mode toggle returns
+      // to auto-pick. The choice rides along on the order links — in auto
+      // mode too, so the cart can name what was picked. sel is null (clear),
+      // {cpi, label, auto} for copper, or {ntd, port, label, auto}.
+      function updatePortParams(sel) {
         out.querySelectorAll('.plan a.btn').forEach(function (a) {
           var url = a.getAttribute('href')
             .replace(/&vt_ntd=[^&]*/g, '').replace(/&vt_port=[^&]*/g, '')
-            .replace(/&vt_portlabel=[^&]*/g, '').replace(/&vt_auto=[^&]*/g, '');
-          if (ntd && port) {
-            url += '&vt_ntd=' + encodeURIComponent(ntd) + '&vt_port=' + encodeURIComponent(port)
-              + (label ? '&vt_portlabel=' + encodeURIComponent(label) : '')
-              + (auto ? '&vt_auto=1' : '');
+            .replace(/&vt_portlabel=[^&]*/g, '').replace(/&vt_auto=[^&]*/g, '')
+            .replace(/&vt_cpi=[^&]*/g, '');
+          if (sel && sel.cpi) {
+            url += '&vt_cpi=' + encodeURIComponent(sel.cpi) + (sel.auto ? '&vt_auto=1' : '');
+          } else if (sel && sel.ntd && sel.port) {
+            url += '&vt_ntd=' + encodeURIComponent(sel.ntd) + '&vt_port=' + encodeURIComponent(sel.port)
+              + (sel.label ? '&vt_portlabel=' + encodeURIComponent(sel.label) : '')
+              + (sel.auto ? '&vt_auto=1' : '');
           }
           a.setAttribute('href', url);
         });
       }
 
-      // The port auto-select picks the first free port; ride it on the
-      // order links up front so checkout shows which port it will be.
+      // Auto-select picks the first free port/pair; ride it on the order
+      // links up front so checkout shows which one it will be.
       var autoPort = null;
       (q.portMap || []).some(function (box) {
         return (box.ports || []).some(function (p) {
-          if (p.free) { autoPort = {ntd: box.ntdId || p.ntdId, port: p.portId, label: p.label}; return true; }
+          if (p.free) {
+            autoPort = p.copper
+              ? {cpi: p.portId, label: p.label, auto: true}
+              : {ntd: box.ntdId || p.ntdId, port: p.portId, label: p.label, auto: true};
+            return true;
+          }
           return false;
         });
       });
       function applyAutoPort() {
-        if (autoPort) { updatePortParams(autoPort.ntd, autoPort.port, autoPort.label, true); }
+        if (autoPort) { updatePortParams(autoPort); }
       }
       applyAutoPort();
 
@@ -443,7 +458,7 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
 
         function clearSelection() {
           diagram.querySelectorAll('.portbtn.selected').forEach(function (b) { b.classList.remove('selected'); });
-          updatePortParams(null, null);
+          updatePortParams(null);
           if (hint) { hint.textContent = ''; }
           if (churnBox) { churnBox.classList.remove('attention'); }
         }
@@ -466,11 +481,16 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
             if (btn.getAttribute('data-free') === '1') {
               clearSelection();
               btn.classList.add('selected');
-              updatePortParams(btn.getAttribute('data-ntd'), btn.getAttribute('data-port'),
-                (btn.firstChild.textContent || btn.textContent || '').trim(), false);
+              var tileLabel = (btn.firstChild.textContent || btn.textContent || '').trim();
+              updatePortParams(btn.getAttribute('data-cpi') === '1'
+                ? {cpi: btn.getAttribute('data-port'), label: tileLabel, auto: false}
+                : {ntd: btn.getAttribute('data-ntd'), port: btn.getAttribute('data-port'),
+                   label: tileLabel, auto: false});
               if (hint) {
-                hint.innerHTML = 'Your new connection will use <strong>'
-                  + esc(btn.firstChild.textContent || btn.textContent) + '</strong>.';
+                hint.innerHTML = 'Your new connection will use <strong>' + esc(tileLabel)
+                  + (btn.getAttribute('data-cpi') === '1'
+                    ? ' (' + esc(btn.getAttribute('data-port')) + ')' : '')
+                  + '</strong>.';
               }
             } else {
               clearSelection();

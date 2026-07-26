@@ -151,6 +151,28 @@ try {
             }
         }
 
+        // Copper pairs: "Line In Use" (NBNServiceStatus) means an active
+        // NBN service rides the pair — transfer territory; anything else
+        // (copperPairStatus Active/Inactive = not yet on NBN) is orderable.
+        $copperFree = 0;
+        $copperUsed = 0;
+        $copperPorts = [];
+        foreach ($q['copper_pairs'] as $i => $pair) {
+            if ((string) $pair['id'] === '') {
+                continue;
+            }
+            $inUse = (bool) preg_match('/in ?use/i', $pair['status']);
+            $inUse ? $copperUsed++ : $copperFree++;
+            $copperPorts[] = [
+                'ntdId' => '',
+                'portId' => $pair['id'],
+                'copper' => true,
+                'label' => 'Pair ' . ($i + 1),
+                'id' => $pair['id'],
+                'free' => !$inUse,
+            ];
+        }
+
         $technologyNames = [
             'nfas' => 'NBN Fibre to the Premises (FTTP)',
             'nhas' => 'NBN Hybrid Fibre Coaxial (HFC)',
@@ -248,6 +270,11 @@ try {
                     ];
                 }
             }
+            // A CPI selector only makes sense with a real choice — a
+            // single pair stays on the silent auto path (copperPair).
+            if (count($copperPorts) > 1) {
+                $portMap[] = ['label' => 'Copper line', 'copper' => true, 'ports' => $copperPorts];
+            }
         }
 
         // Copper sites (FTTN/FTTB/FTTC) have no NTD ports — surface the
@@ -279,8 +306,10 @@ try {
             'tiers' => SpeedTier::customerTiers($q['speeds']),
             'plans' => $plans,
             'newDevelopmentCharge' => $q['new_development_charge'],
-            'freePorts' => $q['ntds'] !== [] ? $freePorts : null,
-            'usedPorts' => $q['ntds'] !== [] ? $usedPorts : null,
+            'freePorts' => $q['ntds'] !== [] ? $freePorts
+                : (count($copperPorts) > 1 ? $copperFree : null),
+            'usedPorts' => $q['ntds'] !== [] ? $usedPorts
+                : (count($copperPorts) > 1 ? $copperUsed : null),
             'churn' => $churn,
             'hasExistingService' => $q['ntds'] !== [] && $freePorts === 0,
         ]);
