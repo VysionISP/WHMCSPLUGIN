@@ -230,7 +230,7 @@ function kx_site_render(string $section): void
   /* the whole check flow lives in a fixed-size popup — no page reflow */
   .kxm { position:fixed; inset:0; z-index:1000; display:flex; align-items:center;
          justify-content:center; background:rgba(4,6,12,.74); backdrop-filter:blur(4px); }
-  .kxm .panel { width:min(620px,94vw); height:min(680px,88vh); background:#10182a;
+  .kxm .panel { width:min(620px,94vw); max-height:88vh; background:#10182a;
                 border:1px solid var(--line); border-radius:20px; overflow:hidden;
                 display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,.55); }
   .kxm .head { display:flex; justify-content:space-between; align-items:center;
@@ -238,7 +238,7 @@ function kx_site_render(string $section): void
   .kxm .head button { background:none; border:0; color:var(--muted); font-size:24px;
                       cursor:pointer; line-height:1; padding:0 2px; }
   .kxm .head button:hover { color:#fff; }
-  .kxm iframe { flex:1; width:100%; border:0; }
+  .kxm iframe { width:100%; border:0; display:block; height:190px; transition:height .18s ease; }
   /* Google Places dropdown, dark */
   .pac-container { background:#141b2b; border:1px solid #2a3347; border-radius:12px;
                    box-shadow:0 18px 50px rgba(0,0,0,.5); font-family:inherit; margin-top:6px; }
@@ -459,7 +459,18 @@ function kxOpenCheck(a){
     +encodeURIComponent(a)+'" title="NBN address check"></iframe></div>';
   document.body.appendChild(m);
   document.body.style.overflow='hidden';
-  function close(){m.remove();document.body.style.overflow='';}
+  // Popup hugs its content: track the embed's body height (shrinks too,
+  // unlike documentElement which ratchets), capped to the viewport.
+  var f=m.querySelector('iframe');
+  var iv=setInterval(function(){try{
+    var b=f.contentDocument&&f.contentDocument.body;
+    if(!b){return;}
+    var h=b.scrollHeight;
+    var max=Math.floor(window.innerHeight*0.88)-58;
+    if(h>80){f.style.height=Math.min(h+10,max)+'px';
+      f.style.overflow=h+10>max?'auto':'hidden';}
+  }catch(e){}},300);
+  function close(){clearInterval(iv);m.remove();document.body.style.overflow='';}
   m.addEventListener('click',function(e){if(e.target===m){close();}});
   m.querySelector('.head button').addEventListener('click',close);
   document.addEventListener('keydown',function esc(e){

@@ -314,19 +314,22 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         var ok = q.readiness && q.readiness.code !== 'not_available';
         var go = '/personal/nbn/signup/?vt_locid=' + encodeURIComponent(locId)
           + '&vt_addr=' + encodeURIComponent(label);
-        show('<div class="card" style="text-align:center">'
+        show('<div class="card" style="text-align:center;padding:28px 22px 20px">'
           + '<span class="status ' + esc(q.readiness.code) + '">' + esc(q.readiness.label) + '</span>'
           + (ok
-            ? '<h3 style="margin:14px 0 4px;font-size:20px">Good news &mdash; we can service your address!</h3>'
-            : '<h3 style="margin:14px 0 4px;font-size:20px">We can&rsquo;t connect this address just yet</h3>')
+            ? '<h3 style="margin:16px 0 4px;font-size:21px">Good news &mdash; we can service your address!</h3>'
+            : '<h3 style="margin:16px 0 4px;font-size:21px">We can&rsquo;t connect this address just yet</h3>')
           + '<div style="color:var(--muted,#667);font-size:13.5px">' + esc(label) + '</div>'
           + (ok
-            ? '<p class="desc" style="margin:10px 0 18px">' + esc(q.technology) + ' is available at your place.</p>'
-              + '<a class="btn" style="display:inline-block;text-decoration:none" href="' + esc(go)
-              + '">View plans for my address &rarr;</a>'
-            : '<p class="desc" style="margin:10px 0 18px">' + esc(q.readiness.description) + '</p>'
-              + '<a class="btn" style="display:inline-block;text-decoration:none" href="/contact.php">Contact us</a>')
-          + '<button type="button" class="again" onclick="vtReset()">Check a different address</button>'
+            ? '<p class="desc" style="margin:10px 0 0">' + esc(q.technology) + ' is available at your place.</p>'
+              + '<div style="margin:20px 0 0"><a class="btn" style="display:inline-block;'
+              + 'text-decoration:none;padding:13px 34px;font-size:16px" href="' + esc(go)
+              + '">View plans for my address &rarr;</a></div>'
+            : '<p class="desc" style="margin:10px 0 0">' + esc(q.readiness.description) + '</p>'
+              + '<div style="margin:20px 0 0"><a class="btn" style="display:inline-block;'
+              + 'text-decoration:none;padding:13px 34px;font-size:16px" href="/contact.php">Contact us</a></div>')
+          + '<div style="margin-top:6px"><button type="button" class="again" '
+          + 'onclick="vtReset()">Check a different address</button></div>'
           + '</div>');
         return;
       }
