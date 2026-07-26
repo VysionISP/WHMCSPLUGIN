@@ -238,7 +238,8 @@ function kx_site_render(string $section): void
   .kxm .head button { background:none; border:0; color:var(--muted); font-size:24px;
                       cursor:pointer; line-height:1; padding:0 2px; }
   .kxm .head button:hover { color:#fff; }
-  .kxm iframe { width:100%; border:0; display:block; height:190px; transition:height .18s ease; }
+  .kxm iframe { width:100%; border:0; display:block; height:200px; transition:height .18s ease;
+                padding:10px 20px 20px; }
   /* Google Places dropdown, dark */
   .pac-container { background:#141b2b; border:1px solid #2a3347; border-radius:12px;
                    box-shadow:0 18px 50px rgba(0,0,0,.5); font-family:inherit; margin-top:6px; }
@@ -465,10 +466,10 @@ function kxOpenCheck(a){
   var iv=setInterval(function(){try{
     var b=f.contentDocument&&f.contentDocument.body;
     if(!b){return;}
-    var h=b.scrollHeight;
+    var h=b.scrollHeight+40; /* + the iframe's own padding */
     var max=Math.floor(window.innerHeight*0.88)-58;
-    if(h>80){f.style.height=Math.min(h+10,max)+'px';
-      f.style.overflow=h+10>max?'auto':'hidden';}
+    if(h>110){f.style.height=Math.min(h,max)+'px';
+      f.style.overflow=h>max?'auto':'hidden';}
   }catch(e){}},300);
   function close(){clearInterval(iv);m.remove();document.body.style.overflow='';}
   m.addEventListener('click',function(e){if(e.target===m){close();}});
