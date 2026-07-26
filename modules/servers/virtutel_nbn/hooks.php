@@ -734,13 +734,17 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . "hideBar(/^Logged in as:/i);"
         // Relocate the notifications toggle into a bell beside the cart
         // icon (moving the whole dropdown keeps its menu working), then
-        // collapse the strip it lived in.
-        . "(function(){var nt=null,links=document.querySelectorAll('a,button');"
+        // collapse the strip it lived in. The theme renders this strip
+        // AFTER load, so keep retrying until it shows up.
+        . "var kxBellTries=0;"
+        . "(function kxBell(){"
+        . "if(document.querySelector('.kx-bell')){return;}"
+        . "var nt=null,links=document.querySelectorAll('a,button');"
         . "for(var i=0;i<links.length;i++){var el=links[i];"
         . "if(el.closest('.kx-topbar')){continue;}"
         . "var t=(el.textContent||'').replace(/\\s+/g,' ').trim();"
         . "if(/^\\d*\\s*Notifications?$/i.test(t)){nt=el;break;}}"
-        . "if(!nt){return;}"
+        . "if(!nt){if(++kxBellTries<40){setTimeout(kxBell,400);}return;}"
         . "var count=(nt.textContent.match(/\\d+/)||[''])[0];"
         . "var wrap=nt.closest('.dropdown')||nt.parentElement;"
         . "var mark=document.createElement('span');mark.style.display='none';"
