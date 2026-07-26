@@ -463,8 +463,23 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         return '';
     }
 
+    // Backstop for markup the stylesheet can't reach (inline styles,
+    // unknown wrappers, order-form CSS with higher specificity): strip any
+    // element that still RENDERS with a (near-)white background. A dark
+    // theme has no white surfaces, so this is safe by definition.
+    $whitewash = "<script>(function(){function sweep(root){"
+        . "root.querySelectorAll('*').forEach(function(el){"
+        . "if(el.tagName==='IFRAME'||el.tagName==='IMG'||el.tagName==='VIDEO'){return;}"
+        . "var m=getComputedStyle(el).backgroundColor.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?/);"
+        . "if(m&&(m[4]===undefined||parseFloat(m[4])>0.5)&&+m[1]>232&&+m[2]>232&&+m[3]>232){"
+        . "el.style.setProperty('background-color','transparent','important');}});}"
+        . "function run(){var mb=document.getElementById('main-body')||document.body;sweep(mb);}"
+        . "document.addEventListener('DOMContentLoaded',function(){run();setTimeout(run,600);});"
+        . "})();</script>";
+
     return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=19">'
-        . '<meta name="color-scheme" content="dark">';
+        . '<meta name="color-scheme" content="dark">'
+        . $whitewash;
 });
 
 /**
