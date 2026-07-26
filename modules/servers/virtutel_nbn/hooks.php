@@ -670,7 +670,8 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         ['Get Remote Support', '/submitticket.php'],
         ['Pay an Invoice', '/clientarea.php?action=invoices'],
     ];
-    $phone = '1300 881 437';
+    // TEMPORARY number — revert to 1300 881 437 when it's live.
+    $phone = '03 4130 5012';
     $portal = !empty($_SESSION['uid'])
         ? ['Logout', '/logout.php']
         : ['Portal Login', '/clientarea.php'];
@@ -871,7 +872,8 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         . '<div class="col brand"><div id="kxFooterLogo" class="txtlogo">KORVIX</div>'
         . '<p>Fast, local NBN and hosted services for Gippsland and beyond &mdash; '
         . 'no lock-ins, no runaround, real local support.</p>'
-        . '<a class="ph" href="tel:1300881437">&#9742;&nbsp;1300 881 437</a></div>'
+        // TEMPORARY number — revert to 1300 881 437 when it's live.
+        . '<a class="ph" href="tel:0341305012">&#9742;&nbsp;03 4130 5012</a></div>'
         . ($cats !== [] ? $col('Services', $cats) : '')
         . $col('Support', $support)
         . $col('Account', $account)
