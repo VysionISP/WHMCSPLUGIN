@@ -395,7 +395,10 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                     . htmlspecialchars((string) $health['report_error']) . '</span>';
             }
             if (!empty($health['report']) && is_array($health['report'])) {
-                $html .= virtutel_nbn_render_health($health['report']);
+                $html .= ' <button type="button" class="btn btn-default btn-sm" id="vtHealthBtn" '
+                    . 'style="margin-left:8px">View full report</button>'
+                    . '<div id="vtHealthData" style="display:none">'
+                    . virtutel_nbn_render_health($health['report']) . '</div>';
             }
             $fields['Service Health'] = $html;
         }
@@ -545,15 +548,15 @@ function virtutel_nbn_test_overlay_js(int $serviceId): string
     document.body.appendChild(ov);
     return ov;
   }
-  // The history button renders in a LATER tab row than this script, so it
-  // doesn't exist yet at parse time — delegate instead of binding direct.
+  // The history/report buttons render in LATER tab rows than this script,
+  // so they don't exist yet at parse time — delegate instead of binding.
   document.addEventListener('click',function(e){
-    var t=e.target&&e.target.closest?e.target.closest('#vtHistBtn'):null;
+    var t=e.target&&e.target.closest?e.target.closest('#vtHistBtn,#vtHealthBtn'):null;
     if(!t){return;}
     e.preventDefault();
-    var data=document.getElementById('vtHistData');
+    var data=document.getElementById(t.id==='vtHealthBtn'?'vtHealthData':'vtHistData');
     var ov=kxOverlay(false,'<div style="text-align:left;font-weight:400">'
-      +(data?data.innerHTML:'No tests yet.')+'</div>','','Close');
+      +(data?data.innerHTML:'Nothing recorded yet.')+'</div>','','Close');
     ov.querySelector('#vtOvClose').addEventListener('click',function(){ov.remove();});
     ov.addEventListener('click',function(ev){if(ev.target===ov){ov.remove();}});
   });
