@@ -121,7 +121,7 @@ class Diagnostics
                 'LINE_QUALITY_DIAGNOSTIC' => 'Run a line quality check',
             ],
             'FW', 'FIXED WIRELESS' => [
-                'WNTD_MEASURE' => 'Check my wireless signal',
+                'WNTD_STATUS' => 'Check my wireless connection',
                 'WNTD_RESET' => 'Restart my connection box (brief dropout)',
             ],
             default => [],

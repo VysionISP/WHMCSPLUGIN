@@ -747,6 +747,13 @@ HTML;
  */
 function virtutel_nbn_test_catalogue(string $subType): array
 {
+    // Authoritative testType list (from the API's own validation error,
+    // 2026-07-26): DPU_PORT_STATUS DPU_PORT_RESET DPU_STATUS
+    // DYNAMIC_LINE_MANAGEMENT_STATUS EE_* LINE_QUALITY_DIAGNOSTIC
+    // LINE_STATE_DIAGNOSTIC LOOPBACK NCD_PORT_RESET NCD_RESET
+    // NCD_UNI_D_STATUS NNI_LINK_OPERATIONAL_STATUS NTD_RESET NTD_STATUS
+    // PORT_RESET SINGLE_END_LINE_TEST UNI_D_STATUS UNI_V_STATUS
+    // WNTD_RESET WNTD_STATUS
     $byTech = [
         'FTTP' => [
             // NTD_RESET is NHAS-only (API-validated) — the FTTP reboot
@@ -776,7 +783,7 @@ function virtutel_nbn_test_catalogue(string $subType): array
         ],
         'FW' => [
             'WNTD_RESET' => 'Reboot wireless NTD (WNTD Reset)',
-            'WNTD_MEASURE' => 'WNTD Measure',
+            'WNTD_STATUS' => 'WNTD Status',
         ],
     ];
     $byTech['FTTB'] = $byTech['FTTN'];
