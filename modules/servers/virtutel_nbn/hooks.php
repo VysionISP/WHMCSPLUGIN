@@ -919,32 +919,37 @@ add_hook('ClientAreaPrimaryNavbar', 1, function ($primaryNavbar) {
             }
         }
 
-        $order = 10;
-        $hasSlug = Capsule::schema()->hasColumn('tblproductgroups', 'slug');
-        $groups = Capsule::table('tblproductgroups')
-            ->where('hidden', 0)->orderBy('order')->get(['id', 'name', 'slug']);
-        foreach ($groups as $g) {
-            $label = (string) $g->name;
-            if (stripos($label, 'addon') !== false) {
-                continue;
-            }
-            $uri = ($hasSlug && (string) ($g->slug ?? '') !== '')
-                ? '/store/' . $g->slug
-                : '/cart.php?gid=' . (int) $g->id;
-            $primaryNavbar->addChild('kxGroup' . (int) $g->id, [
-                'label' => $label,
-                'uri' => $uri,
-                'order' => $order,
-            ]);
-            $order += 10;
-        }
-
+        // Mirror the section-shell nav exactly so guests see the same
+        // menu on WHMCS pages as on /personal and /business.
+        $primaryNavbar->addChild('kxPersonal', [
+            'label' => 'Personal',
+            'uri' => '/personal/',
+            'order' => 10,
+        ]);
+        $primaryNavbar->addChild('kxBusiness', [
+            'label' => 'Business',
+            'uri' => '/business/',
+            'order' => 20,
+        ]);
         $primaryNavbar->addChild('kxContact', [
             'label' => 'Contact',
             'uri' => '/contact.php',
-            'order' => $order,
+            'order' => 30,
         ]);
     } catch (\Throwable $e) {
         // Any failure leaves the stock nav in place.
     }
+});
+
+/**
+ * Personal is the site's front page: visitors hitting the portal homepage
+ * are sent to /personal/ so the public index IS the Personal section.
+ * Logged-in clients keep the portal homepage.
+ */
+add_hook('ClientAreaPageHome', 1, function () {
+    if (!empty($_SESSION['uid'])) {
+        return;
+    }
+    header('Location: /personal/', true, 302);
+    exit;
 });
