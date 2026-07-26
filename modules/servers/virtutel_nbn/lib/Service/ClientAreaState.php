@@ -39,6 +39,7 @@ class ClientAreaState
             'vt_technology' => strtoupper((string) ($service->technology_type ?? '')),
             'vt_speed' => $tier['label'] ?? (string) ($service->speed_tier ?? ''),
             'vt_avc' => (string) ($service->avc_id ?? ''),
+            'vt_address' => (string) ($service->service_address ?? ''),
             'vt_carrier_status' => (string) ($service->carrier_status ?? ''),
             'vt_order_id' => $order->vt_order_id ?? null,
             'vt_order_status' => $order->status ?? null,

@@ -955,3 +955,61 @@ add_hook('ClientAreaPageHome', 1, function () {
     kx_site_render('residential');
     exit;
 });
+
+/**
+ * NBN identifiers on invoice lines: for every Hosting line that belongs to
+ * a linked Virtutel service, append the AVC ID and the service address to
+ * the item description. WHMCS already prints the domain (= AVC) inline,
+ * but the description is what appears bold on the PDF/email — the AVC and
+ * address make the line self-identifying for customers with multiple
+ * services and for churn paperwork.
+ */
+add_hook('InvoiceCreation', 1, function ($vars) {
+    try {
+        $invoiceId = (int) ($vars['invoiceid'] ?? 0);
+        if ($invoiceId === 0) {
+            return;
+        }
+
+        $items = Capsule::table('tblinvoiceitems')
+            ->where('invoiceid', $invoiceId)
+            ->where('type', 'Hosting')
+            ->where('relid', '>', 0)
+            ->get(['id', 'relid', 'description']);
+        if (count($items) === 0) {
+            return;
+        }
+
+        $links = Capsule::table('mod_virtutel_services')
+            ->whereIn('whmcs_service_id', $items->pluck('relid')->map(fn ($v) => (int) $v)->all())
+            ->whereNotNull('avc_id')->where('avc_id', '!=', '')
+            ->get()
+            ->keyBy('whmcs_service_id');
+
+        foreach ($items as $item) {
+            $link = $links[(int) $item->relid] ?? null;
+            if ($link === null) {
+                continue;
+            }
+
+            $extra = [];
+            $avc = (string) $link->avc_id;
+            $address = trim((string) ($link->service_address ?? ''));
+            if ($avc !== '' && stripos((string) $item->description, $avc) === false) {
+                $extra[] = 'AVC: ' . $avc;
+            }
+            if ($address !== '' && stripos((string) $item->description, $address) === false) {
+                $extra[] = $address;
+            }
+            if ($extra === []) {
+                continue;
+            }
+
+            Capsule::table('tblinvoiceitems')->where('id', $item->id)->update([
+                'description' => rtrim((string) $item->description) . "\n" . implode(' — ', $extra),
+            ]);
+        }
+    } catch (\Throwable $e) {
+        // Invoice generation must never fail because of decoration.
+    }
+});

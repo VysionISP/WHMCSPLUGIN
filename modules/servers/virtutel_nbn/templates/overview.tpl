@@ -80,6 +80,10 @@
       <span style="color:#98a2b8">Technology</span><strong>{$vt_technology|default:'—'}</strong></div>
     <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2739">
       <span style="color:#98a2b8">Speed</span><strong>{$vt_speed|default:'—'}</strong></div>
+    {if $vt_address}
+    <div style="display:flex;justify-content:space-between;gap:14px;padding:6px 0;border-bottom:1px solid #1e2739">
+      <span style="color:#98a2b8;white-space:nowrap">Address</span><strong style="text-align:right">{$vt_address}</strong></div>
+    {/if}
     {if $vt_avc}
     <div style="padding:8px 0 0;color:#98a2b8;font-size:12px">
       Keep your AVC ID handy if you ever transfer to another provider.</div>

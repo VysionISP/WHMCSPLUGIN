@@ -13,7 +13,7 @@ use WHMCS\Database\Capsule;
  */
 class Migrations
 {
-    public const SCHEMA_VERSION = 3;
+    public const SCHEMA_VERSION = 4;
 
     private static bool $checkedThisRequest = false;
 
@@ -50,11 +50,63 @@ class Migrations
         if ($current < 3) {
             self::migrateToV3();
         }
+        if ($current < 4) {
+            self::migrateToV4($schema);
+        }
 
         Capsule::table('mod_virtutel_settings')->updateOrInsert(
             ['name' => 'schema_version'],
             ['value' => (string) self::SCHEMA_VERSION, 'updated_at' => date('Y-m-d H:i:s')]
         );
+    }
+
+    /**
+     * AVC into the service Domain field so WHMCS prints it on invoice
+     * lines and service lists natively (backfill for already-linked
+     * services; empty domains only, nothing is clobbered).
+     */
+    private static function migrateToV4($schema): void
+    {
+        if (!$schema->hasColumn('mod_virtutel_services', 'service_address')) {
+            $schema->table('mod_virtutel_services', function ($table) {
+                $table->string('service_address', 160)->nullable();
+            });
+        }
+
+        $linked = Capsule::table('mod_virtutel_services')
+            ->whereNotNull('avc_id')->where('avc_id', '!=', '')
+            ->limit(100)
+            ->get();
+        foreach ($linked as $row) {
+            Capsule::table('tblhosting')
+                ->where('id', (int) $row->whmcs_service_id)
+                ->where(function ($q) {
+                    $q->whereNull('domain')->orWhere('domain', '');
+                })
+                ->update(['domain' => (string) $row->avc_id]);
+
+            // Best-effort address backfill from the LOC ID (must never
+            // block migration).
+            if ((string) ($row->service_address ?? '') === ''
+                && (string) ($row->nbn_location_id ?? '') !== '') {
+                try {
+                    $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService(
+                        (int) $row->whmcs_service_id
+                    );
+                    $address = \WHMCS\Module\Server\VirtutelNbn\Service\ServiceLinker::resolveAddress(
+                        $client,
+                        (string) $row->nbn_location_id
+                    );
+                    if ($address !== '') {
+                        Capsule::table('mod_virtutel_services')
+                            ->where('id', $row->id)
+                            ->update(['service_address' => $address]);
+                    }
+                } catch (\Throwable $e) {
+                    // filled lazily on next link/completion instead
+                }
+            }
+        }
     }
 
     /** Appointment-required customer email template (admin-editable). */

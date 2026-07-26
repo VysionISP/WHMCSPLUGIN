@@ -38,6 +38,7 @@ class OrderCompletion
 
         $avcId = '';
         $vtServiceId = '';
+        $address = '';
         try {
             $client = ClientFactory::forWhmcsService((int) $service->whmcs_service_id);
 
@@ -60,6 +61,10 @@ class OrderCompletion
                     }
                 }
             }
+
+            if ((string) ($service->service_address ?? '') === '') {
+                $address = ServiceLinker::resolveAddress($client, (string) ($service->nbn_location_id ?? ''));
+            }
         } catch (\Throwable $e) {
             // Enrichment failure must not block activation; the daily sync
             // can fill in identifiers later.
@@ -75,6 +80,7 @@ class OrderCompletion
         Capsule::table('mod_virtutel_services')->where('id', $service->id)->update(array_filter([
             'avc_id' => $avcId !== '' ? $avcId : null,
             'vt_service_id' => $vtServiceId !== '' ? $vtServiceId : null,
+            'service_address' => $address !== '' ? $address : null,
             'carrier_status' => 'Active',
             'updated_at' => date('Y-m-d H:i:s'),
         ], fn ($v) => $v !== null));

@@ -405,6 +405,9 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 'VT Service ID' => htmlspecialchars((string) ($row->vt_service_id ?? '—')),
                 'AVC ID' => htmlspecialchars((string) ($row->avc_id ?? '—')),
                 'NBN Location ID' => htmlspecialchars((string) ($row->nbn_location_id ?? '—')),
+                'Service Address' => htmlspecialchars(
+                    (string) (($row->service_address ?? '') !== '' ? $row->service_address : '—')
+                ),
                 'Technology' => htmlspecialchars((string) ($row->technology_type ?? '—')),
                 'Carrier Status' => htmlspecialchars((string) ($row->carrier_status ?? '—')),
             ];
@@ -790,7 +793,7 @@ function virtutel_nbn_AdminServicesTabFieldsSave(array $params): void
             return;
         }
 
-        \WHMCS\Module\Server\VirtutelNbn\Service\ServiceLinker::link($serviceId, $svc);
+        \WHMCS\Module\Server\VirtutelNbn\Service\ServiceLinker::link($serviceId, $svc, $client);
         \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set(
             'linkmsg_' . $serviceId,
             'Linked to ' . (string) ($svc['vtServiceId'] ?? '?') . ' / '

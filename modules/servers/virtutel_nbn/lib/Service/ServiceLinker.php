@@ -59,10 +59,17 @@ class ServiceLinker
     }
 
     /** Writes the link row + custom fields for a looked-up service. */
-    public static function link(int $whmcsServiceId, array $svc): void
+    public static function link(int $whmcsServiceId, array $svc, ?VirtutelClient $client = null): void
     {
         $now = date('Y-m-d H:i:s');
         $trim = fn ($v, int $len) => ($s = substr(trim((string) $v), 0, $len)) !== '' ? $s : null;
+
+        // Service address (for invoices / client area) via reverse LOC
+        // lookup — best-effort, linking must succeed without it.
+        $address = '';
+        if ($client !== null) {
+            $address = self::resolveAddress($client, (string) ($svc['locationId'] ?? ''));
+        }
 
         $values = [
             'vt_service_id' => $trim($svc['vtServiceId'] ?? '', 32),
@@ -74,6 +81,9 @@ class ServiceLinker
             'external_ref' => $trim($svc['supplierServiceId'] ?? '', 64),
             'updated_at' => $now,
         ];
+        if ($address !== '') {
+            $values['service_address'] = $address;
+        }
 
         $exists = Capsule::table('mod_virtutel_services')
             ->where('whmcs_service_id', $whmcsServiceId)->exists();
@@ -86,10 +96,54 @@ class ServiceLinker
             );
         }
 
+        // AVC into the Domain field so WHMCS prints it on invoice lines and
+        // service lists natively (never clobbers a non-empty domain).
+        $avc = trim((string) ($svc['avcId'] ?? ''));
+        if ($avc !== '') {
+            Capsule::table('tblhosting')
+                ->where('id', $whmcsServiceId)
+                ->where(function ($q) {
+                    $q->whereNull('domain')->orWhere('domain', '');
+                })
+                ->update(['domain' => substr($avc, 0, 100)]);
+        }
+
         CustomFields::writeServiceValues($whmcsServiceId, [
             'Location ID' => (string) ($svc['locationId'] ?? ''),
             'NTD ID' => (string) ($svc['cpiNtdId'] ?? ''),
             'UNI-D Port' => (string) ($svc['uniDPortId'] ?? ''),
         ]);
+    }
+
+    /**
+     * Reverse-resolves a LOC ID to its full street address via
+     * POST /locations {locationId}. Returns '' on any failure — callers
+     * treat the address as optional decoration.
+     */
+    public static function resolveAddress(VirtutelClient $client, string $locId): string
+    {
+        $locId = strtoupper(trim($locId));
+        if (!preg_match('/^LOC\d{9,15}$/', $locId)) {
+            return '';
+        }
+
+        try {
+            $response = $client->request('POST', VirtutelClient::PATH_LOCATIONS, [
+                'action' => 'ReverseLocation',
+                'json' => ['locationId' => $locId],
+                'timeout' => 15,
+                'attempts' => 1,
+            ]);
+            foreach ((array) $response->get('responseData', []) as $loc) {
+                $address = trim((string) ($loc['fullAddress'] ?? ($loc['formattedAddress'] ?? '')));
+                if ($address !== '') {
+                    return mb_substr($address, 0, 160);
+                }
+            }
+        } catch (\Throwable $e) {
+            // fall through — address stays blank until the next attempt
+        }
+
+        return '';
     }
 }
