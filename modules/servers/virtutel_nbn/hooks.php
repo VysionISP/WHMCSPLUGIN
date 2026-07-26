@@ -692,7 +692,7 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . '<div class="kx-topbar"><div class="in">'
         . '<div class="l">' . $left . '</div>'
         . '<div class="r">'
-        . '<a class="ph" href="tel:' . $tel . '">&#9742;&nbsp;' . htmlspecialchars($phone, ENT_QUOTES) . '</a>'
+        . '<a class="ph" href="tel:' . $tel . '">&#9742;&#65038;&nbsp;' . htmlspecialchars($phone, ENT_QUOTES) . '</a>'
         . '<a class="cp" href="' . htmlspecialchars($portal[1], ENT_QUOTES) . '">'
         . htmlspecialchars($portal[0], ENT_QUOTES) . '</a>'
         . '</div></div></div></div>';
@@ -886,7 +886,7 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         . '<p>Fast, local NBN and hosted services for Gippsland and beyond &mdash; '
         . 'no lock-ins, no runaround, real local support.</p>'
         // TEMPORARY number — revert to 1300 881 437 when it's live.
-        . '<a class="ph" href="tel:0341305012">&#9742;&nbsp;03 4130 5012</a></div>'
+        . '<a class="ph" href="tel:0341305012">&#9742;&#65038;&nbsp;03 4130 5012</a></div>'
         . ($cats !== [] ? $col('Services', $cats) : '')
         . $col('Support', $support)
         . $col('Account', $account)

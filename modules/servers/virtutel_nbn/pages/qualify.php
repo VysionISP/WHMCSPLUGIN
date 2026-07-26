@@ -87,6 +87,14 @@ header('Cache-Control: no-store, max-age=0');
   h1 { font-size:26px; margin:0 0 6px; }
   p.lead { color:var(--muted); margin:0 0 22px; }
   .searchbox { display:flex; gap:8px; }
+  /* phones: button drops below the input at full width instead of
+     clipping off the right edge */
+  @media (max-width:560px) {
+    .searchbox { flex-wrap:wrap; }
+    .searchbox .btn { width:100%; }
+    .portmode { flex-wrap:wrap; }
+    .portmode .modebtn { flex:1 1 auto; }
+  }
   .searchbox input { flex:1; font-size:16px; padding:12px 14px; background:var(--input); color:var(--ink); border:1px solid var(--line);
                      border-radius:8px; outline:none; }
   .searchbox input:focus { border-color:var(--brand); }

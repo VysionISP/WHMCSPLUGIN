@@ -334,6 +334,8 @@ function kx_site_render(string $section): void
     .ticks li { font-size:14px; }
     h2 { font-size:22px; }
     .kx-switch .in, .kx-topbar .in { padding-left:14px; padding-right:14px; }
+    /* with the left links hidden, keep phone + login pinned right */
+    .kx-topbar .in { justify-content:flex-end; }
     .kx-nav .in { padding:14px 16px; gap:10px; }
     /* nav: one scrollable row instead of wrapped link soup */
     .kx-nav .links { width:100%; margin-left:0; flex-wrap:nowrap; overflow-x:auto;
@@ -368,7 +370,7 @@ function kx_site_render(string $section): void
     <a href="/clientarea.php?action=invoices">Pay an Invoice</a>
   </div>
   <div class="r" style="display:flex;gap:14px;align-items:center">
-    <a class="ph" href="tel:<?php echo $e($tel); ?>">&#9742;&nbsp;<?php echo $e($phone); ?></a>
+    <a class="ph" href="tel:<?php echo $e($tel); ?>">&#9742;&#65038;&nbsp;<?php echo $e($phone); ?></a>
     <?php if ($loggedIn) { ?>
       <a class="cp" href="/logout.php">Logout</a>
     <?php } else { ?>
@@ -694,7 +696,7 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
       <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:12px">KORVIX</div>
       <p style="max-width:300px;margin:0 0 14px;line-height:1.7">Fast, local NBN and hosted services
         for Gippsland and beyond &mdash; no lock-ins, no runaround, real local support.</p>
-      <a style="color:#e6e9f2;font-weight:700;font-size:16px" href="tel:<?php echo $e($tel); ?>">&#9742;&nbsp;<?php echo $e($phone); ?></a>
+      <a style="color:#e6e9f2;font-weight:700;font-size:16px" href="tel:<?php echo $e($tel); ?>">&#9742;&#65038;&nbsp;<?php echo $e($phone); ?></a>
     </div>
     <div>
       <h4>Services</h4>
