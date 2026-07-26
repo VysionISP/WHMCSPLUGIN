@@ -704,6 +704,16 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . 'padding:4px 14px;border-radius:999px;font-weight:600}'
         . '.kx-topbar .cp:hover{color:#fff;filter:brightness(1.12)}'
         . '@media(max-width:640px){.kx-topbar .l{display:none}}'
+        . '.kx-bell{display:inline-flex !important;align-items:center;justify-content:center;'
+        . 'width:42px;height:42px;border-radius:50%;border:1px solid #2a3347;color:#e6e9f2 !important;'
+        . 'position:relative;background:transparent;text-decoration:none !important}'
+        . '.kx-bell:hover{border-color:#4d8dff;color:#fff !important}'
+        . '.kx-bell svg{pointer-events:none}'
+        . '.kx-bellbadge{position:absolute;top:-5px;right:-5px;'
+        . 'background:linear-gradient(92deg,#4d8dff,#7a5cff);color:#fff;font-size:10.5px;'
+        . 'font-weight:700;line-height:1;padding:3px 6px;border-radius:999px}'
+        . '.kx-bellwrap{display:inline-flex !important;align-items:center;vertical-align:middle;'
+        . 'margin-right:10px;position:relative}'
         . '</style>'
         . "<script>document.addEventListener('DOMContentLoaded',function(){"
         . "var d=document.createElement('div');d.innerHTML={$json};"
@@ -722,6 +732,36 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         . "if(pt.length>t.length+12){break;}box=box.parentElement;}"
         . "box.style.display='none';return;}}"
         . "hideBar(/^Logged in as:/i);"
-        . "hideBar(/^\\d+ Notifications?$/i);"
+        // Relocate the notifications toggle into a bell beside the cart
+        // icon (moving the whole dropdown keeps its menu working), then
+        // collapse the strip it lived in.
+        . "(function(){var nt=null,links=document.querySelectorAll('a,button');"
+        . "for(var i=0;i<links.length;i++){var el=links[i];"
+        . "if(el.closest('.kx-topbar')){continue;}"
+        . "var t=(el.textContent||'').replace(/\\s+/g,' ').trim();"
+        . "if(/^\\d*\\s*Notifications?$/i.test(t)){nt=el;break;}}"
+        . "if(!nt){return;}"
+        . "var count=(nt.textContent.match(/\\d+/)||[''])[0];"
+        . "var wrap=nt.closest('.dropdown')||nt.parentElement;"
+        . "var mark=document.createElement('span');mark.style.display='none';"
+        . "wrap.parentElement.insertBefore(mark,wrap);"
+        . "var cart=null,cs=document.querySelectorAll('a[href*=\"cart.php\"]');"
+        . "for(var j=0;j<cs.length;j++){var ct=(cs[j].textContent||'').replace(/\\s+/g,' ').trim();"
+        . "if(/^\\d*$/.test(ct)&&!cs[j].closest('.kx-topbar')){cart=cs[j];break;}}"
+        . "if(cart){"
+        . "nt.innerHTML='<svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" "
+        . "stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">"
+        . "<path d=\"M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9\"/>"
+        . "<path d=\"M13.7 21a2 2 0 0 1-3.4 0\"/></svg>'"
+        . "+(count&&count!=='0'?'<span class=\"kx-bellbadge\">'+count+'</span>':'');"
+        . "nt.className='kx-bell';nt.removeAttribute('style');"
+        . "wrap.className='kx-bellwrap';wrap.removeAttribute('style');"
+        . "(cart.parentElement).insertBefore(wrap,cart);}"
+        . "var box=mark,guard=0;"
+        . "while(box.parentElement&&box.parentElement!==document.body&&guard++<6){"
+        . "var pt=(box.parentElement.textContent||'').replace(/\\s+/g,' ').trim();"
+        . "if(pt.length>24){break;}box=box.parentElement;}"
+        . "if(box!==mark){box.style.display='none';}else{mark.remove();}"
+        . "})();"
         . "});</script>";
 });
