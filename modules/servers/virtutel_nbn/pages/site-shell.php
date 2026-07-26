@@ -266,7 +266,11 @@ function kx_site_render(string $section): void
   .pnav:hover { border-color:var(--brand); color:#fff; }
   .pnav.prev { left:-16px; }
   .pnav.next { right:-16px; }
-  @media(max-width:700px){ .pnav { display:none; } }
+  @media(max-width:700px){
+    .pnav { width:38px; height:38px; font-size:17px; }
+    .pnav.prev { left:2px; }
+    .pnav.next { right:2px; }
+  }
   .pcard { background:var(--surface); border:1px solid var(--line); border-radius:18px;
            padding:28px 22px 24px; display:flex; flex-direction:column; align-items:center;
            position:relative; transition:transform .15s,border-color .15s;
