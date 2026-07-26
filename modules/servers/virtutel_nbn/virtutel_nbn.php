@@ -410,6 +410,10 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 ),
                 'Technology' => htmlspecialchars((string) ($row->technology_type ?? '—')),
                 'Carrier Status' => htmlspecialchars((string) ($row->carrier_status ?? '—')),
+                'Customer Checks Today' => (int) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get(
+                    'ctests_' . $serviceId . '_' . date('Ymd'),
+                    '0'
+                ) ?? '0') . ' of 5 <small>(reset with the Reset Daily Test Limit button below)</small>',
             ];
             // Full raw API record (captured at link time): the source of
             // truth for mapping service types we haven't hardcoded yet
@@ -896,7 +900,37 @@ function virtutel_nbn_AdminCustomButtonArray(array $params = []): array
         // fall through — show the button rather than hide functionality
     }
 
-    return ['Run Service Health Check' => 'runhealthcheck'];
+    return [
+        'Run Service Health Check' => 'runhealthcheck',
+        'Reset Daily Test Limit' => 'resetdailytests',
+    ];
+}
+
+/**
+ * Clears today's customer self-serve check counter (5/day cap) for this
+ * service — for testing, or after walking a customer through a fault.
+ */
+function virtutel_nbn_resetdailytests(array $params): string
+{
+    $serviceId = (int) $params['serviceid'];
+    try {
+        Migrations::ensure();
+        $key = 'ctests_' . $serviceId . '_' . date('Ymd');
+        $used = (int) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get($key, '0') ?? '0');
+        \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set($key, '0');
+
+        if (function_exists('logActivity')) {
+            logActivity(sprintf(
+                'Virtutel NBN: daily customer test limit reset for service #%d (was %d/5)',
+                $serviceId,
+                $used
+            ));
+        }
+
+        return 'success';
+    } catch (\Throwable $e) {
+        return $e->getMessage();
+    }
 }
 
 function virtutel_nbn_runhealthcheck(array $params): string
