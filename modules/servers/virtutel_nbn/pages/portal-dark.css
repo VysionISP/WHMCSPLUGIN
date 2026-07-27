@@ -652,3 +652,21 @@ code, pre {
   border-radius: 8px;
 }
 img.card-img-top { filter: brightness(.9); }
+
+/* ---------- one-row header (menu relocated beside the logo) ---------- */
+.kx-onerow { display:flex !important; align-items:center; gap:30px; flex-wrap:nowrap; }
+.kx-inline-nav { flex:1; min-width:0; }
+.kx-inline-nav .navbar-nav {
+  display:flex !important; flex-direction:row; align-items:center; gap:22px;
+  margin:0 !important; padding:0 !important; list-style:none;
+}
+.kx-inline-nav .navbar-nav > li { position:relative; margin:0 !important; }
+.kx-inline-nav .navbar-nav > li > a {
+  color:#c7cede !important; font-weight:600 !important; font-size:15px !important;
+  padding:6px 0 !important; white-space:nowrap;
+}
+.kx-inline-nav .navbar-nav > li > a:hover { color:#fff !important; }
+/* the Account/user dropdown hugs the right edge like the marketing nav */
+.kx-inline-nav .navbar-nav > li.dropdown:last-child,
+.kx-inline-nav .navbar-nav > li:last-child { margin-left:auto !important; }
+.kx-inline-nav .dropdown-menu { position:absolute; right:0; left:auto; top:100%; z-index:1050; }

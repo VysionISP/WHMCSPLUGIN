@@ -560,7 +560,7 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         . "document.addEventListener('DOMContentLoaded',function(){run();setTimeout(run,600);});"
         . "})();</script>";
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=24">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=25">'
         . '<meta name="color-scheme" content="dark">'
         . $whitewash;
 });
@@ -1012,7 +1012,22 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         . "document.querySelectorAll('input[placeholder*=\"knowledgebase\" i]').forEach(function(inp){"
         . "var box=inp.closest('form,.search-container,section,div');"
         . "if(box){box.remove();}else{inp.remove();}"
-        . "});});</script>";
+        . "});"
+        // Single-row header on desktop, matching the marketing shell: the
+        // theme's two-tier header (logo row + separate nav row) is
+        // collapsed by moving the primary menu up beside the logo.
+        . "if(window.matchMedia('(min-width:992px)').matches){"
+        . "var pm=document.querySelector('#main-menu .navbar-nav,.app-main-menu .navbar-nav');"
+        . "var brand=document.querySelector('.navbar-brand,#logo a,header a[href=\"/\"],a[href*=\"index.php\"] img');"
+        . "if(brand&&brand.tagName==='IMG'){brand=brand.closest('a');}"
+        . "if(pm&&brand&&brand.parentElement){"
+        . "var wrap=document.createElement('div');wrap.className='kx-inline-nav';wrap.appendChild(pm);"
+        . "brand.insertAdjacentElement('afterend',wrap);"
+        . "var host=brand.parentElement;host.classList.add('kx-onerow');"
+        . "var bar=document.getElementById('main-menu')||document.querySelector('.app-main-menu');"
+        . "if(bar&&!bar.querySelector('.navbar-nav')){bar.style.display='none';}"
+        . "}}"
+        . "});</script>";
 });
 
 /**
