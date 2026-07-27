@@ -13,7 +13,7 @@ use WHMCS\Database\Capsule;
  */
 class Migrations
 {
-    public const SCHEMA_VERSION = 6;
+    public const SCHEMA_VERSION = 7;
 
     private static bool $checkedThisRequest = false;
 
@@ -58,6 +58,9 @@ class Migrations
         }
         if ($current < 6) {
             self::migrateToV6();
+        }
+        if ($current < 7) {
+            self::migrateToV7($schema);
         }
 
         Capsule::table('mod_virtutel_settings')->updateOrInsert(
@@ -152,6 +155,21 @@ class Migrations
                     // filled lazily on next link/completion instead
                 }
             }
+        }
+    }
+
+    /** Launch-interest leads captured from the coming-soon pages. */
+    private static function migrateToV7($schema): void
+    {
+        if (!$schema->hasTable('mod_virtutel_leads')) {
+            $schema->create('mod_virtutel_leads', function ($table) {
+                $table->increments('id');
+                $table->string('product', 24);
+                $table->string('email', 190);
+                $table->string('ip', 45)->nullable();
+                $table->timestamps();
+                $table->unique(['product', 'email']);
+            });
         }
     }
 

@@ -178,6 +178,7 @@ $( [ -n "$CERT" ] && printf '    ssl_certificate %s/fullchain.pem;\n    ssl_cert
         fastcgi_pass unix:/run/php/php$PHPV-fpm.sock;
     }
     location ~* /(vendor|node_modules)/ { deny all; }
+    error_page 404 /404.php;
 }
 EOF
 else
@@ -191,6 +192,7 @@ else
         AllowOverride All
         Require all granted
     </Directory>
+    ErrorDocument 404 /404.php
 </VirtualHost>
 $( if [ -n "$CERT" ]; then cat <<SSL
 <VirtualHost *:443>
@@ -205,6 +207,7 @@ $( if [ -n "$CERT" ]; then cat <<SSL
         AllowOverride All
         Require all granted
     </Directory>
+    ErrorDocument 404 /404.php
 </VirtualHost>
 SSL
 fi )

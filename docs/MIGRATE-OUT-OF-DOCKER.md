@@ -138,6 +138,7 @@ cat > /etc/apache2/sites-available/whmcs.conf <<'EOF'
         AllowOverride All
         Require all granted
     </Directory>
+    ErrorDocument 404 /404.php
     ErrorLog ${APACHE_LOG_DIR}/whmcs_error.log
     CustomLog ${APACHE_LOG_DIR}/whmcs_access.log combined
 </VirtualHost>

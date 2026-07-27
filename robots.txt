@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /includes/
+Disallow: /vendor/
+Disallow: /templates/
+Disallow: /modules/
+Disallow: /clientarea.php
+Disallow: /cart.php
+Disallow: /viewinvoice.php
+Disallow: /dl.php
+Sitemap: https://korvix.co/sitemap.xml

@@ -21,7 +21,7 @@ function kx_legal_org(): array
         'entity' => 'Korvix Networks Pty Ltd',
         'abn' => '00 000 000 000',
         'address' => 'PO Box 000, Sale VIC 3850',
-        'phone' => '03 4130 5012',
+        'phone' => '03 4130 5013',
         'email' => 'support@korvix.co',
         'privacy_email' => 'privacy@korvix.co',
         'hardship_email' => 'hardship@korvix.co',
@@ -430,6 +430,41 @@ HTML;
     if ($cisBlocks === '') {
         $cisBlocks = '<p>Plan summaries will appear here once plans are published.</p>';
     }
+
+    // Home Phone (VoIP) CIS — required disclosures incl. the power/000
+    // limitation. Static launch pricing; update alongside the products.
+    $phoneCis = '';
+    foreach ([
+        ['home-phone-basic', 'Home Phone Basic', '9.95',
+            'Unlimited standard local &amp; national calls. Calls to Australian mobiles billed per second.'],
+        ['home-phone-ultimate', 'Home Phone Ultimate', '19.95',
+            'Unlimited standard local, national &amp; Australian mobile calls.'],
+    ] as [$slug, $planName, $price, $included]) {
+        $phoneCis .= '<div class="cis" id="' . $e($slug) . '">'
+            . '<h2>' . $e($planName) . '</h2>'
+            . '<table>'
+            . '<tr><th>Service</th><td>VoIP home phone delivered over your broadband connection. '
+            . 'Requires a working internet connection and mains power &mdash; <strong>the service, '
+            . 'including calls to 000 emergency services, will not work during a power or internet '
+            . 'outage</strong>. Keep a charged mobile phone for emergencies.</td></tr>'
+            . '<tr><th>Included calls</th><td>' . $included . '</td></tr>'
+            . '<tr><th>Excluded</th><td>13/1300 numbers 40c per call (untimed). International, '
+            . 'satellite and premium numbers charged per our rate table (available on request). '
+            . 'Where charges apply, calls bill per second with a 1c minimum.</td></tr>'
+            . '<tr><th>Monthly charge</th><td>$' . $e($price) . '</td></tr>'
+            . '<tr><th>Minimum term</th><td>None &mdash; month to month, cancel any time</td></tr>'
+            . '<tr><th>Minimum / maximum cost</th><td>Minimum $' . $e($price) . ' (one month). '
+            . 'Maximum in any month: your plan fee plus any excluded-call charges you incur.</td></tr>'
+            . '<tr><th>Equipment</th><td>BYO VoIP handset, or an analogue telephone adapter (ATA) '
+            . 'for an existing phone. We can advise on suitable hardware.</td></tr>'
+            . '<tr><th>Number porting</th><td>You can bring your existing number; porting is '
+            . 'arranged for you and any porting cost is confirmed with you before the transfer '
+            . 'proceeds. Your old service keeps working until the number moves.</td></tr>'
+            . '<tr><th>Cancelling</th><td>Cancel from the customer portal or by contacting us; '
+            . 'the service ends at the close of the billing period. No cancellation fee.</td></tr>'
+            . '</table></div>';
+    }
+    $cisBlocks .= '<h2 style="margin-top:34px">Home Phone plans</h2>' . $phoneCis;
     $cis = <<<HTML
 <p>A Critical Information Summary for each of our residential nbn&reg;
 plans. All plans are month to month with unlimited data and no setup fee

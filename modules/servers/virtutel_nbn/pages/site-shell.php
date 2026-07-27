@@ -170,8 +170,8 @@ function kx_site_render(string $section, string $arg = ''): void
         }
     }
 
-    // TEMPORARY number — revert to 1300 881 437 when it's live.
-    $phone = '03 4130 5012';
+    // Korvix main number.
+    $phone = '03 4130 5013';
     $tel = preg_replace('/\D/', '', $phone);
     $loggedIn = !empty($_SESSION['uid']);
     $groups = kx_site_groups();
@@ -190,7 +190,7 @@ function kx_site_render(string $section, string $arg = ''): void
             ['NBN Internet', '/personal/nbn/'],
             ['Mobile', '/personal/mobile/'],
             ['Home Phone', '/personal/home-phone/'],
-            ['Contact', '/contact.php'],
+            ['Contact', '/contact/'],
         ];
         $active = [
             'residential' => 'Home',
@@ -204,7 +204,7 @@ function kx_site_render(string $section, string $arg = ''): void
             ['Home', '/'],
             ['Personal', '/personal/'],
             ['Business', '/business/'],
-            ['Contact', '/contact.php'],
+            ['Contact', '/contact/'],
         ];
         $active = 'Business';
     }
@@ -216,16 +216,47 @@ function kx_site_render(string $section, string $arg = ''): void
         'mobile' => 'Mobile — Korvix',
         'homephone' => 'Home Phone — Korvix',
         'business' => 'Business Internet & Services — Korvix',
+        'contact' => 'Contact Us — Korvix',
+        'notfound' => 'Page Not Found — Korvix',
     ];
     $title = $titles[$section] ?? 'Korvix';
     if ($section === 'legal') {
         $title = $legalDocs[$legalSlug][0] . ' — Korvix';
     }
 
+    // SEO: description + canonical per section (legal uses its tagline).
+    $descs = [
+        'residential' => 'Fast, local NBN for Gippsland and beyond — unlimited data, no lock-in, real local support. Check your address and see exactly what your place supports.',
+        'nbn' => 'NBN plans matched to your address — live NBN lookup, unlimited data, month-to-month, and local Gippsland support.',
+        'signup' => 'Get connected with Korvix NBN — check your address, pick your plan, and order in minutes.',
+        'mobile' => 'Korvix Mobile is coming — SIM-only 5G plans with unlimited national calls and the same local support as our NBN. Register your interest.',
+        'homephone' => 'Keep your home phone number without the line rental — VoIP home phone over your NBN from $9.95/month.',
+        'business' => 'Business internet, email and voice with local support — connectivity your business can bank on.',
+        'contact' => 'Talk to Korvix — call ' . $phone . ', open a ticket, or start a remote support session.',
+        'notfound' => 'That page doesn\'t exist — but the internet does. Head back to Korvix.',
+    ];
+    $canonPaths = [
+        'residential' => '/personal/', 'nbn' => '/personal/nbn/', 'signup' => '/personal/nbn/signup/',
+        'mobile' => '/personal/mobile/', 'homephone' => '/personal/home-phone/',
+        'business' => '/business/', 'contact' => '/contact/',
+    ];
+    $metaDesc = $descs[$section] ?? $descs['residential'];
+    $canonPath = $canonPaths[$section] ?? '';
+    if ($section === 'legal') {
+        $metaDesc = $legalDocs[$legalSlug][1];
+        $canonPath = '/' . $legalSlug . '/';
+    }
+    $host = preg_replace('/[^a-zA-Z0-9.\-:]/', '', (string) ($_SERVER['HTTP_HOST'] ?? 'korvix.co'));
+    $canonical = $canonPath !== '' ? 'https://' . $host . $canonPath : '';
+
     header('Content-Type: text/html; charset=utf-8');
-    // These pages change with every plugin release — never let the
-    // browser serve a stale copy.
-    header('Cache-Control: no-store, max-age=0');
+    if ($section === 'signup' || $section === 'notfound') {
+        header('Cache-Control: no-store, max-age=0');
+    } else {
+        // Launch-ready: short public caching keeps pages snappy; deploys
+        // land within five minutes.
+        header('Cache-Control: public, max-age=300');
+    }
     ?>
 <!doctype html>
 <html lang="en">
@@ -233,6 +264,35 @@ function kx_site_render(string $section, string $arg = ''): void
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?php echo $e($title); ?></title>
+<meta name="description" content="<?php echo $e($metaDesc); ?>">
+<?php if ($section === 'notfound') { ?>
+<meta name="robots" content="noindex">
+<?php } elseif ($canonical !== '') { ?>
+<link rel="canonical" href="<?php echo $e($canonical); ?>">
+<?php } ?>
+<meta property="og:site_name" content="Korvix">
+<meta property="og:type" content="website">
+<meta property="og:title" content="<?php echo $e($title); ?>">
+<meta property="og:description" content="<?php echo $e($metaDesc); ?>">
+<?php if ($canonical !== '') { ?><meta property="og:url" content="<?php echo $e($canonical); ?>">
+<?php } ?>
+<?php if ($logoUrl !== '') {
+    $ogImage = str_starts_with($logoUrl, 'http') ? $logoUrl : 'https://' . $host . $logoUrl; ?>
+<meta property="og:image" content="<?php echo $e($ogImage); ?>">
+<?php } ?>
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%230b0f1a'/%3E%3Ctext%20x='32'%20y='45'%20font-family='Arial'%20font-size='38'%20font-weight='800'%20text-anchor='middle'%20fill='%234d8dff'%3EK%3C/text%3E%3C/svg%3E">
+<script type="application/ld+json">
+<?php echo json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'LocalBusiness',
+    'name' => 'Korvix',
+    'url' => 'https://' . $host . '/',
+    'telephone' => '+61 3 4130 5013',
+    'description' => 'Local internet service provider — NBN, home phone and business connectivity for Gippsland and beyond.',
+    'areaServed' => ['Gippsland VIC', 'Victoria', 'Australia'],
+], JSON_UNESCAPED_SLASHES); ?>
+</script>
 <style>
   :root { --bg:#0b0f1a; --surface:#141b2b; --line:#2a3347; --text:#e6e9f2; --muted:#98a2b8;
           --brand:#4d8dff; --brand2:#7a5cff; --ok:#2fbf71;
@@ -1044,15 +1104,19 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
         <span>5G</span><span>SIM ONLY</span><span>KEEP YOUR NUMBER</span><span>NO LOCK-IN</span>
       </div>
     </div>
-    <div class="checkwrap">
+    <div class="checkwrap" id="notify">
       <div class="checker">
         <span class="badge" style="color:#ecc575;background:rgba(226,163,54,.12);border-color:rgba(226,163,54,.35)">&#9679; Launching soon</span>
         <p class="t">Be first in line</p>
         <p class="s">Register your interest and we'll email you the moment plans go live &mdash;
           early access (and launch pricing) goes to the people who ask.</p>
-        <a class="btn" href="/contact.php" style="width:100%;margin-bottom:8px">Register your interest</a>
+        <form class="srow" data-kxlead="mobile">
+          <input type="text" name="website" value="" style="display:none" tabindex="-1" autocomplete="off">
+          <input type="email" name="email" placeholder="your@email.com" required>
+          <button class="btn" type="submit">Notify me</button>
+        </form>
         <div class="chints">
-          <span>No commitment</span><span>Launch pricing locked</span><span>Local support</span>
+          <span>No commitment</span><span>No spam &mdash; one email at launch</span><span>Local support</span>
         </div>
       </div>
     </div>
@@ -1077,12 +1141,31 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
           <li><?php echo $e($mGb); ?>GB on a major 5G network</li>
           <li>Keep your number</li>
         </ul>
-        <a class="btn ghost" href="/contact.php">Register interest</a>
+        <a class="btn ghost" href="#notify">Register interest</a>
       </div>
       <?php } ?>
     </div>
   </div>
 </section>
+
+<script>
+document.querySelectorAll('[data-kxlead]').forEach(function(f){
+  f.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    var btn=f.querySelector('button');btn.disabled=true;btn.textContent='Saving…';
+    fetch('/modules/servers/virtutel_nbn/pages/interest.php',{
+      method:'POST',credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({product:f.dataset.kxlead,email:f.querySelector('[name=email]').value,
+        website:f.querySelector('[name=website]').value})
+    }).then(function(r){return r.json();}).then(function(j){
+      if(j.ok){f.outerHTML='<p style="color:#7fdcaa;font-weight:700;margin:8px 0">'
+        +'&#10003; You\'re on the list — we\'ll email you at launch.</p>';}
+      else{btn.disabled=false;btn.textContent='Notify me';alert(j.error||'Try again shortly.');}
+    }).catch(function(){btn.disabled=false;btn.textContent='Notify me';});
+  });
+});
+</script>
 
 <section>
   <div class="inner"><div class="band">
@@ -1107,13 +1190,13 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
                 'Calls to Australian mobiles billed per second',
                 '13/1300 numbers 40c untimed',
                 'Keep your existing number',
-            ], '/contact.php'],
+            ], '/contact/'],
             ['Home Phone Ultimate', '19.95', [
                 'Unlimited local, national &amp; mobile calls',
                 '13/1300 numbers 40c untimed',
                 'Per-second billing where charges apply',
                 'Keep your existing number',
-            ], '/contact.php'],
+            ], '/contact/'],
         ];
     }
 ?>
@@ -1144,7 +1227,7 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
         <p class="s">Porting is handled for you &mdash; your old service keeps working until the
           moment your number moves, so you're never without a phone. We'll confirm timing and
           any cost before anything changes.</p>
-        <a class="btn" href="<?php echo $phonePlans !== [] ? '#phoneplans' : '/contact.php'; ?>"
+        <a class="btn" href="<?php echo $phonePlans !== [] ? '#phoneplans' : '/contact/'; ?>"
            style="width:100%;margin-bottom:8px"><?php
            echo $phonePlans !== [] ? 'See the plans' : 'Talk to us about porting'; ?></a>
         <div class="chints">
@@ -1265,7 +1348,7 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
     <h1>Connectivity your business<br>can <span class="grad">bank on</span></h1>
     <p class="sub">High-availability internet, business email, hosted voice, and backup &mdash;
       all supported locally, all on one bill.</p>
-    <a class="btn" href="/contact.php">Talk to us</a>
+    <a class="btn" href="/contact/">Talk to us</a>
   </div>
 </section>
 
@@ -1307,10 +1390,60 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
     <h2>Let's talk about your setup</h2>
     <p class="sub">Call <?php echo $e($phone); ?> or drop us a line &mdash; we'll design the right mix
       and give you one clear monthly price.</p>
-    <a class="btn" href="/contact.php">Contact us</a>
+    <a class="btn" href="/contact/">Contact us</a>
     &nbsp;
     <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
   </div></div>
+</section>
+
+<?php } elseif ($section === 'contact') { ?>
+
+<section class="hero" style="padding-bottom:20px">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker">Contact</div>
+    <h1>Talk to a <span class="grad">local</span></h1>
+    <p class="sub">No phone trees, no offshore scripts &mdash; you get a person in Gippsland who
+      can see your actual service.</p>
+  </div>
+</section>
+
+<section style="text-align:center;padding-top:0">
+  <div class="inner" style="max-width:1120px">
+    <div class="cards" style="text-align:left">
+      <div class="card"><div class="ico">&#128222;&#65038;</div><h3>Call us</h3>
+        <p>Sales, support, faults &mdash; one number for all of it.</p>
+        <a class="btn" href="tel:<?php echo $e($tel); ?>"><?php echo $e($phone); ?></a></div>
+      <div class="card"><div class="ico">&#127915;&#65038;</div><h3>Open a ticket</h3>
+        <p>Best for anything with details worth keeping &mdash; billing questions, changes,
+           non-urgent faults.</p>
+        <a class="btn ghost" href="/submitticket.php">Open a ticket</a></div>
+      <div class="card"><div class="ico">&#128421;&#65038;</div><h3>Remote support</h3>
+        <p>On the phone with us and need to share your screen? Start a secure session here.</p>
+        <a class="btn ghost" href="https://go.getscreen.me/invite/683032125" target="_blank" rel="noopener">Get remote support</a></div>
+      <div class="card"><div class="ico">&#128337;&#65038;</div><h3>When we answer</h3>
+        <p>Business hours for sales and everyday support. Existing customers with a service-down
+           fault: call any time &mdash; the message tells you where to go next.</p>
+        <a class="btn ghost" href="/serverstatus.php">Check network status</a></div>
+    </div>
+  </div>
+</section>
+
+<?php } elseif ($section === 'notfound') { ?>
+
+<section class="hero" style="padding-bottom:40px">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker">404</div>
+    <h1>This page doesn&rsquo;t exist<br><span class="grad">but the internet does</span></h1>
+    <p class="sub">The link is old, mistyped, or moved. Everything worth finding is one click
+      away.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="btn" href="/">Back to the home page</a>
+      <a class="btn ghost" href="/personal/nbn/">See NBN plans</a>
+      <a class="btn ghost" href="/contact/">Contact us</a>
+    </div>
+  </div>
 </section>
 
 <?php } elseif ($section === 'legal') {
@@ -1362,7 +1495,7 @@ if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400)
         <li><a href="/knowledgebase.php">Knowledgebase</a></li>
         <li><a href="/serverstatus.php">Network Status</a></li>
         <li><a href="/submitticket.php">Open a Ticket</a></li>
-        <li><a href="/contact.php">Contact Us</a></li>
+        <li><a href="/contact/">Contact Us</a></li>
         <li><a href="/clientarea.php">Client Area</a></li>
       </ul>
     </div>

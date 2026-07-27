@@ -39,12 +39,19 @@ PATHS=(
   "$DOCROOT/complaints"
   "$DOCROOT/financial-hardship"
   "$DOCROOT/critical-information"
+  "$DOCROOT/contact"
 )
 for p in "${PATHS[@]}"; do
   [ -d "$p" ] || continue
   chown -R "$OWNER:$OWNER" "$p"
   find "$p" -type d -exec chmod 755 {} +
   find "$p" -type f -exec chmod 644 {} +
+done
+for f in 404.php robots.txt sitemap.xml; do
+  if [ -f "$DOCROOT/$f" ]; then
+    chown "$OWNER:$OWNER" "$DOCROOT/$f"
+    chmod 644 "$DOCROOT/$f"
+  fi
 done
 if [ -f "$DOCROOT/includes/hooks/virtutel_nbn.php" ]; then
   chown "$OWNER:$OWNER" "$DOCROOT/includes/hooks/virtutel_nbn.php"

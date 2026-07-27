@@ -749,8 +749,8 @@ add_hook('ClientAreaHeadOutput', 4, function () {
         ['Get Remote Support', 'https://go.getscreen.me/invite/683032125'],
         ['Pay an Invoice', '/clientarea.php?action=invoices'],
     ];
-    // TEMPORARY number — revert to 1300 881 437 when it's live.
-    $phone = '03 4130 5012';
+    // Korvix main number.
+    $phone = '03 4130 5013';
     $portal = !empty($_SESSION['uid'])
         ? ['Logout', '/logout.php']
         : ['Portal Login', '/clientarea.php'];
@@ -916,7 +916,7 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         ['Network Status', '/serverstatus.php'],
         ['Announcements', '/announcements.php'],
         ['Open a Ticket', '/submitticket.php'],
-        ['Contact Us', '/contact.php'],
+        ['Contact Us', '/contact/'],
     ];
     $account = [
         ['Client Area', '/clientarea.php'],
@@ -971,8 +971,8 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         . '<div class="col brand"><div id="kxFooterLogo" class="txtlogo">KORVIX</div>'
         . '<p>Fast, local NBN and hosted services for Gippsland and beyond &mdash; '
         . 'no lock-ins, no runaround, real local support.</p>'
-        // TEMPORARY number — revert to 1300 881 437 when it's live.
-        . '<a class="ph" href="tel:0341305012">&#9742;&#65038;&nbsp;03 4130 5012</a></div>'
+        // Korvix main number.
+        . '<a class="ph" href="tel:0341305013">&#9742;&#65038;&nbsp;03 4130 5013</a></div>'
         . ($cats !== [] ? $col('Services', $cats) : '')
         . $col('Support', $support)
         . $col('Account', $account)
@@ -1033,7 +1033,7 @@ add_hook('ClientAreaPrimaryNavbar', 1, function ($primaryNavbar) {
         ]);
         $primaryNavbar->addChild('kxContact', [
             'label' => 'Contact',
-            'uri' => '/contact.php',
+            'uri' => '/contact/',
             'order' => 30,
         ]);
     } catch (\Throwable $e) {
