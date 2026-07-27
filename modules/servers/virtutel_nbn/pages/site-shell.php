@@ -306,14 +306,22 @@ function kx_site_render(string $section, string $arg = ''): void
   .inner { max-width:1080px; margin:0 auto; padding:0 20px; }
   /* chrome */
   .kx-switch { background:#04060c; font-size:12.5px; }
-  .kx-switch .in { max-width:1200px; margin:0 auto; padding:0 20px; display:flex; gap:2px;
+  /* chrome containers track Bootstrap's ladder so the nav lines up
+     exactly with the logged-in portal (540/720/960/1140, 15px gutters) */
+  .kx-switch .in, .kx-topbar .in, .kx-nav .in, .kx-footer .in {
+    width:100%; margin:0 auto; padding-left:15px; padding-right:15px; }
+  @media(min-width:576px){ .kx-switch .in, .kx-topbar .in, .kx-nav .in, .kx-footer .in { max-width:540px; } }
+  @media(min-width:768px){ .kx-switch .in, .kx-topbar .in, .kx-nav .in, .kx-footer .in { max-width:720px; } }
+  @media(min-width:992px){ .kx-switch .in, .kx-topbar .in, .kx-nav .in, .kx-footer .in { max-width:960px; } }
+  @media(min-width:1200px){ .kx-switch .in, .kx-topbar .in, .kx-nav .in, .kx-footer .in { max-width:1140px; } }
+  .kx-switch .in { display:flex; gap:2px;
                    justify-content:flex-end; }
   .kx-switch a { color:#98a2b8; font-weight:600; padding:8px 16px; display:inline-block; }
   .kx-switch a:hover { color:#e6e9f2; }
   .kx-switch a.on { color:#fff; background:#0b0f1a; border-top:2px solid var(--brand); }
   .kx-topbar { background:#070a12; border-bottom:1px solid #1c2436; font-size:12.5px; }
-  .kx-topbar .in { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between;
-                   align-items:center; padding:7px 20px; gap:14px; flex-wrap:wrap; }
+  .kx-topbar .in { display:flex; justify-content:space-between;
+                   align-items:center; padding-top:7px; padding-bottom:7px; gap:14px; flex-wrap:wrap; }
   .kx-topbar .l { display:flex; gap:18px; flex-wrap:wrap; }
   .kx-topbar a { color:#98a2b8; }
   .kx-topbar a:hover { color:#e6e9f2; }
@@ -322,7 +330,7 @@ function kx_site_render(string $section, string $arg = ''): void
                    padding:4px 14px; border-radius:999px; font-weight:600; }
   @media(max-width:640px){ .kx-topbar .l { display:none; } }
   .kx-nav { background:#0b0f1a; border-bottom:1px solid #1c2436; }
-  .kx-nav .in { max-width:1200px; margin:0 auto; padding:18px 20px; display:flex;
+  .kx-nav .in { padding-top:18px; padding-bottom:18px; display:flex;
                 align-items:center; gap:30px; flex-wrap:wrap; }
   .kx-nav .logo { font-size:24px; font-weight:900; color:#fff; letter-spacing:.02em; }
   /* same image, size and filter as the portal navbar logo (portal-dark.css)
@@ -532,7 +540,7 @@ function kx_site_render(string $section, string $arg = ''): void
   .kx-footer:before { content:''; position:absolute; top:0; left:0; right:0; height:1px;
                background:linear-gradient(90deg,transparent,#4d8dff 30%,#7a5cff 70%,transparent);
                opacity:.55; }
-  .kx-footer .in { max-width:1200px; margin:0 auto; padding:48px 20px 0; }
+  .kx-footer .in { padding-top:48px; padding-bottom:0; }
   .kx-footer .grid { display:grid; grid-template-columns:2fr 1fr 1fr; gap:32px; }
   @media(max-width:700px){ .kx-footer .grid { grid-template-columns:1fr; } }
   .kx-footer h4 { color:#e6e9f2; font-size:13px; letter-spacing:.1em; text-transform:uppercase;
