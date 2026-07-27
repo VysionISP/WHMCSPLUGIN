@@ -146,17 +146,6 @@ header('Cache-Control: no-store, max-age=0');
   .tiers { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
   .tier { background:var(--chip); color:var(--brand); border:1px solid var(--chipline); border-radius:8px;
           padding:8px 14px; font-weight:600; font-size:15px; }
-  .wzsteps { display:flex; align-items:center; gap:6px; }
-  .wzstep { display:flex; flex-direction:column; align-items:center; gap:4px; }
-  .wzdot { width:30px; height:30px; border-radius:50%; background:var(--chip); border:1px solid var(--chipline);
-           color:var(--muted); font-weight:800; font-size:13px; line-height:28px; text-align:center; }
-  .wzstep.on .wzdot { background:linear-gradient(135deg,#4d8dff,#7a5cff); border:0; color:#fff;
-                      line-height:30px; box-shadow:0 0 14px rgba(77,141,255,.5); }
-  .wzstep.done .wzdot { background:var(--ok); border:0; color:#fff; line-height:30px; }
-  .wzlbl { font-size:10.5px; color:var(--muted); white-space:nowrap; }
-  .wzstep.on .wzlbl { color:var(--ink); font-weight:700; }
-  .wzbar { flex:1; height:2px; background:var(--line); border-radius:2px; margin-bottom:16px; }
-  .wzbar.done { background:var(--ok); }
   .plans { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-top:18px; }
   .plan { border:1px solid var(--line); border-radius:10px; padding:16px; text-align:center; background:var(--card); }
   .plan .pname { font-weight:700; margin-bottom:2px; }
@@ -408,7 +397,9 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         function planRows(list) {
           return '<div style="margin:14px auto 0;max-width:420px;text-align:left">'
             + list.map(function (p) {
-              return '<a href="' + esc(p.orderUrl) + '" style="display:flex;justify-content:space-between;'
+              return '<a class="vt-order" href="' + esc(p.orderUrl) + '" data-plan="' + esc(p.name)
+                + '" data-price="' + esc(p.price) + '" data-addr="' + esc(label)
+                + '" style="display:flex;justify-content:space-between;'
                 + 'align-items:center;gap:12px;border:1px solid var(--line);border-radius:10px;'
                 + 'padding:10px 14px;margin-top:8px;text-decoration:none;color:var(--ink)">'
                 + '<span><strong>' + esc(p.name) + '</strong>'
@@ -429,8 +420,10 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
           head = 'Good news &mdash; we can connect you on ' + esc(sel.name) + '!';
           body = '<p class="desc" style="margin:10px 0 0">' + esc(q.technology)
             + ' is available at your place and supports the plan you picked.</p>'
-            + '<div style="margin:18px 0 0"><a class="btn" style="display:inline-block;'
+            + '<div style="margin:18px 0 0"><a class="btn vt-order" style="display:inline-block;'
             + 'text-decoration:none;padding:13px 34px;font-size:16px" href="' + esc(sel.orderUrl)
+            + '" data-plan="' + esc(sel.name) + '" data-price="' + esc(sel.price)
+            + '" data-addr="' + esc(label)
             + '">Get ' + esc(sel.name) + ' &mdash; ' + esc(sel.price) + ' &rarr;</a></div>'
             + (others.length
               ? '<p class="desc" style="margin:22px 0 0">We can also offer you:</p>' + planRows(others)
@@ -736,244 +729,27 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
 })();
 </script>
 <script>
-// ---- Onboarding wizard: a visible step-by-step journey ----
-// Details -> Contact -> Modem (if configured) -> Verify (if SMS) ->
-// Review -> checkout. Intercepts ONLY the final Order click; the order
-// URL (ports, transfer AVC, CPI, address) is exactly what the existing
-// flow built, and if wizard metadata fails to load the old direct flow
-// is untouched.
+// ---- Onboarding hand-off ----
+// Order clicks go to the full-page signup walkthrough (onboard.php):
+// details, DOB, modem offer, SMS verify, review — then it forwards to
+// this exact order URL, so ports/transfer/CPI capture is untouched. A
+// href without order.php falls through to normal navigation (old flow).
 (function () {
-  var api = 'signup-api.php';
-  var meta = null;
-  fetch(api, {method: 'POST', credentials: 'same-origin',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({action: 'meta'})})
-    .then(function (r) { return r.json(); })
-    .then(function (j) { if (j.ok) { meta = j; } })
-    .catch(function () {});
-
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-    });
-  }
-  function post(data) {
-    return fetch(api, {method: 'POST', credentials: 'same-origin',
-      headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
-      .then(function (r) { return r.json(); });
-  }
-
-  var state = {};
-  var FLOW = [];
-  var LABELS = {details: 'Your details', contact: 'Contact', modem: 'Modem',
-    verify: 'Verify', review: 'Review'};
-
-  function buildFlow() {
-    FLOW = ['details', 'contact'];
-    if (meta.router) { FLOW.push('modem'); }
-    if (meta.sms) { FLOW.push('verify'); }
-    FLOW.push('review');
-  }
-
-  function stepper(currentIdx) {
-    var html = '<div class="wzsteps">';
-    FLOW.forEach(function (key, i) {
-      var cls = i < currentIdx ? 'done' : (i === currentIdx ? 'on' : '');
-      html += '<div class="wzstep ' + cls + '"><span class="wzdot">'
-        + (i < currentIdx ? '&#10003;' : (i + 1)) + '</span>'
-        + '<span class="wzlbl">' + LABELS[key] + '</span></div>'
-        + (i < FLOW.length - 1 ? '<span class="wzbar ' + (i < currentIdx ? 'done' : '') + '"></span>' : '');
-    });
-    return html + '</div>';
-  }
-
-  function overlay(idx, title, body) {
-    var w = document.getElementById('vtWiz');
-    if (!w) {
-      w = document.createElement('div');
-      w.id = 'vtWiz';
-      w.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(6,9,16,.82);'
-        + 'display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto';
-      document.body.appendChild(w);
-    }
-    w.innerHTML = '<div class="card" style="max-width:500px;width:100%;margin-top:2vh">'
-      + stepper(idx)
-      + '<h3 style="margin:14px 0 12px;font-size:20px">' + title + '</h3>'
-      + '<div id="vtWizErr" style="display:none;color:var(--bad);font-size:13.5px;margin-bottom:10px"></div>'
-      + body + '</div>';
-    return w;
-  }
-  function closeWiz() { var w = document.getElementById('vtWiz'); if (w) { w.remove(); } }
-  function err(msg) {
-    var box = document.getElementById('vtWizErr');
-    if (box) { box.textContent = msg; box.style.display = 'block'; }
-  }
-  function busy(on, label) {
-    var b = document.getElementById('vtWizGo');
-    if (b) { b.disabled = on; if (label) { b.textContent = on ? 'One moment\u2026' : label; } }
-  }
-  function inputRow(name, ph, type, extra) {
-    return '<input name="' + name + '" type="' + (type || 'text') + '" placeholder="' + ph + '" '
-      + (extra || '') + ' style="width:100%;margin-bottom:10px;font-size:15px;padding:11px 13px;'
-      + 'background:var(--input);color:var(--ink);border:1px solid var(--line);border-radius:8px;'
-      + 'outline:none" />';
-  }
-  function nav(nextLabel) {
-    return '<button type="button" class="btn" id="vtWizGo" style="width:100%;margin-top:6px">'
-      + nextLabel + '</button>'
-      + '<button type="button" class="again" id="vtWizBack" style="margin-top:10px">Back</button>';
-  }
-  function keep(w, keys) {
-    keys.forEach(function (k) {
-      var el = w.querySelector('[name=' + k + ']');
-      if (el && state[k]) { el.value = state[k]; }
-    });
-  }
-  function grab(w, keys) {
-    keys.forEach(function (k) {
-      var el = w.querySelector('[name=' + k + ']');
-      if (el) { state[k] = el.value.trim(); }
-    });
-  }
-
-  function go(idx) {
-    if (idx < 0) { closeWiz(); return; }
-    var key = FLOW[idx];
-    if (key === 'details') { return stepDetails(idx); }
-    if (key === 'contact') { return stepContact(idx); }
-    if (key === 'modem') { return stepModem(idx); }
-    if (key === 'verify') { return stepVerify(idx); }
-    if (key === 'review') { return stepReview(idx); }
-  }
-
-  function stepDetails(idx) {
-    var w = overlay(idx, 'Let\u2019s get you set up',
-      '<p class="desc" style="margin:0 0 14px">Who\u2019s this connection for?</p>'
-      + inputRow('first', 'First name')
-      + inputRow('last', 'Last name')
-      + inputRow('email', 'Email address', 'email')
-      + nav('Next \u2192'));
-    keep(w, ['first', 'last', 'email']);
-    w.querySelector('#vtWizBack').onclick = function () { go(idx - 1); };
-    w.querySelector('#vtWizGo').onclick = function () {
-      grab(w, ['first', 'last', 'email']);
-      if (!state.first || !state.last) { return err('Please enter your name.'); }
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email)) { return err('That email doesn\u2019t look right.'); }
-      go(idx + 1);
-    };
-  }
-
-  function stepContact(idx) {
-    var w = overlay(idx, 'How do we reach you?',
-      '<p class="desc" style="margin:0 0 14px">Your mobile gets connection updates; date of birth '
-      + 'is for identity checks \u2014 never marketing.</p>'
-      + inputRow('phone', 'Mobile number (04xx xxx xxx)', 'tel')
-      + '<label style="display:block;color:var(--muted);font-size:12.5px;margin:2px 0 4px">Date of birth</label>'
-      + inputRow('dob', '', 'date', 'max="' + new Date().toISOString().slice(0, 10) + '"')
-      + nav('Next \u2192'));
-    keep(w, ['phone', 'dob']);
-    w.querySelector('#vtWizBack').onclick = function () { go(idx - 1); };
-    w.querySelector('#vtWizGo').onclick = function () {
-      grab(w, ['phone', 'dob']);
-      if (!/^(\+?61|0)[\s()-]*4[\d\s()-]{8,}$/.test(state.phone)) { return err('Please enter a valid Australian mobile.'); }
-      if (!state.dob) { return err('Please enter your date of birth.'); }
-      go(idx + 1);
-    };
-  }
-
-  function stepModem(idx) {
-    var r = meta.router;
-    var w = overlay(idx, 'Need a modem?',
-      '<p class="desc" style="margin:0 0 6px"><strong>' + esc(r.name) + '</strong>'
-      + (r.price ? ' \u2014 ' + esc(r.price) : '') + '</p>'
-      + '<p class="desc" style="margin:0 0 16px">' + esc(r.blurb || 'Pre-configured for Korvix \u2014 plug in and you\u2019re online. Or bring your own router: no username or password needed.') + '</p>'
-      + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
-      + '<button type="button" class="btn" id="vtWizYes">Yes, add it</button>'
-      + '<button type="button" class="btn" id="vtWizNo" style="background:transparent;'
-      + 'border:1px solid var(--line);color:var(--ink)">I\u2019ll bring my own</button></div>'
-      + '<button type="button" class="again" id="vtWizBack" style="margin-top:12px">Back</button>');
-    w.querySelector('#vtWizBack').onclick = function () { go(idx - 1); };
-    w.querySelector('#vtWizYes').onclick = function () { state.router = true; advance(idx); };
-    w.querySelector('#vtWizNo').onclick = function () { state.router = false; advance(idx); };
-  }
-
-  // Leaving the last input step: create the account (or send the code).
-  function advance(idx) {
-    var nextKey = FLOW[idx + 1];
-    if (nextKey === 'verify' || nextKey === 'review') {
-      if (state.accountDone) { return go(idx + 1); }
-      busy(true);
-      post({action: 'start', first: state.first, last: state.last, email: state.email,
-        phone: state.phone, dob: state.dob, addr: state.addr})
-        .then(function (j) {
-          busy(false);
-          if (!j.ok) { return err(j.error || 'Please check your details.'); }
-          if (j.verify) { state.hint = j.hint; return go(idx + 1); } // -> verify
-          state.accountDone = true;
-          state.existing = !!j.existing;
-          go(FLOW.indexOf('review'));
-        })
-        .catch(function () { busy(false); err('Connection hiccup \u2014 try again.'); });
-    } else {
-      go(idx + 1);
-    }
-  }
-
-  function stepVerify(idx) {
-    var w = overlay(idx, 'Confirm your mobile',
-      '<p class="desc" style="margin:0 0 14px">We\u2019ve texted a 6-digit code to <strong>'
-      + esc(state.hint || 'your mobile') + '</strong>.</p>'
-      + inputRow('code', '123456', 'tel', 'maxlength="6" inputmode="numeric" autocomplete="one-time-code"')
-      + nav('Verify \u2192'));
-    var codeEl = w.querySelector('[name=code]');
-    codeEl.focus();
-    w.querySelector('#vtWizBack').onclick = function () { go(idx - 1); };
-    w.querySelector('#vtWizGo').onclick = function () {
-      busy(true);
-      post({action: 'verify', code: codeEl.value})
-        .then(function (j) {
-          busy(false);
-          if (!j.ok) { return err(j.error || 'That code isn\u2019t right.'); }
-          state.accountDone = true;
-          state.existing = !!j.existing;
-          go(idx + 1);
-        })
-        .catch(function () { busy(false); err('Connection hiccup \u2014 try again.'); });
-    };
-  }
-
-  function stepReview(idx) {
-    var row = function (k, v) {
-      return '<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 0;'
-        + 'border-bottom:1px solid var(--line)"><span style="color:var(--muted)">' + k
-        + '</span><strong style="text-align:right">' + v + '</strong></div>';
-    };
-    var w = overlay(idx, 'Ready to go?',
-      row('Plan', esc(state.plan || '') + (state.price ? ' \u00b7 ' + esc(state.price) : ''))
-      + row('Address', esc(state.addr || ''))
-      + (meta.router ? row('Modem', state.router ? esc(meta.router.name) : 'Bringing my own') : '')
-      + row('Account', esc(state.email) + (state.existing
-          ? ' <span style="color:var(--warn)">(existing \u2014 log in at checkout)</span>'
-          : ' <span style="color:var(--ok)">\u2713 ready</span>'))
-      + '<button type="button" class="btn" id="vtWizGo" style="width:100%;margin-top:16px">'
-      + 'Continue to secure checkout \u2192</button>'
-      + '<button type="button" class="again" id="vtWizBack" style="margin-top:10px">Back</button>');
-    w.querySelector('#vtWizBack').onclick = function () { go(idx - 1); };
-    w.querySelector('#vtWizGo').onclick = function () {
-      var url = state.orderUrl + (state.router ? '&vt_router=1' : '');
-      busy(true, 'Continue to secure checkout \u2192');
-      (window.top || window).location.href = url;
-    };
-  }
-
   document.addEventListener('click', function (ev) {
     var a = ev.target.closest ? ev.target.closest('a.vt-order') : null;
-    if (!a || !meta) { return; } // meta failed => untouched old flow
+    if (!a) { return; }
+    var href = a.getAttribute('href') || '';
+    var cut = href.indexOf('order.php?');
+    if (cut === -1) { return; }
     ev.preventDefault();
-    state = {orderUrl: a.getAttribute('href'), addr: a.getAttribute('data-addr') || '',
-      plan: a.getAttribute('data-plan') || '', price: a.getAttribute('data-price') || ''};
-    buildFlow();
-    go(0);
+    var theme = document.documentElement.classList.contains('vt-dark') ? 'dark'
+      : (document.documentElement.classList.contains('vt-light') ? 'light' : '');
+    (window.top || window).location.href = href.slice(0, cut) + 'onboard.php'
+      + '?oq=' + encodeURIComponent(href.slice(cut + 'order.php?'.length))
+      + '&plan=' + encodeURIComponent(a.getAttribute('data-plan') || '')
+      + '&price=' + encodeURIComponent(a.getAttribute('data-price') || '')
+      + '&addr=' + encodeURIComponent(a.getAttribute('data-addr') || '')
+      + (theme ? '&theme=' + theme : '');
   });
 })();
 </script>
