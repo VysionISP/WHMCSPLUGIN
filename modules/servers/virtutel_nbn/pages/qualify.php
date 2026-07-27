@@ -234,7 +234,11 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
     btn.disabled = false;
     if (!res.ok) { return fail(res.body.error || 'Search failed.'); }
     var m = res.body.matches || [];
-    if (!m.length) { return fail('We couldn’t find that address in the NBN database. Try adding your suburb and postcode, or contact us and we’ll check manually.'); }
+    if (!m.length) { return fail(res.body.notFound || 'We couldn’t find that address in the NBN database. Try adding your suburb and postcode, or contact us and we’ll check manually.'); }
+    // Reverse-looked-up LOC ID: the address IS authoritative — qualify it.
+    if (m.length === 1 && m[0].exact) {
+      return qualify(m[0].locId, m[0].address || fallbackLabel);
+    }
     // Auto-accept a single match ONLY when its street number agrees with
     // what was typed — the NBN fuzzy search happily returns the nearest
     // neighbour (type 23, get 21) and silently qualifying that would tell

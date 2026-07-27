@@ -66,6 +66,30 @@ try {
         $lat = $input['lat'] ?? null;
         $lng = $input['lng'] ?? null;
 
+        // Power-user path: a typed NBN Location ID (LOC…) reverse-resolves
+        // to its address and qualifies directly. Tolerates spaces and a
+        // lowercase prefix.
+        $rawQuery = strtoupper(preg_replace('/\s+/', '', (string) ($input['address'] ?? '')) ?? '');
+        if (preg_match('/^LOC\d{9,15}$/', $rawQuery)) {
+            $results = $service->searchAddress(['locationId' => $rawQuery]);
+            $matches = [];
+            foreach ($results as $row) {
+                $label = (string) (($row['fullAddress'] ?? '') ?: ($row['formattedAddress'] ?? ''));
+                if ($label !== '') {
+                    $matches[] = [
+                        'locId' => (string) (($row['id'] ?? '') ?: $rawQuery),
+                        'address' => $label,
+                        'exact' => true, // reverse lookup — skip the typo guard
+                    ];
+                }
+            }
+            if ($matches === []) {
+                $respond(200, ['matches' => [], 'error' => null,
+                    'notFound' => 'No address found for ' . $rawQuery . ' — check the LOC ID.']);
+            }
+            $respond(200, ['matches' => $matches]);
+        }
+
         if (is_numeric($lat) && is_numeric($lng)) {
             // Preferred path: Google Places picked the address; NBN's
             // coordinate search returns the exact premises (incl. units).
