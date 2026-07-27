@@ -110,6 +110,12 @@ function kx_site_plans(): array
             ->get(['tblproducts.name', 'tblpricing.monthly']);
         $plans = [];
         foreach ($rows as $row) {
+            // Fixed Wireless tiers stay off the marketing slider — they
+            // only apply to FW addresses and clutter the line-up; the
+            // qualification flow still offers them where relevant.
+            if (preg_match('/\bFW\b|FIXED\s*WIRELESS/i', (string) $row->name)) {
+                continue;
+            }
             $down = $up = '';
             if (preg_match('/(\d+)\s*\/\s*(\d+)/', (string) $row->name, $m)) {
                 [, $down, $up] = $m;
