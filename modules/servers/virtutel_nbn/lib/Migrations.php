@@ -13,7 +13,7 @@ use WHMCS\Database\Capsule;
  */
 class Migrations
 {
-    public const SCHEMA_VERSION = 7;
+    public const SCHEMA_VERSION = 8;
 
     private static bool $checkedThisRequest = false;
 
@@ -61,6 +61,9 @@ class Migrations
         }
         if ($current < 7) {
             self::migrateToV7($schema);
+        }
+        if ($current < 8) {
+            self::migrateToV8();
         }
 
         Capsule::table('mod_virtutel_settings')->updateOrInsert(
@@ -156,6 +159,33 @@ class Migrations
                 }
             }
         }
+    }
+
+    /** Date of Birth client custom field, filled by the signup wizard. */
+    private static function migrateToV8(): void
+    {
+        $exists = Capsule::table('tblcustomfields')
+            ->where('type', 'client')
+            ->where('fieldname', 'like', 'Date of Birth%')
+            ->exists();
+        if ($exists) {
+            return;
+        }
+
+        Capsule::table('tblcustomfields')->insert([
+            'type' => 'client',
+            'relid' => 0,
+            'fieldname' => 'Date of Birth',
+            'fieldtype' => 'text',
+            'description' => 'YYYY-MM-DD (collected at signup for identity checks)',
+            'fieldoptions' => '',
+            'regexpr' => '',
+            'adminonly' => '',
+            'required' => '',
+            'showorder' => '',
+            'showinvoice' => '',
+            'sortorder' => 0,
+        ]);
     }
 
     /** Launch-interest leads captured from the coming-soon pages. */

@@ -41,6 +41,30 @@ function virtutel_nbn_admin_config(): array
                 'Description' => 'Enables address autocomplete on the customer qualification page. '
                     . 'Restrict the key to your domains and the Maps JavaScript + Places APIs.',
             ],
+            'router_pid' => [
+                'FriendlyName' => 'Modem/Router Product ID',
+                'Type' => 'text',
+                'Size' => '8',
+                'Description' => 'WHMCS product ID offered in the signup wizard ("Need a modem?"). Blank disables the step.',
+            ],
+            'clicksend_username' => [
+                'FriendlyName' => 'ClickSend Username',
+                'Type' => 'text',
+                'Size' => '30',
+                'Description' => 'For SMS mobile verification at signup. Blank disables verification (signup still works).',
+            ],
+            'clicksend_api_key' => [
+                'FriendlyName' => 'ClickSend API Key',
+                'Type' => 'password',
+                'Size' => '40',
+                'Description' => '',
+            ],
+            'sms_from' => [
+                'FriendlyName' => 'SMS Sender Name',
+                'Type' => 'text',
+                'Size' => '12',
+                'Description' => 'Up to 11 characters, default Korvix.',
+            ],
             'radius_db_host' => [
                 'FriendlyName' => 'FreeRADIUS DB Host',
                 'Type' => 'text',

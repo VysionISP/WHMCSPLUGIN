@@ -39,6 +39,39 @@ if (isset($_GET['ajax'])) {
     exit;
 }
 
+// Signup wizard "yes, I need a modem": drop the configured router product
+// straight into the session cart alongside the plan being added.
+if (($_GET['vt_router'] ?? '') === '1') {
+    $routerPid = (int) (Capsule::table('tbladdonmodules')
+        ->where('module', 'virtutel_nbn_admin')
+        ->where('setting', 'router_pid')->value('value') ?? 0);
+    if ($routerPid > 0) {
+        if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
+            $_SESSION['cart'] = [];
+        }
+        if (!isset($_SESSION['cart']['products']) || !is_array($_SESSION['cart']['products'])) {
+            $_SESSION['cart']['products'] = [];
+        }
+        $inCart = false;
+        foreach ($_SESSION['cart']['products'] as $cartProduct) {
+            if ((int) ($cartProduct['pid'] ?? 0) === $routerPid) {
+                $inCart = true;
+                break;
+            }
+        }
+        if (!$inCart) {
+            $_SESSION['cart']['products'][] = [
+                'pid' => $routerPid,
+                'domain' => '',
+                'billingcycle' => '',
+                'configoptions' => [],
+                'customfields' => [],
+                'addons' => [],
+            ];
+        }
+    }
+}
+
 $systemUrl = rtrim((string) (Capsule::table('tblconfiguration')
     ->where('setting', 'SystemURL')->value('value') ?? ''), '/');
 

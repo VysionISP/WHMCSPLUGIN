@@ -514,7 +514,8 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
             + '<div class="pname">' + esc(p.name) + '</div>'
             + '<div class="pspeed">' + esc(p.speedLabel) + '</div>'
             + '<div class="pprice">' + esc(p.price) + '</div>'
-            + '<a class="btn" href="' + esc(orderUrl) + '">Order now</a>'
+            + '<a class="btn vt-order" href="' + esc(orderUrl) + '" data-plan="' + esc(p.name)
+            + '" data-addr="' + esc(label) + '">Order now</a>'
             + '</div>';
         });
         html += '</div>';
@@ -721,6 +722,166 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
     var fInput = document.getElementById('address');
     if (fInput) { fInput.focus(); }
   }
+})();
+</script>
+<script>
+// ---- Onboarding wizard: modem offer -> account (DOB) -> SMS verify ----
+// Intercepts ONLY the final Order click; the order URL (ports, transfer
+// AVC, CPI, address) is exactly what the existing flow built.
+(function () {
+  var api = 'signup-api.php';
+  var meta = null;
+  fetch(api, {method: 'POST', credentials: 'same-origin',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({action: 'meta'})})
+    .then(function (r) { return r.json(); })
+    .then(function (j) { if (j.ok) { meta = j; } })
+    .catch(function () {});
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function post(data) {
+    return fetch(api, {method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
+      .then(function (r) { return r.json(); });
+  }
+
+  var state = {};
+
+  function overlay(html) {
+    var w = document.getElementById('vtWiz');
+    if (!w) {
+      w = document.createElement('div');
+      w.id = 'vtWiz';
+      w.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(6,9,16,.8);'
+        + 'display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto';
+      document.body.appendChild(w);
+    }
+    w.innerHTML = '<div class="card" style="max-width:480px;width:100%;margin-top:2vh">' + html + '</div>';
+    return w;
+  }
+  function closeWiz() { var w = document.getElementById('vtWiz'); if (w) { w.remove(); } }
+  function err(msg) {
+    var box = document.getElementById('vtWizErr');
+    if (box) { box.textContent = msg; box.style.display = 'block'; }
+  }
+  function busy(on) {
+    var b = document.querySelector('#vtWiz .btn');
+    if (b) { b.disabled = on; }
+  }
+  function head(step, total, title) {
+    return '<div style="color:var(--muted);font-size:12px;letter-spacing:.08em;'
+      + 'text-transform:uppercase;margin-bottom:4px">Step ' + step + ' of ' + total + '</div>'
+      + '<h3 style="margin:0 0 12px;font-size:20px">' + title + '</h3>'
+      + '<div id="vtWizErr" style="display:none;color:var(--bad);font-size:13.5px;'
+      + 'margin-bottom:10px"></div>';
+  }
+  function inputRow(name, ph, type, extra) {
+    return '<input name="' + name + '" type="' + (type || 'text') + '" placeholder="' + ph + '" '
+      + (extra || '') + ' style="width:100%;margin-bottom:10px;font-size:15px;padding:11px 13px;'
+      + 'background:var(--input);color:var(--ink);border:1px solid var(--line);border-radius:8px;'
+      + 'outline:none" />';
+  }
+  function backLink(fn) {
+    return '<button type="button" class="again" id="vtWizBack" style="margin-top:10px">Back</button>';
+  }
+
+  function totalSteps() { return (meta && meta.router ? 1 : 0) + 1 + (meta && meta.sms ? 1 : 0); }
+  function accountStepNo() { return (meta && meta.router ? 2 : 1); }
+
+  function stepRouter() {
+    var r = meta.router;
+    var w = overlay(head(1, totalSteps(), 'Need a modem?')
+      + '<p class="desc" style="margin:0 0 6px"><strong>' + esc(r.name) + '</strong>'
+      + (r.price ? ' &mdash; ' + esc(r.price) : '') + '</p>'
+      + '<p class="desc" style="margin:0 0 16px">' + esc(r.blurb || 'Pre-configured for Korvix — plug in and you\'re online. Or bring your own router (no username or password needed).') + '</p>'
+      + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
+      + '<button type="button" class="btn" id="vtWizYes">Yes, add it</button>'
+      + '<button type="button" class="btn" id="vtWizNo" style="background:transparent;'
+      + 'border:1px solid var(--line);color:var(--ink)">No thanks — I have my own</button>'
+      + '</div>' + backLink());
+    w.querySelector('#vtWizYes').onclick = function () { state.router = true; stepAccount(); };
+    w.querySelector('#vtWizNo').onclick = function () { state.router = false; stepAccount(); };
+    w.querySelector('#vtWizBack').onclick = closeWiz;
+  }
+
+  function stepAccount() {
+    var w = overlay(head(accountStepNo(), totalSteps(), 'Create your account')
+      + '<p class="desc" style="margin:0 0 14px">A couple of details and you\'re set — no separate '
+      + 'registration form at checkout.</p>'
+      + inputRow('first', 'First name')
+      + inputRow('last', 'Last name')
+      + inputRow('email', 'Email address', 'email')
+      + inputRow('phone', 'Mobile number (04xx xxx xxx)', 'tel')
+      + '<label style="display:block;color:var(--muted);font-size:12.5px;margin:2px 0 4px">Date of birth</label>'
+      + inputRow('dob', '', 'date', 'max="' + new Date().toISOString().slice(0, 10) + '"')
+      + '<button type="button" class="btn" id="vtWizGo" style="width:100%;margin-top:6px">'
+      + (meta && meta.sms ? 'Send verification code' : 'Create account &amp; continue') + '</button>'
+      + backLink());
+    ['first', 'last', 'email', 'phone', 'dob'].forEach(function (k) {
+      var el = w.querySelector('[name=' + k + ']');
+      if (state[k]) { el.value = state[k]; }
+    });
+    w.querySelector('#vtWizBack').onclick = meta && meta.router ? stepRouter : closeWiz;
+    w.querySelector('#vtWizGo').onclick = function () {
+      ['first', 'last', 'email', 'phone', 'dob'].forEach(function (k) {
+        state[k] = w.querySelector('[name=' + k + ']').value.trim();
+      });
+      busy(true);
+      post({action: 'start', first: state.first, last: state.last, email: state.email,
+        phone: state.phone, dob: state.dob, addr: state.addr})
+        .then(function (j) {
+          busy(false);
+          if (!j.ok) { return err(j.error || 'Please check your details.'); }
+          if (j.verify) { return stepOtp(j.hint); }
+          finish(j.existing);
+        })
+        .catch(function () { busy(false); err('Connection hiccup — try again.'); });
+    };
+  }
+
+  function stepOtp(hint) {
+    var w = overlay(head(totalSteps(), totalSteps(), 'Confirm your mobile')
+      + '<p class="desc" style="margin:0 0 14px">We\'ve texted a 6-digit code to <strong>'
+      + esc(hint || 'your mobile') + '</strong>. Enter it below.</p>'
+      + inputRow('code', '123456', 'tel', 'maxlength="6" inputmode="numeric" autocomplete="one-time-code"')
+      + '<button type="button" class="btn" id="vtWizGo" style="width:100%;margin-top:6px">Verify &amp; continue</button>'
+      + backLink());
+    var codeEl = w.querySelector('[name=code]');
+    codeEl.focus();
+    w.querySelector('#vtWizBack').onclick = stepAccount;
+    w.querySelector('#vtWizGo').onclick = function () {
+      busy(true);
+      post({action: 'verify', code: codeEl.value})
+        .then(function (j) {
+          busy(false);
+          if (!j.ok) { return err(j.error || 'That code isn\'t right.'); }
+          finish(j.existing);
+        })
+        .catch(function () { busy(false); err('Connection hiccup — try again.'); });
+    };
+  }
+
+  function finish(existing) {
+    var url = state.orderUrl + (state.router ? '&vt_router=1' : '');
+    overlay('<h3 style="margin:0 0 8px;font-size:20px">' + (existing
+        ? 'Welcome back!' : 'Account created &#10003;')
+      + '</h3><p class="desc">' + (existing
+        ? 'You already have a Korvix account — you\'ll log in at checkout.'
+        : 'Taking you to checkout&hellip;') + '</p>');
+    setTimeout(function () { (window.top || window).location.href = url; }, existing ? 1800 : 600);
+  }
+
+  document.addEventListener('click', function (ev) {
+    var a = ev.target.closest ? ev.target.closest('a.vt-order') : null;
+    if (!a || !meta) { return; } // meta failed to load => untouched old flow
+    ev.preventDefault();
+    state = {orderUrl: a.getAttribute('href'), addr: a.getAttribute('data-addr') || ''};
+    if (meta.router) { stepRouter(); } else { stepAccount(); }
+  });
 })();
 </script>
 <?php if ($placesKey !== ''): ?>
