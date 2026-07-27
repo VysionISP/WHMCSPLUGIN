@@ -1031,6 +1031,30 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
 });
 
 /**
+ * Guests browsing sales/marketing pages don't need checkout furniture:
+ * the header cart widget only renders for visitors on actual cart/store
+ * pages (and always for logged-in clients, whose cart can hold items).
+ */
+add_hook('ClientAreaHeadOutput', 7, function () {
+    if (!empty($_SESSION['uid'])) {
+        return '';
+    }
+    $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
+    if (str_contains($path, 'cart.php') || str_contains($path, '/store/')) {
+        return '';
+    }
+
+    return '<style>'
+        . '#header a[href*="cart.php"],.app-header a[href*="cart.php"],'
+        . 'nav a[href*="cart.php"],.kx-onerow a[href*="cart.php"]{display:none !important}'
+        . '</style>'
+        . "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "document.querySelectorAll('a[href*=\"cart.php\"]').forEach(function(a){"
+        . "if(a.closest('#header,.app-header,nav,.navbar')){a.style.display='none';}"
+        . "});});</script>";
+});
+
+/**
  * Split main nav: logged-in clients keep the stock portal nav (Services,
  * Billing, Support, Open Ticket); visitors get a marketing nav built live
  * from the visible product groups (store slug links when present) plus
