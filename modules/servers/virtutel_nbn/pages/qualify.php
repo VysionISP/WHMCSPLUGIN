@@ -234,7 +234,29 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
     btn.disabled = false;
     if (!res.ok) { return fail(res.body.error || 'Search failed.'); }
     var m = res.body.matches || [];
-    if (!m.length) { return fail(res.body.notFound || 'We couldn’t find that address in the NBN database. Try adding your suburb and postcode, or contact us and we’ll check manually.'); }
+    if (!m.length) {
+      // Not a dead end: the address is usually real but missing/odd in
+      // the NBN database — give tips and a human escape hatch.
+      show('<div class="card" style="text-align:left">'
+        + '<strong>' + esc(res.body.notFound || 'We couldn’t find that address in the NBN database.')
+        + '</strong>'
+        + '<p class="desc" style="margin:10px 0 6px">Your address is probably fine — the NBN '
+        + 'database sometimes lists places differently (or not yet at all). Quick things to try:</p>'
+        + '<ul class="desc" style="margin:0 0 14px;padding-left:20px;line-height:1.8">'
+        + '<li>Add the suburb and postcode (e.g. "12 Smith St, Sale VIC 3850")</li>'
+        + '<li>Drop the unit/shop number and pick it from the list instead</li>'
+        + '<li>For corner blocks or ranges, try just the first street number</li>'
+        + '</ul>'
+        + '<p class="desc" style="margin:0 0 12px">Still nothing? That usually means NBN has the '
+        + 'premises under a different name — we can look it up manually in a minute or two.</p>'
+        + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
+        + '<a class="btn" style="text-decoration:none" href="/contact/">Ask us to check it</a>'
+        + '<a class="btn" style="text-decoration:none;background:transparent;'
+        + 'border:1px solid var(--line);color:var(--ink)" href="tel:0341305013">Call 03 4130 5013</a>'
+        + '<button type="button" class="again" onclick="vtReset()">Try another address</button>'
+        + '</div></div>');
+      return;
+    }
     // Reverse-looked-up LOC ID: the address IS authoritative — qualify it.
     if (m.length === 1 && m[0].exact) {
       return qualify(m[0].locId, m[0].address || fallbackLabel);
