@@ -671,7 +671,10 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
         . "if(grid){grid.replaceWith(f);}"
         . "else{var mb=document.getElementById('main-body')||document.querySelector('.main-content,section#main-menu+*');"
         . "if(!mb){return;}mb.insertBefore(f,mb.firstChild);}"
-        . "setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;"
+        // body.scrollHeight shrinks with the content; documentElement
+        // ratchets at iframe height and leaves a void after long lists.
+        . "setInterval(function(){try{var b=f.contentDocument.body;if(!b){return;}"
+        . "var h=b.scrollHeight+24;"
         . "if(h>200&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);"
         . "});</script>";
 });
@@ -732,7 +735,8 @@ add_hook('ClientAreaHeadOutput', 9, function ($vars) {
         . "mb.innerHTML=html;mb.style.opacity='1';"
         . "var f=document.getElementById('kxQualifyFrame');"
         . "if(f){setInterval(function(){try{"
-        . "var h=f.contentDocument.documentElement.scrollHeight;"
+        . "var b=f.contentDocument.body;if(!b){return;}"
+        . "var h=b.scrollHeight+24;"
         . "if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);}"
         . "}).catch(function(){mb.style.opacity='1';});"
         . "});</script>";

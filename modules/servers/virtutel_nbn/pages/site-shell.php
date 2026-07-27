@@ -1071,7 +1071,11 @@ function kxInitPlaces(){
 
 <script>
 (function(){var f=document.getElementById('kxQ');if(!f){return;}
-setInterval(function(){try{var h=f.contentDocument.documentElement.scrollHeight;
+setInterval(function(){try{
+// body.scrollHeight shrinks when content does (documentElement ratchets
+// at iframe height and leaves a void after long lists collapse)
+var b=f.contentDocument.body;if(!b){return;}
+var h=b.scrollHeight+24;
 if(h>120&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);})();
 </script>
 
