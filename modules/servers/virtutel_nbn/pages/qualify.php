@@ -492,11 +492,10 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
             + '</div>';
         });
         html += '</div>';
-      } else if (q.tiers && q.tiers.length) {
-        html += '<div class="tiers">';
-        q.tiers.forEach(function (t) { html += '<span class="tier">' + esc(t.label) + '</span>'; });
-        html += '</div>';
       }
+      // (Raw speed-tier chips used to render here when no plan cards did —
+      // dropped: plans carry the speeds, and in the transfer flow the
+      // cards appear right after AVC validation anyway.)
       if (q.newDevelopmentCharge) {
         html += '<div class="note">This address is in a new development area — NBN’s one-off New Development Charge may apply.</div>';
       }
