@@ -264,6 +264,58 @@ function virtutel_nbn_admin_output(array $vars): void
             }
             echo '</table>';
         }
+
+        // Signup wizard status: what the modem step will actually show, and
+        // why a configured pid isn't showing (the usual "step not there"
+        // question answers itself here).
+        $wizSetting = function (string $name): string {
+            return (string) (Capsule::table('tbladdonmodules')
+                ->where('module', 'virtutel_nbn_admin')
+                ->where('setting', $name)->value('value') ?? '');
+        };
+        $wizIds = function (string $csv): array {
+            return array_values(array_filter(array_map(
+                'intval',
+                preg_split('/[\s,]+/', $csv, -1, PREG_SPLIT_NO_EMPTY) ?: []
+            ), static fn ($id) => $id > 0));
+        };
+        $routerPids = $wizIds($wizSetting('router_pids'));
+        if ($routerPids === []) {
+            $routerPids = $wizIds($wizSetting('router_pid'));
+        }
+        $noVdsl = $wizIds($wizSetting('router_no_vdsl_pids'));
+
+        echo '<div style="border-top:1px solid #e4e8f0;margin-top:12px;padding-top:10px;'
+            . 'color:#667;font-size:12.5px"><strong style="color:#333">Signup wizard:</strong> ';
+        if ($routerPids === []) {
+            echo 'modem step <span style="color:#a3690e;font-weight:600">disabled</span> — set '
+                . '"Modem/Router Product IDs" in this addon\'s Configure tab. ';
+        } else {
+            $parts = [];
+            foreach (array_slice($routerPids, 0, 4) as $rpid) {
+                $rp = Capsule::table('tblproducts')->where('id', $rpid)->first(['id', 'name']);
+                if (!$rp) {
+                    $parts[] = '<span style="color:#c0392b;font-weight:600">#' . (int) $rpid
+                        . ' not found</span>';
+                    continue;
+                }
+                $priceRow = Capsule::table('tblpricing')->where('type', 'product')
+                    ->where('relid', $rpid)->orderBy('currency')->first();
+                $label = $e((string) $rp->name) . ' (#' . (int) $rpid . ')';
+                if (!$priceRow || (float) $priceRow->monthly < 0) {
+                    $label .= ' <span style="color:#c0392b">no price</span>';
+                }
+                if (in_array($rpid, $noVdsl, true)) {
+                    $label .= ' <span style="color:#a3690e">hidden on FTTN/FTTB</span>';
+                }
+                $parts[] = $label;
+            }
+            echo 'modem cards: ' . implode(' &nbsp;·&nbsp; ', $parts) . '. ';
+        }
+        echo 'SMS verification: ' . (\WHMCS\Module\Server\VirtutelNbn\Service\Sms::enabled()
+            ? '<span style="color:#1d9e55;font-weight:600">on</span>'
+            : '<span style="color:#a3690e">off (ClickSend not configured)</span>')
+            . '</div>';
         echo '</div>';
     } catch (\Throwable $ex) {
         echo '<div style="color:#c0392b">Ops dashboard error: ' . $e($ex->getMessage()) . '</div>';

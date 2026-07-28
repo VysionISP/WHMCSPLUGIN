@@ -144,15 +144,20 @@ try {
         }
         $ethernetOnly = $parseIds($setting('router_no_vdsl_pids'));
 
+        $currencyId = (int) (Capsule::table('tblcurrencies')
+            ->orderByDesc('default')->orderBy('id')->value('id') ?? 1);
         $routers = [];
         foreach (array_slice($pids, 0, 4) as $routerPid) {
+            // No hidden=0 filter: hardware add-on products are typically
+            // hidden from the store catalogue but still orderable via the
+            // wizard's direct cart injection.
             $product = Capsule::table('tblproducts')->where('id', $routerPid)
-                ->where('hidden', 0)->first(['id', 'name', 'paytype', 'description']);
+                ->first(['id', 'name', 'paytype', 'description']);
             if (!$product) {
                 continue;
             }
             $pricing = Capsule::table('tblpricing')->where('type', 'product')
-                ->where('currency', 1)->where('relid', $routerPid)->first();
+                ->where('currency', $currencyId)->where('relid', $routerPid)->first();
             $amount = null;
             $suffix = '';
             if ($pricing) {
