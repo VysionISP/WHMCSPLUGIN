@@ -81,7 +81,7 @@ class CustomerFacingTest extends TestCase
         $readiness = ConnectReadiness::assess($q);
         $this->assertSame('existing_service', $readiness['code']);
         $this->assertStringNotContainsString('technician visit is needed', $readiness['description']);
-        $this->assertStringContainsString('transfers to us remotely', $readiness['description']);
+        $this->assertStringContainsString('remote transfer', $readiness['description']);
     }
 
     public function testFttpNoNtdNeedsAppointment(): void

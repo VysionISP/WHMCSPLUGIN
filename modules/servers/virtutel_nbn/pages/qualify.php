@@ -81,6 +81,9 @@ header('Cache-Control: no-store, max-age=0');
   html.vt-embed .wrap { max-width: 100%; padding: 4px 2px 10px; }
   html.vt-embed h1, html.vt-embed p.lead { display: none; }
   * { box-sizing:border-box; }
+  /* Stop iOS Safari "font boosting" from inflating the copy into giant
+     text when the page runs inside the store-page iframe. */
+  html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
          color:var(--ink); margin:0; background:var(--page); }
   .wrap { max-width:640px; margin:0 auto; padding:28px 16px 60px; }
@@ -94,6 +97,8 @@ header('Cache-Control: no-store, max-age=0');
     .searchbox .btn { width:100%; }
     .portmode { flex-wrap:wrap; }
     .portmode .modebtn { flex:1 1 auto; }
+    .churn .row { flex-wrap:wrap; }
+    .churn .row .btn { width:100%; }
   }
   .searchbox input { flex:1; font-size:16px; padding:12px 14px; background:var(--input); color:var(--ink); border:1px solid var(--line);
                      border-radius:8px; outline:none; }
@@ -175,7 +180,7 @@ header('Cache-Control: no-store, max-age=0');
   .churn h3 { margin:0 0 6px; font-size:16px; }
   .churn p { margin:0 0 10px; color:var(--muted); font-size:14px; line-height:1.5; }
   .churn .row { display:flex; gap:8px; }
-  .churn input[type=text] { flex:1; font-size:15px; padding:10px 12px; background:var(--input); color:var(--ink); border:1px solid var(--line); border-radius:8px; }
+  .churn input[type=text] { flex:1; min-width:0; font-size:15px; padding:10px 12px; background:var(--input); color:var(--ink); border:1px solid var(--line); border-radius:8px; }
   .churn label.consent { display:flex; gap:8px; align-items:flex-start; font-size:13px; color:var(--muted);
                           margin:10px 0 0; line-height:1.45; }
   .churn .cherr { color:var(--bad); font-size:14px; margin-top:8px; }
@@ -543,15 +548,15 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
             + 'Switching from another provider? Transfer your existing service instead &rarr;</button></p>';
         }
         html += '<div class="churn"' + (churnExpanded ? '' : ' style="display:none"') + '><h3>Already have NBN at this address?</h3>'
-          + '<p>Switching from another provider? Transfers are done remotely — '
-          + (q.hasExistingService ? 'and since the NBN equipment here is already in use, this is usually the fastest way to connect. ' : '')
-          + 'Grab the <strong>AVC ID</strong> from your current provider (it looks like AVC123456789012 — '
-          + 'check their portal, app, or a recent invoice; the last 5 digits are enough).</p>'
+          + '<p>Transfers happen remotely — no technician visit'
+          + (q.hasExistingService ? ', and with the equipment here already in use it’s the fastest way to connect' : '')
+          + '. Enter the <strong>AVC ID</strong> from your current provider’s portal, app or invoice '
+          + '(looks like AVC123456789012 — the last 5 digits are enough).</p>'
           + '<div class="row"><input type="text" id="avcInput" maxlength="15" placeholder="AVC123456789012 or last 5 digits"'
           + (churnFailed ? ' value="' + esc(q.churn.attempted || '') + '"' : '') + '>'
           + '<button type="button" class="btn" id="avcBtn">Check transfer</button></div>'
-          + '<label class="consent"><input type="checkbox" id="avcConsent"> I’m the account holder (or authorised by them) '
-          + 'and I authorise this provider to transfer the service at this address from my current provider.</label>'
+          + '<label class="consent"><input type="checkbox" id="avcConsent"> I’m the account holder (or authorised '
+          + 'by them) and approve transferring this service from my current provider.</label>'
           + (churnFailed ? '<div class="cherr">' + esc(q.churn.error) + '</div>' : '')
           + '</div>';
       }

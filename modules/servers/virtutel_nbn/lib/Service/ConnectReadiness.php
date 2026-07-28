@@ -43,10 +43,8 @@ class ConnectReadiness
             return [
                 'code' => 'existing_service',
                 'label' => 'Active service at this address',
-                'description' => 'The NBN equipment here already has a service connected. Switching from another '
-                    . 'provider? Your connection transfers to us remotely — no technician visit needed. '
-                    . 'Enter your AVC ID below to get started. (Need an extra, separate connection instead? '
-                    . 'Contact us and we\'ll arrange it.)',
+                'description' => 'The NBN equipment here already has a service connected — switching to us '
+                    . 'is a quick remote transfer. Start with your AVC ID below.',
             ];
         }
 
@@ -65,10 +63,8 @@ class ConnectReadiness
                 return [
                     'code' => 'existing_service',
                     'label' => 'Active service at this address',
-                    'description' => 'The line at this address already has an active NBN service. Switching from '
-                        . 'another provider? Your connection transfers to us remotely — no technician visit '
-                        . 'needed. Enter your AVC ID below to get started. (Need an extra, separate line '
-                        . 'instead? Contact us and we\'ll arrange it.)',
+                    'description' => 'The line at this address already has an active NBN service — switching '
+                        . 'to us is a quick remote transfer. Start with your AVC ID below.',
                 ];
             }
         }

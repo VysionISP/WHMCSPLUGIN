@@ -81,6 +81,7 @@ header('Cache-Control: no-store, max-age=0');
     }
   }
   * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
          color:var(--ink); margin:0; background:var(--page); min-height:100vh; }
   a { color:var(--brand); }
