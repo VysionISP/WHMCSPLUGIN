@@ -126,35 +126,73 @@ try {
     $action = (string) ($input['action'] ?? '');
 
     if ($action === 'meta') {
-        $routerPid = (int) (Capsule::table('tbladdonmodules')
-            ->where('module', 'virtutel_nbn_admin')
-            ->where('setting', 'router_pid')->value('value') ?? 0);
-        $router = null;
-        if ($routerPid > 0) {
+        $setting = function (string $name): string {
+            return (string) (Capsule::table('tbladdonmodules')
+                ->where('module', 'virtutel_nbn_admin')
+                ->where('setting', $name)->value('value') ?? '');
+        };
+        $parseIds = static fn (string $csv): array => array_values(array_filter(array_map(
+            'intval',
+            preg_split('/[\s,]+/', $csv, -1, PREG_SPLIT_NO_EMPTY) ?: []
+        ), static fn ($id) => $id > 0));
+
+        // router_pids (comma-separated, display order) with the old single
+        // router_pid setting as a fallback so existing configs keep working.
+        $pids = $parseIds($setting('router_pids'));
+        if ($pids === []) {
+            $pids = $parseIds($setting('router_pid'));
+        }
+        $ethernetOnly = $parseIds($setting('router_no_vdsl_pids'));
+
+        $routers = [];
+        foreach (array_slice($pids, 0, 4) as $routerPid) {
             $product = Capsule::table('tblproducts')->where('id', $routerPid)
                 ->where('hidden', 0)->first(['id', 'name', 'paytype', 'description']);
-            if ($product) {
-                $pricing = Capsule::table('tblpricing')->where('type', 'product')
-                    ->where('currency', 1)->where('relid', $routerPid)->first();
-                $amount = null;
-                $suffix = '';
-                if ($pricing) {
-                    if ((string) $product->paytype === 'onetime' && (float) $pricing->monthly >= 0) {
-                        $amount = (float) $pricing->monthly;
-                        $suffix = ' once';
-                    } elseif ((float) $pricing->monthly > 0) {
-                        $amount = (float) $pricing->monthly;
-                        $suffix = '/mo';
-                    }
-                }
-                $router = [
-                    'name' => (string) $product->name,
-                    'price' => $amount !== null ? '$' . number_format($amount, 2) . $suffix : '',
-                    'blurb' => trim(strip_tags((string) $product->description)),
-                ];
+            if (!$product) {
+                continue;
             }
+            $pricing = Capsule::table('tblpricing')->where('type', 'product')
+                ->where('currency', 1)->where('relid', $routerPid)->first();
+            $amount = null;
+            $suffix = '';
+            if ($pricing) {
+                if ((string) $product->paytype === 'onetime' && (float) $pricing->monthly >= 0) {
+                    $amount = (float) $pricing->monthly;
+                    $suffix = ' upfront';
+                } elseif ((float) $pricing->monthly > 0) {
+                    $amount = (float) $pricing->monthly;
+                    $suffix = '/mo';
+                }
+            }
+
+            // Description lines become the card's feature bullets.
+            $features = array_slice(array_values(array_filter(array_map(
+                'trim',
+                preg_split('/\r\n|\r|\n/', strip_tags((string) $product->description)) ?: []
+            ), static fn ($line) => $line !== '')), 0, 6);
+
+            // Optional card photo by convention: assets/img/routers/<pid>.png|jpg
+            $img = '';
+            foreach (['png', 'jpg'] as $ext) {
+                if (is_file(__DIR__ . '/../../../../assets/img/routers/' . $routerPid . '.' . $ext)) {
+                    $img = '/assets/img/routers/' . $routerPid . '.' . $ext;
+                    break;
+                }
+            }
+
+            $routers[] = [
+                'pid' => $routerPid,
+                'name' => (string) $product->name,
+                'price' => $amount !== null ? '$' . number_format($amount, 2) : '',
+                'priceSuffix' => $amount !== null ? $suffix : '',
+                'features' => $features,
+                'img' => $img,
+                'ethernetOnly' => in_array($routerPid, $ethernetOnly, true),
+            ];
         }
-        $respond(200, ['ok' => true, 'router' => $router, 'sms' => Sms::enabled()]);
+
+        $respond(200, ['ok' => true, 'routers' => $routers,
+            'router' => $routers[0] ?? null, 'sms' => Sms::enabled()]);
     }
 
     if (!RateLimiter::allow(RateLimiter::clientIp())) {

@@ -210,6 +210,24 @@ header('Cache-Control: no-store, max-age=0');
     -webkit-background-clip:text; background-clip:text; color:transparent; }
   .sumnote { margin-top:10px; font-size:12.5px; color:var(--muted); line-height:1.5; }
 
+  .rgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); gap:12px; margin-top:6px; }
+  .rcard { border:1px solid var(--line); border-radius:13px; padding:15px 14px 14px; background:var(--input);
+           display:flex; flex-direction:column; gap:8px; text-align:left;
+           transition:border-color .12s ease, transform .12s ease; }
+  .rcard:hover { border-color:var(--brand); transform:translateY(-2px); }
+  .rimg { height:76px; display:flex; align-items:center; justify-content:center; }
+  .rimg img { max-height:76px; max-width:100%; object-fit:contain; }
+  .rimg.ph { color:var(--muted); opacity:.7; }
+  .rimg.ph svg { width:62px; height:44px; }
+  .rname { font-weight:800; font-size:15px; letter-spacing:.01em; }
+  .rprice .amt { font-size:21px; font-weight:800;
+    background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff);
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .rprice .suf { font-size:12px; color:var(--muted); margin-left:5px; }
+  .rfeat { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px;
+           font-size:12.5px; color:var(--muted); line-height:1.4; flex:1; }
+  .rfeat li::before { content:'\2713'; color:var(--ok); font-weight:800; margin-right:6px; }
+  .rcard .btn { margin-top:auto; padding:10px 14px; font-size:14px; }
   .chints { display:flex; flex-wrap:wrap; gap:8px 18px; margin:14px 4px 0;
             font-size:13px; color:var(--muted); }
   .chints span::before { content:'\2713'; color:var(--ok); font-weight:800; margin-right:6px; }
@@ -286,9 +304,10 @@ header('Cache-Control: no-store, max-age=0');
   var state = {
     plan: <?php echo $jsVar($plan); ?>,
     price: <?php echo $jsVar($price); ?>,
-    addr: <?php echo $jsVar($addr); ?>
+    addr: <?php echo $jsVar($addr); ?>,
+    tech: <?php echo $jsVar((string) ($clean['vt_tech'] ?? '')); ?>
   };
-  var meta = {router: null, sms: false};
+  var meta = {routers: [], sms: false};
   var FLOW = [];
   var LABELS = {details: 'Your details', contact: 'Contact', modem: 'Modem',
     verify: 'Verify', review: 'Review'};
@@ -334,8 +353,13 @@ header('Cache-Control: no-store, max-age=0');
     });
   }
   function buildFlow() {
+    // Ethernet-WAN-only routers (no VDSL modem, e.g. MikroTik) can't
+    // terminate an FTTN/FTTB line — drop them for those addresses.
+    state.routerList = (meta.routers || []).filter(function (r) {
+      return !(r.ethernetOnly && /FTTN|FTTB|to the Node|to the Building/i.test(state.tech || ''));
+    });
     FLOW = ['details', 'contact'];
-    if (meta.router) { FLOW.push('modem'); }
+    if (state.routerList.length) { FLOW.push('modem'); }
     if (meta.sms) { FLOW.push('verify'); }
     FLOW.push('review');
   }
@@ -363,8 +387,9 @@ header('Cache-Control: no-store, max-age=0');
     if (state.router === undefined) { row.style.display = 'none'; return; }
     row.style.display = 'flex';
     val.innerHTML = state.router
-      ? esc(meta.router.name) + (meta.router.price
-          ? '<span style="display:block;color:var(--brand)">' + esc(meta.router.price) + '</span>' : '')
+      ? esc(state.router.name) + (state.router.price
+          ? '<span class="price">' + esc(state.router.price)
+            + ' <span style="font-size:11px">' + esc(state.router.priceSuffix) + '</span></span>' : '')
       : 'Bringing my own';
   }
 
@@ -417,19 +442,46 @@ header('Cache-Control: no-store, max-age=0');
     };
   }
 
+  var ROUTER_SVG = '<svg viewBox="0 0 64 44" fill="none" stroke="currentColor" stroke-width="2.5"'
+    + ' stroke-linecap="round"><path d="M16 20 V6 M48 20 V6"/>'
+    + '<rect x="6" y="20" width="52" height="17" rx="5"/>'
+    + '<circle cx="16" cy="28.5" r="1.6" fill="currentColor" stroke="none"/>'
+    + '<circle cx="24" cy="28.5" r="1.6" fill="currentColor" stroke="none"/>'
+    + '<circle cx="32" cy="28.5" r="1.6" fill="currentColor" stroke="none"/></svg>';
+
   function stepModem(idx) {
-    var r = meta.router;
-    render(idx, 'Need a modem?',
-      '<p class="desc" style="margin:0 0 6px"><strong>' + esc(r.name) + '</strong>'
-      + (r.price ? ' — ' + esc(r.price) : '') + '</p>'
-      + '<p class="desc" style="margin:0 0 16px">' + esc(r.blurb || 'Pre-configured for Korvix — plug in and you’re online. Or bring your own router: no username or password needed.') + '</p>'
-      + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
-      + '<button type="button" class="btn" style="width:auto" id="vtWizYes">Yes, add it</button>'
-      + '<button type="button" class="btn ghost" id="vtWizNo">I’ll bring my own</button></div>'
+    var cards = state.routerList.map(function (r, i) {
+      return '<div class="rcard">'
+        + (r.img ? '<div class="rimg"><img src="' + esc(r.img) + '" alt=""></div>'
+                 : '<div class="rimg ph">' + ROUTER_SVG + '</div>')
+        + '<div class="rname">' + esc(r.name) + '</div>'
+        + (r.price ? '<div class="rprice"><span class="amt">' + esc(r.price) + '</span>'
+            + '<span class="suf">' + esc(r.priceSuffix) + '</span></div>' : '')
+        + (r.features.length
+            ? '<ul class="rfeat">' + r.features.map(function (f) {
+                return '<li>' + esc(f) + '</li>';
+              }).join('') + '</ul>'
+            : '')
+        + '<button type="button" class="btn rsel" data-i="' + i + '">Select +</button>'
+        + '</div>';
+    }).join('');
+    render(idx, 'Would you like a modem?',
+      '<p class="desc" style="margin:0 0 14px">Pre-configured for Korvix — plug in and you’re online. '
+      + 'Or bring your own router: no username or password needed.</p>'
+      + '<div class="rgrid">' + cards + '</div>'
+      + '<button type="button" class="btn ghost" id="vtWizNo" style="width:100%;margin-top:14px">'
+      + 'No thanks — I’ll bring my own</button>'
       + '<button type="button" class="again" id="vtWizBack">Back</button>');
     document.getElementById('vtWizBack').onclick = function () { go(idx - 1); };
-    document.getElementById('vtWizYes').onclick = function () { state.router = true; setSumModem(); advance(idx); };
-    document.getElementById('vtWizNo').onclick = function () { state.router = false; setSumModem(); advance(idx); };
+    document.getElementById('vtWizNo').onclick = function () {
+      state.router = null; setSumModem(); advance(idx);
+    };
+    Array.prototype.forEach.call(elBody.querySelectorAll('.rsel'), function (b) {
+      b.onclick = function () {
+        state.router = state.routerList[parseInt(b.getAttribute('data-i'), 10)];
+        setSumModem(); advance(idx);
+      };
+    });
   }
 
   // Leaving the last input step: create the account (or send the code).
@@ -485,7 +537,8 @@ header('Cache-Control: no-store, max-age=0');
     render(idx, 'Ready to go?',
       row('Plan', esc(state.plan || '') + (state.price ? ' · ' + esc(state.price) : ''))
       + (state.addr ? row('Address', esc(state.addr)) : '')
-      + (meta.router ? row('Modem', state.router ? esc(meta.router.name) : 'Bringing my own') : '')
+      + (state.routerList && state.routerList.length
+          ? row('Modem', state.router ? esc(state.router.name) : 'Bringing my own') : '')
       + row('Account', esc(state.email) + (state.existing
           ? ' <span style="color:var(--warn)">(existing — log in at checkout)</span>'
           : ' <span style="color:var(--ok)">✓ ready</span>'))
@@ -495,7 +548,8 @@ header('Cache-Control: no-store, max-age=0');
     document.getElementById('vtWizBack').onclick = function () { go(idx - 1); };
     document.getElementById('vtWizGo').onclick = function () {
       busy(true, 'Continue to secure checkout →');
-      location.href = ORDER_URL + (state.router ? '&vt_router=1' : '');
+      location.href = ORDER_URL
+        + (state.router ? '&vt_router_pid=' + encodeURIComponent(state.router.pid) : '');
     };
   }
 

@@ -41,11 +41,21 @@ function virtutel_nbn_admin_config(): array
                 'Description' => 'Enables address autocomplete on the customer qualification page. '
                     . 'Restrict the key to your domains and the Maps JavaScript + Places APIs.',
             ],
-            'router_pid' => [
-                'FriendlyName' => 'Modem/Router Product ID',
+            'router_pids' => [
+                'FriendlyName' => 'Modem/Router Product IDs',
                 'Type' => 'text',
-                'Size' => '8',
-                'Description' => 'WHMCS product ID offered in the signup wizard ("Need a modem?"). Blank disables the step.',
+                'Size' => '30',
+                'Description' => 'Comma-separated WHMCS product IDs offered in the signup wizard '
+                    . '("Need a modem?"), shown in this order (e.g. 12,13,14). Blank disables the step. '
+                    . 'Product description lines become the feature bullets; drop a photo at '
+                    . 'assets/img/routers/&lt;pid&gt;.png for the card image.',
+            ],
+            'router_no_vdsl_pids' => [
+                'FriendlyName' => 'Ethernet-only Router IDs',
+                'Type' => 'text',
+                'Size' => '30',
+                'Description' => 'IDs from the list above with no VDSL modem (e.g. MikroTik) — '
+                    . 'automatically hidden when the address is FTTN or FTTB.',
             ],
             'clicksend_username' => [
                 'FriendlyName' => 'ClickSend Username',

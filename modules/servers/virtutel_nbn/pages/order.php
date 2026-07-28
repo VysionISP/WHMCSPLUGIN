@@ -39,12 +39,27 @@ if (isset($_GET['ajax'])) {
     exit;
 }
 
-// Signup wizard "yes, I need a modem": drop the configured router product
-// straight into the session cart alongside the plan being added.
-if (($_GET['vt_router'] ?? '') === '1') {
-    $routerPid = (int) (Capsule::table('tbladdonmodules')
-        ->where('module', 'virtutel_nbn_admin')
-        ->where('setting', 'router_pid')->value('value') ?? 0);
+// Signup wizard "yes, I need a modem": drop the chosen router product
+// straight into the session cart alongside the plan being added. The pid
+// is only honoured when it's in the admin-configured router list.
+if (($_GET['vt_router'] ?? '') === '1' || (int) ($_GET['vt_router_pid'] ?? 0) > 0) {
+    $parseIds = static fn (string $csv): array => array_values(array_filter(array_map(
+        'intval',
+        preg_split('/[\s,]+/', $csv, -1, PREG_SPLIT_NO_EMPTY) ?: []
+    ), static fn ($id) => $id > 0));
+    $configured = [];
+    foreach (['router_pids', 'router_pid'] as $settingName) {
+        $configured = $parseIds((string) (Capsule::table('tbladdonmodules')
+            ->where('module', 'virtutel_nbn_admin')
+            ->where('setting', $settingName)->value('value') ?? ''));
+        if ($configured !== []) {
+            break;
+        }
+    }
+    $requested = (int) ($_GET['vt_router_pid'] ?? 0);
+    $routerPid = in_array($requested, $configured, true)
+        ? $requested
+        : ($requested === 0 ? (int) ($configured[0] ?? 0) : 0);
     if ($routerPid > 0) {
         if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
             $_SESSION['cart'] = [];
