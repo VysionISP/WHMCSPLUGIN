@@ -351,7 +351,14 @@ header('Cache-Control: no-store, max-age=0');
       headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
       .then(function (r) { return r.json(); });
   }
-  function err(msg) { elErr.textContent = msg; elErr.style.display = msg ? 'block' : 'none'; }
+  function err(msg) {
+    elErr.style.color = 'var(--bad)';
+    elErr.textContent = msg; elErr.style.display = msg ? 'block' : 'none';
+  }
+  function info(msg) {
+    elErr.style.color = 'var(--warn)';
+    elErr.textContent = msg; elErr.style.display = msg ? 'block' : 'none';
+  }
   function escapeHatch() { var s = document.getElementById('wzSkip'); if (s) { s.style.display = 'block'; } }
   function busy(on, label) {
     var b = document.getElementById('vtWizGo');
@@ -383,9 +390,12 @@ header('Cache-Control: no-store, max-age=0');
     state.routerList = (meta.routers || []).filter(function (r) {
       return !(r.ethernetOnly && /FTTN|FTTB|to the Node|to the Building/i.test(state.tech || ''));
     });
-    FLOW = ['details', 'contact', 'address'];
+    FLOW = ['details'];
+    // Existing account: skip the personal/billing/SMS steps — nothing to
+    // collect, they log in at checkout and keep their current details.
+    if (!state.existing) { FLOW.push('contact', 'address'); }
     if (state.routerList.length) { FLOW.push('modem'); }
-    if (meta.sms) { FLOW.push('verify'); }
+    if (meta.sms && !state.existing) { FLOW.push('verify'); }
     FLOW.push('review');
   }
   function stepper(currentIdx) {
@@ -446,7 +456,34 @@ header('Cache-Control: no-store, max-age=0');
       grab(['first', 'last', 'email']);
       if (!state.first || !state.last) { return err('Please enter your name.'); }
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email)) { return err('That email doesn’t look right.'); }
-      go(idx + 1);
+
+      // Duplicate-account catch: warn once, shorten the flow, move on.
+      if (state.emailNotified === state.email) { return go(idx + 1); }
+      busy(true, 'Next →');
+      post({action: 'emailcheck', email: state.email})
+        .then(function (j) {
+          busy(false);
+          var wasExisting = state.existing;
+          state.existing = !!(j.ok && j.exists);
+          if (state.existing) {
+            state.accountDone = true;
+            state.emailNotified = state.email;
+            buildFlow();
+            info('Welcome back! That email already has a Korvix account — we’ll skip the '
+              + 'extra questions and you’ll log in at checkout. Press Next again to continue, '
+              + 'or use a different email.');
+            return;
+          }
+          state.emailNotified = '';
+          if (wasExisting) { state.accountDone = false; buildFlow(); }
+          go(idx + 1);
+        })
+        .catch(function () {
+          // Check unavailable: let the normal flow handle it at creation.
+          busy(false);
+          state.emailNotified = '';
+          go(idx + 1);
+        });
     };
   }
 
@@ -666,9 +703,9 @@ header('Cache-Control: no-store, max-age=0');
     render(idx, 'Ready to go?',
       row('Plan', esc(state.plan || '') + (state.price ? ' · ' + esc(state.price) : ''))
       + (state.addr ? row('Address', esc(state.addr)) : '')
-      + row('Billing', state.sameAddr === false && state.baddr1
+      + (state.existing ? '' : row('Billing', state.sameAddr === false && state.baddr1
           ? esc(state.baddr1 + ', ' + state.bcity + ' ' + state.bstate + ' ' + state.bpostcode)
-          : 'Same as connection address')
+          : 'Same as connection address'))
       + (state.routerList && state.routerList.length
           ? row('Modem', state.router ? esc(state.router.name) : 'Bringing my own') : '')
       + row('Account', esc(state.email) + (state.existing

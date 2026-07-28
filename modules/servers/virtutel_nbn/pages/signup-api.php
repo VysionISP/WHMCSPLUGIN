@@ -227,6 +227,17 @@ try {
         $respond(429, ['ok' => false, 'error' => 'Too many attempts — please try again shortly.']);
     }
 
+    if ($action === 'emailcheck') {
+        // Early duplicate-account catch for the Details step (rate-limited
+        // above, so it can't be used for bulk enumeration).
+        $email = strtolower(trim((string) ($input['email'] ?? '')));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $respond(422, ['ok' => false, 'error' => 'That email doesn\'t look right.']);
+        }
+        $exists = Capsule::table('tblclients')->where('email', $email)->exists();
+        $respond(200, ['ok' => true, 'exists' => $exists]);
+    }
+
     if ($action === 'start') {
         $first = trim((string) ($input['first'] ?? ''));
         $last = trim((string) ($input['last'] ?? ''));
