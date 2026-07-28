@@ -30,6 +30,28 @@ try {
     // pre-activation — page still renders, order link falls back relative
 }
 
+// Same logo the marketing nav and portal navbar show: uploaded file on
+// disk first, LogoURL fallback normalised to an absolute path, text
+// wordmark when neither exists (or the image 404s, via onerror).
+$logoUrl = '';
+foreach (['assets/img/logo.png', 'assets/img/logo.jpg'] as $cand) {
+    if (is_file(__DIR__ . '/../../../../' . $cand)) {
+        $logoUrl = '/' . $cand;
+        break;
+    }
+}
+if ($logoUrl === '') {
+    try {
+        $logoUrl = trim((string) (Capsule::table('tblconfiguration')
+            ->where('setting', 'LogoURL')->value('value') ?? ''));
+    } catch (\Throwable $e) {
+        $logoUrl = '';
+    }
+    if ($logoUrl !== '' && !preg_match('#^(https?:)?//#i', $logoUrl) && $logoUrl[0] !== '/') {
+        $logoUrl = '/' . $logoUrl;
+    }
+}
+
 // Rebuild the order URL from an allowlist of SignupCapture keys.
 $allowed = ['pid', 'vt_locid', 'vt_avc', 'vt_addr', 'vt_tech', 'vt_cpi',
     'vt_ntd', 'vt_port', 'vt_portlabel', 'vt_auto'];
@@ -80,23 +102,54 @@ header('Cache-Control: no-store, max-age=0');
       --page:#0f1420; --card:#171e2e; --line:#2a3347; --input:#0a0e18; --chip:#1e2739; --chipline:#2a3347;
     }
   }
+  :root { --logofilter:none; }
+  html.vt-dark { --logofilter:invert(1) hue-rotate(180deg) brightness(1.05); }
+  @media (prefers-color-scheme: dark) {
+    html:not(.vt-light) { --logofilter:invert(1) hue-rotate(180deg) brightness(1.05); }
+  }
   * { box-sizing:border-box; }
   html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
   body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-         color:var(--ink); margin:0; background:var(--page); min-height:100vh; }
+         color:var(--ink); margin:0; background:var(--page); min-height:100vh;
+         position:relative; overflow-x:hidden; }
   a { color:var(--brand); }
 
+  /* Marketing-site texture: faint engineering dot-grid faded at the
+     edges, plus two drifting corner glows behind everything. */
+  body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:radial-gradient(rgba(122,146,200,.14) 1px, transparent 1.4px);
+    background-size:26px 26px;
+    -webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 0%, #000 30%, transparent 75%);
+    mask-image:radial-gradient(ellipse 90% 70% at 50% 0%, #000 30%, transparent 75%); }
+  .glow { position:fixed; border-radius:50%; filter:blur(100px); opacity:.26;
+          pointer-events:none; z-index:0; }
+  .g1 { width:440px; height:440px; background:#2b5cff; top:-180px; left:-120px;
+        animation:kxDrift 16s ease-in-out infinite alternate; }
+  .g2 { width:400px; height:400px; background:#7a5cff; top:-140px; right:-100px;
+        animation:kxDrift 19s ease-in-out infinite alternate-reverse; }
+  @keyframes kxDrift { from { transform:translate(0,0); } to { transform:translate(40px,26px); } }
+  @media (prefers-reduced-motion: reduce) { .g1, .g2 { animation:none; } }
+  html.vt-light body::before, html.vt-light .glow { opacity:.12; }
+
   .bar { display:flex; align-items:center; justify-content:space-between; gap:14px;
-         max-width:960px; margin:0 auto; padding:16px; }
-  .brand { font-weight:900; font-size:21px; letter-spacing:.14em; text-decoration:none;
-           background:linear-gradient(135deg,#4d8dff,#7a5cff); -webkit-background-clip:text;
-           background-clip:text; -webkit-text-fill-color:transparent; }
+         max-width:960px; margin:0 auto; padding:18px 16px; position:relative; z-index:1; }
+  .brand { font-weight:900; font-size:22px; letter-spacing:.02em; text-decoration:none;
+           color:var(--ink); display:flex; align-items:center; }
+  .brand img { height:36px; display:block; filter:var(--logofilter); }
   .barr { display:flex; align-items:center; gap:14px; font-size:13px; color:var(--muted); }
+  .barr .lock { border:1px solid var(--line); border-radius:999px; padding:5px 13px;
+                font-weight:600; background:var(--card); }
   .barr .lock::before { content:'\1F512\FE0E'; margin-right:6px; opacity:.8; }
   .barr a { text-decoration:none; font-weight:700; color:var(--ink); }
   @media (max-width:560px) { .barr .lock { display:none; } }
 
-  .wrap { max-width:960px; margin:0 auto; padding:6px 16px 70px; }
+  .wrap { max-width:960px; margin:0 auto; padding:6px 16px 70px; position:relative; z-index:1; }
+  .pagehead { margin:8px 2px 18px; }
+  .kicker { color:var(--brand); font-weight:700; font-size:12.5px; letter-spacing:.14em;
+            text-transform:uppercase; margin:0 0 6px; }
+  .pagehead h1 { margin:0; font-size:clamp(24px,4.5vw,32px); font-weight:800; letter-spacing:-.02em; }
+  .pagehead h1 .grad { background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff);
+                       -webkit-background-clip:text; background-clip:text; color:transparent; }
   .grid { display:grid; grid-template-columns:minmax(0,1fr) 300px; grid-template-areas:'main side';
           gap:18px; align-items:start; }
   main  { grid-area:main; }
@@ -106,8 +159,12 @@ header('Cache-Control: no-store, max-age=0');
     aside { position:static; }
   }
 
-  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; }
-  main.card { padding:24px 26px 26px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px;
+          box-shadow:0 18px 50px rgba(0,0,0,.28); }
+  html.vt-light .card { box-shadow:0 14px 40px rgba(30,50,100,.10); }
+  main.card { padding:26px 28px 28px; position:relative; overflow:hidden; }
+  main.card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff); }
   h2 { margin:16px 0 12px; font-size:22px; }
   .desc { color:var(--muted); margin:10px 0 0; line-height:1.55; font-size:14.5px; }
   .spin { color:var(--muted); }
@@ -148,16 +205,27 @@ header('Cache-Control: no-store, max-age=0');
   .srow:last-of-type { border-bottom:0; }
   .srow .k { color:var(--muted); white-space:nowrap; }
   .srow .v { text-align:right; font-weight:700; overflow-wrap:anywhere; }
+  .srow .v .price { display:block; font-size:17px; font-weight:800;
+    background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff);
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
   .sumnote { margin-top:10px; font-size:12.5px; color:var(--muted); line-height:1.5; }
 
+  .chints { display:flex; flex-wrap:wrap; gap:8px 18px; margin:14px 4px 0;
+            font-size:13px; color:var(--muted); }
+  .chints span::before { content:'\2713'; color:var(--ok); font-weight:800; margin-right:6px; }
+
   .skip { display:none; margin-top:16px; font-size:13px; color:var(--muted); }
-  .foot { max-width:960px; margin:0 auto; padding:0 16px 30px; color:var(--muted); font-size:13px; }
+  .foot { max-width:960px; margin:0 auto; padding:0 16px 30px; color:var(--muted); font-size:13px;
+          position:relative; z-index:1; }
   .foot a { font-weight:700; }
 </style>
 </head>
 <body>
+<div class="glow g1"></div><div class="glow g2"></div>
 <div class="bar">
-  <a class="brand" href="/personal/">KORVIX</a>
+  <a class="brand" href="/personal/"><?php if ($logoUrl !== '') { ?><img
+    src="<?php echo htmlspecialchars($logoUrl, ENT_QUOTES); ?>" alt="Korvix"
+    onerror="this.parentNode.textContent='KORVIX'"><?php } else { echo 'KORVIX'; } ?></a>
   <div class="barr">
     <span class="lock">Secure signup</span>
     <a href="tel:0341305013">03 4130 5013</a>
@@ -172,6 +240,10 @@ header('Cache-Control: no-store, max-age=0');
     <a class="btn" style="max-width:320px;margin-top:18px" href="/personal/nbn/signup/">Check my address &rarr;</a>
   </div>
 <?php else: ?>
+  <div class="pagehead">
+    <p class="kicker">Almost there</p>
+    <h1>Let&rsquo;s get you <span class="grad">connected</span></h1>
+  </div>
   <div class="grid">
     <main class="card">
       <div id="wzSteps"></div>
@@ -180,13 +252,14 @@ header('Cache-Control: no-store, max-age=0');
       <div id="wzSkip" class="skip">Having trouble?
         <a href="<?php echo htmlspecialchars($orderUrl, ENT_QUOTES); ?>">Continue straight to checkout &rarr;</a>
         or call <a href="tel:0341305013">03 4130 5013</a>.</div>
+      <div class="chints"><span>No lock-in contracts</span><span>Local Aussie support</span><span>Fast activation</span></div>
     </main>
     <aside class="card">
       <h4>Your order</h4>
       <?php if ($plan !== ''): ?>
       <div class="srow"><span class="k">Plan</span>
         <span class="v"><?php echo htmlspecialchars($plan, ENT_QUOTES);
-            echo $price !== '' ? '<span style="display:block;color:var(--brand)">'
+            echo $price !== '' ? '<span class="price">'
                 . htmlspecialchars($price, ENT_QUOTES) . '</span>' : ''; ?></span></div>
       <?php endif; ?>
       <?php if ($addr !== ''): ?>
@@ -310,8 +383,8 @@ header('Cache-Control: no-store, max-age=0');
   }
 
   function stepDetails(idx) {
-    render(idx, 'Let’s get you set up',
-      '<p class="desc" style="margin:0 0 14px">Who’s this connection for?</p>'
+    render(idx, 'Who’s this connection for?',
+      '<p class="desc" style="margin:0 0 14px">Just the basics — this becomes your Korvix account.</p>'
       + inputRow('first', 'First name')
       + inputRow('last', 'Last name')
       + inputRow('email', 'Email address', 'email')
