@@ -457,7 +457,11 @@ header('Cache-Control: no-store, max-age=0');
     document.getElementById('vtWizGo').onclick = function () {
       grab(['phone', 'dob']);
       if (!/^(\+?61|0)[\s()-]*4[\d\s()-]{8,}$/.test(state.phone)) { return err('Please enter a valid Australian mobile.'); }
-      if (!state.dob) { return err('Please enter your date of birth.'); }
+      var dobTs = Date.parse(state.dob);
+      if (!state.dob || isNaN(dobTs)) { return err('Please enter your date of birth.'); }
+      var age = (Date.now() - dobTs) / (365.25 * 86400000);
+      if (age < 18) { return err('You must be 18 or over to sign up.'); }
+      if (age > 110) { return err('That date of birth doesn’t look right — please check it.'); }
       go(idx + 1);
     };
   }
@@ -559,7 +563,15 @@ header('Cache-Control: no-store, max-age=0');
         phone: state.phone, dob: state.dob, addr: state.addr})
         .then(function (j) {
           busy(false);
-          if (!j.ok) { err(j.error || 'Please check your details.'); escapeHatch(); return; }
+          if (!j.ok) {
+            // A rejected field belongs to an earlier step — jump back to
+            // it so the message sits next to the input it's about.
+            var msg = j.error || 'Please check your details.';
+            var backTo = /name|email/i.test(msg) ? 0
+              : (/birth|18|mobile/i.test(msg) ? FLOW.indexOf('contact') : -1);
+            if (backTo >= 0 && backTo < idx) { go(backTo); }
+            err(msg); escapeHatch(); return;
+          }
           if (j.verify) { state.hint = j.hint; return go(idx + 1); } // -> verify
           state.accountDone = true;
           state.existing = !!j.existing;
