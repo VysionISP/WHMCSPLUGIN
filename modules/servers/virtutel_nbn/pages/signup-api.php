@@ -176,9 +176,11 @@ try {
                 preg_split('/\r\n|\r|\n/', strip_tags((string) $product->description)) ?: []
             ), static fn ($line) => $line !== '')), 0, 6);
 
-            // Optional card photo by convention: assets/img/routers/<pid>.png|jpg
+            // Optional card photo by convention: assets/img/routers/<pid>.<ext>.
+            // png/jpg first so a real photo dropped on the server overrides
+            // a bundled svg fallback.
             $img = '';
-            foreach (['png', 'jpg'] as $ext) {
+            foreach (['png', 'jpg', 'jpeg', 'webp', 'svg'] as $ext) {
                 if (is_file(__DIR__ . '/../../../../assets/img/routers/' . $routerPid . '.' . $ext)) {
                     $img = '/assets/img/routers/' . $routerPid . '.' . $ext;
                     break;
