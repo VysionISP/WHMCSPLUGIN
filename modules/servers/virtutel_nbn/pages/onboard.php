@@ -186,6 +186,11 @@ header('Cache-Control: no-store, max-age=0');
     background:var(--input); color:var(--ink); border:1px solid var(--line); border-radius:9px; outline:none; }
   input:focus { border-color:var(--brand); }
   label.small { display:block; color:var(--muted); font-size:12.5px; margin:2px 0 4px; }
+  .samebox { display:flex; gap:11px; align-items:flex-start; background:var(--chip);
+             border:1px solid var(--chipline); border-radius:10px; padding:13px 14px;
+             margin-bottom:12px; cursor:pointer; font-size:14.5px; font-weight:600; }
+  .samebox input { width:auto; margin:3px 0 0; }
+  .samebox .sub { display:block; color:var(--muted); font-size:12.5px; font-weight:400; margin-top:2px; }
 
   .btn { display:inline-block; width:100%; text-align:center; border:0; cursor:pointer;
          background:linear-gradient(135deg,#4d8dff,#7a5cff); color:#fff; font-weight:800;
@@ -329,8 +334,8 @@ header('Cache-Control: no-store, max-age=0');
   };
   var meta = {routers: [], sms: false};
   var FLOW = [];
-  var LABELS = {details: 'Your details', contact: 'Contact', modem: 'Modem',
-    verify: 'Verify', review: 'Review'};
+  var LABELS = {details: 'Your details', contact: 'Contact', address: 'Billing',
+    modem: 'Modem', verify: 'Verify', review: 'Review'};
 
   var elSteps = document.getElementById('wzSteps');
   var elBody = document.getElementById('wzBody');
@@ -378,7 +383,7 @@ header('Cache-Control: no-store, max-age=0');
     state.routerList = (meta.routers || []).filter(function (r) {
       return !(r.ethernetOnly && /FTTN|FTTB|to the Node|to the Building/i.test(state.tech || ''));
     });
-    FLOW = ['details', 'contact'];
+    FLOW = ['details', 'contact', 'address'];
     if (state.routerList.length) { FLOW.push('modem'); }
     if (meta.sms) { FLOW.push('verify'); }
     FLOW.push('review');
@@ -422,6 +427,7 @@ header('Cache-Control: no-store, max-age=0');
     var key = FLOW[idx];
     if (key === 'details') { return stepDetails(idx); }
     if (key === 'contact') { return stepContact(idx); }
+    if (key === 'address') { return stepAddress(idx); }
     if (key === 'modem') { return stepModem(idx); }
     if (key === 'verify') { return stepVerify(idx); }
     if (key === 'review') { return stepReview(idx); }
@@ -462,6 +468,47 @@ header('Cache-Control: no-store, max-age=0');
       var age = (Date.now() - dobTs) / (365.25 * 86400000);
       if (age < 18) { return err('You must be 18 or over to sign up.'); }
       if (age > 110) { return err('That date of birth doesn’t look right — please check it.'); }
+      go(idx + 1);
+    };
+  }
+
+  function stepAddress(idx) {
+    var same = state.sameAddr !== false;
+    render(idx, 'Where do we send the bills?',
+      '<p class="desc" style="margin:0 0 14px">Invoices go to your email — this address goes on them.</p>'
+      + '<label class="samebox"><input type="checkbox" id="vtSame"' + (same ? ' checked' : '') + '>'
+      + '<span>Same as my connection address'
+      + (state.addr ? '<span class="sub">' + esc(state.addr) + '</span>' : '') + '</span></label>'
+      + '<div id="vtBFields" style="' + (same ? 'display:none' : '') + '">'
+      + inputRow('baddr1', 'Street address')
+      + inputRow('bcity', 'Suburb / town')
+      + '<div style="display:flex;gap:10px">'
+      + '<select name="bstate" style="flex:1"><option value="">State</option>'
+      + ['VIC', 'NSW', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT'].map(function (s) {
+          return '<option' + (state.bstate === s ? ' selected' : '') + '>' + s + '</option>';
+        }).join('') + '</select>'
+      + '<input name="bpostcode" type="tel" placeholder="Postcode" maxlength="4" '
+      + 'inputmode="numeric" style="flex:1" />'
+      + '</div></div>'
+      + nav('Next →'));
+    keep(['baddr1', 'bcity', 'bpostcode']);
+    var box = document.getElementById('vtSame');
+    box.onchange = function () {
+      document.getElementById('vtBFields').style.display = box.checked ? 'none' : '';
+    };
+    document.getElementById('vtWizBack').onclick = function () { go(idx - 1); };
+    document.getElementById('vtWizGo').onclick = function () {
+      if (box.checked) {
+        state.sameAddr = true;
+        state.baddr1 = state.bcity = state.bstate = state.bpostcode = '';
+        return go(idx + 1);
+      }
+      state.sameAddr = false;
+      grab(['baddr1', 'bcity', 'bstate', 'bpostcode']);
+      if (!state.baddr1 || state.baddr1.length < 5) { return err('Please enter your billing street address.'); }
+      if (!state.bcity) { return err('Please enter your billing suburb or town.'); }
+      if (!state.bstate) { return err('Please pick your billing state.'); }
+      if (!/^\d{4}$/.test(state.bpostcode)) { return err('Please enter a valid 4-digit postcode.'); }
       go(idx + 1);
     };
   }
@@ -560,15 +607,20 @@ header('Cache-Control: no-store, max-age=0');
       if (state.accountDone) { return go(idx + 1); }
       busy(true);
       post({action: 'start', first: state.first, last: state.last, email: state.email,
-        phone: state.phone, dob: state.dob, addr: state.addr})
+        phone: state.phone, dob: state.dob, addr: state.addr,
+        baddr1: state.sameAddr === false ? state.baddr1 : '',
+        bcity: state.sameAddr === false ? state.bcity : '',
+        bstate: state.sameAddr === false ? state.bstate : '',
+        bpostcode: state.sameAddr === false ? state.bpostcode : ''})
         .then(function (j) {
           busy(false);
           if (!j.ok) {
             // A rejected field belongs to an earlier step — jump back to
             // it so the message sits next to the input it's about.
             var msg = j.error || 'Please check your details.';
-            var backTo = /name|email/i.test(msg) ? 0
-              : (/birth|18|mobile/i.test(msg) ? FLOW.indexOf('contact') : -1);
+            var backTo = /billing|postcode|suburb|state/i.test(msg) ? FLOW.indexOf('address')
+              : (/birth|18|mobile/i.test(msg) ? FLOW.indexOf('contact')
+              : (/name|email/i.test(msg) ? 0 : -1));
             if (backTo >= 0 && backTo < idx) { go(backTo); }
             err(msg); escapeHatch(); return;
           }
@@ -614,6 +666,9 @@ header('Cache-Control: no-store, max-age=0');
     render(idx, 'Ready to go?',
       row('Plan', esc(state.plan || '') + (state.price ? ' · ' + esc(state.price) : ''))
       + (state.addr ? row('Address', esc(state.addr)) : '')
+      + row('Billing', state.sameAddr === false && state.baddr1
+          ? esc(state.baddr1 + ', ' + state.bcity + ' ' + state.bstate + ' ' + state.bpostcode)
+          : 'Same as connection address')
       + (state.routerList && state.routerList.length
           ? row('Modem', state.router ? esc(state.router.name) : 'Bringing my own') : '')
       + row('Account', esc(state.email) + (state.existing

@@ -64,20 +64,29 @@ $createClient = function (array $payload) use ($respond) {
         $respond(200, ['ok' => true, 'done' => true, 'existing' => true]);
     }
 
-    // Rough AU address split for the client record (skipvalidation keeps
-    // this best-effort; the service address is authoritative elsewhere).
+    // Billing address: the wizard's explicit fields win; otherwise fall
+    // back to a rough AU split of the connection address (skipvalidation
+    // keeps this best-effort; the service address is authoritative
+    // elsewhere).
     $addr = trim((string) ($payload['addr'] ?? ''));
     $state = '';
     $postcode = '';
     $city = '';
-    if (preg_match('/\b(VIC|NSW|QLD|SA|WA|TAS|NT|ACT)\b/i', $addr, $m)) {
-        $state = strtoupper($m[1]);
-    }
-    if (preg_match('/\b(\d{4})\s*$/', $addr, $m)) {
-        $postcode = $m[1];
-    }
-    if ($state !== '' && preg_match('/([A-Za-z\' ]{2,40})\s+' . $state . '\b/i', $addr, $m)) {
-        $city = ucwords(strtolower(trim($m[1])));
+    if (($payload['baddr1'] ?? '') !== '') {
+        $addr = (string) $payload['baddr1'];
+        $city = (string) ($payload['bcity'] ?? '');
+        $state = (string) ($payload['bstate'] ?? '');
+        $postcode = (string) ($payload['bpostcode'] ?? '');
+    } else {
+        if (preg_match('/\b(VIC|NSW|QLD|SA|WA|TAS|NT|ACT)\b/i', $addr, $m)) {
+            $state = strtoupper($m[1]);
+        }
+        if (preg_match('/\b(\d{4})\s*$/', $addr, $m)) {
+            $postcode = $m[1];
+        }
+        if ($state !== '' && preg_match('/([A-Za-z\' ]{2,40})\s+' . $state . '\b/i', $addr, $m)) {
+            $city = ucwords(strtolower(trim($m[1])));
+        }
     }
 
     $params = [
@@ -236,9 +245,34 @@ try {
         }
         $phone = '+61' . $m[1];
 
+        // Separate billing address (optional — omitted means "same as
+        // connection address" and the fallback parse applies).
+        $baddr1 = trim((string) ($input['baddr1'] ?? ''));
+        $bcity = trim((string) ($input['bcity'] ?? ''));
+        $bstate = strtoupper(trim((string) ($input['bstate'] ?? '')));
+        $bpostcode = trim((string) ($input['bpostcode'] ?? ''));
+        if ($baddr1 !== '') {
+            if (mb_strlen($baddr1) < 5) {
+                $respond(422, ['ok' => false, 'error' => 'Please enter your billing street address.']);
+            }
+            if ($bcity === '' || !preg_match("/^[A-Za-z' -]{2,40}$/", $bcity)) {
+                $respond(422, ['ok' => false, 'error' => 'Please enter your billing suburb or town.']);
+            }
+            if (!in_array($bstate, ['VIC', 'NSW', 'QLD', 'SA', 'WA', 'TAS', 'NT', 'ACT'], true)) {
+                $respond(422, ['ok' => false, 'error' => 'Please pick your billing state.']);
+            }
+            if (!preg_match('/^\d{4}$/', $bpostcode)) {
+                $respond(422, ['ok' => false, 'error' => 'Please enter a valid 4-digit billing postcode.']);
+            }
+        }
+
         $payload = [
             'first' => $first, 'last' => $last, 'email' => $email,
             'dob' => $dob, 'phone' => $phone, 'addr' => mb_substr($addr, 0, 140),
+            'baddr1' => mb_substr($baddr1, 0, 100),
+            'bcity' => ucwords(strtolower($bcity)),
+            'bstate' => $bstate,
+            'bpostcode' => $bpostcode,
         ];
 
         if (!Sms::enabled()) {
