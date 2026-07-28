@@ -414,6 +414,8 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         }
 
         var head, body;
+        var badgeCode = q.readiness.code;
+        var badgeLabel = q.readiness.label;
         if (!ok) {
           head = 'We can&rsquo;t connect this address just yet';
           body = '<p class="desc" style="margin:10px 0 0">' + esc(q.readiness.description) + '</p>'
@@ -434,7 +436,10 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
               ? '<p class="desc" style="margin:22px 0 0">We can also offer you:</p>' + planRows(others)
               : '');
         } else if ((selName || selDown) && avail.length && !sel) {
-          // Qualified, but not for the tier they clicked.
+          // Qualified, but not for the tier they clicked — the badge must
+          // agree with the "sorry" headline, not shout "Ready to connect".
+          badgeCode = 'nbn_work';
+          badgeLabel = 'Other speeds available';
           head = 'Sorry &mdash; ' + esc(selName || selDown + ' Mbps')
             + ' isn&rsquo;t available at your address';
           body = '<p class="desc" style="margin:10px 0 0">Your ' + esc(q.technology)
@@ -454,7 +459,7 @@ var VT_PLACES_ENABLED = <?php echo $placesKey !== '' ? 'true' : 'false'; ?>;
         }
 
         show('<div class="card" style="text-align:center;padding:28px 22px 20px">'
-          + '<span class="status ' + esc(q.readiness.code) + '">' + esc(q.readiness.label) + '</span>'
+          + '<span class="status ' + esc(badgeCode) + '">' + esc(badgeLabel) + '</span>'
           + '<h3 style="margin:16px 0 4px;font-size:21px">' + head + '</h3>'
           + '<div style="color:var(--muted,#667);font-size:13.5px">' + esc(label) + '</div>'
           + body
