@@ -228,6 +228,26 @@ header('Cache-Control: no-store, max-age=0');
            font-size:12.5px; color:var(--muted); line-height:1.4; flex:1; }
   .rfeat li::before { content:'\2713'; color:var(--ok); font-weight:800; margin-right:6px; }
   .rcard .btn { margin-top:auto; padding:10px 14px; font-size:14px; }
+  .rinfo { background:none; border:0; padding:0; color:var(--brand); font-size:12.5px;
+           cursor:pointer; text-decoration:underline; text-align:left; }
+  .rmodal { position:fixed; inset:0; z-index:60; background:rgba(6,9,16,.82);
+            display:flex; align-items:flex-start; justify-content:center;
+            padding:30px 14px; overflow:auto; }
+  .rmodal .rbox { background:var(--card); border:1px solid var(--line); border-radius:16px;
+                  max-width:500px; width:100%; padding:26px 28px 24px; position:relative;
+                  box-shadow:0 24px 70px rgba(0,0,0,.5); margin-top:2vh; }
+  .rmodal .rbox::before { content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    border-radius:16px 16px 0 0; background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff); }
+  .rmodal .rclose { position:absolute; top:10px; right:14px; background:none; border:0;
+                    color:var(--muted); font-size:24px; line-height:1; cursor:pointer; }
+  .rmodal .rclose:hover { color:var(--ink); }
+  .rmodal .rimg { height:190px; margin:4px 0 12px; }
+  .rmodal .rimg img { max-height:190px; }
+  .rmodal .rimg.ph svg { width:110px; height:78px; }
+  .rmodal h3 { margin:0 0 2px; font-size:20px; }
+  .rmodal .ruse { margin:12px 0 0; padding:12px 14px; background:var(--chip);
+                  border:1px solid var(--chipline); border-radius:10px; font-size:13.5px;
+                  color:var(--muted); line-height:1.55; }
   .chints { display:flex; flex-wrap:wrap; gap:8px 18px; margin:14px 4px 0;
             font-size:13px; color:var(--muted); }
   .chints span::before { content:'\2713'; color:var(--ok); font-weight:800; margin-right:6px; }
@@ -449,6 +469,47 @@ header('Cache-Control: no-store, max-age=0');
     + '<circle cx="24" cy="28.5" r="1.6" fill="currentColor" stroke="none"/>'
     + '<circle cx="32" cy="28.5" r="1.6" fill="currentColor" stroke="none"/></svg>';
 
+  function routerUsage(r) {
+    return r.ethernetOnly
+      ? 'Connects to your NBN connection box with an ethernet cable — great for FTTP, HFC and '
+        + 'Fixed Wireless. It has no phone-line (VDSL) modem, so it doesn’t suit FTTN/FTTB.'
+      : 'Works on every NBN connection type — including FTTN/FTTB, thanks to its built-in VDSL '
+        + 'modem. It ships pre-configured for your Korvix service: plug it in, wait for the '
+        + 'lights, and you’re online. No usernames or passwords to enter.';
+  }
+
+  function routerModal(idx, i) {
+    var r = state.routerList[i];
+    var m = document.createElement('div');
+    m.className = 'rmodal';
+    m.innerHTML = '<div class="rbox">'
+      + '<button type="button" class="rclose" aria-label="Close">&times;</button>'
+      + (r.img ? '<div class="rimg"><img src="' + esc(r.img) + '" alt=""></div>'
+               : '<div class="rimg ph">' + ROUTER_SVG + '</div>')
+      + '<h3>' + esc(r.name) + '</h3>'
+      + (r.price ? '<div class="rprice"><span class="amt">' + esc(r.price) + '</span>'
+          + '<span class="suf">' + esc(r.priceSuffix) + '</span></div>' : '')
+      + '<div class="ruse">' + routerUsage(r) + '</div>'
+      + (r.features.length
+          ? '<ul class="rfeat" style="margin-top:14px">' + r.features.map(function (f) {
+              return '<li>' + esc(f) + '</li>';
+            }).join('') + '</ul>'
+          : '')
+      + '<button type="button" class="btn rpick" style="width:100%;margin-top:16px">'
+      + 'Add ' + esc(r.name) + ' to my order</button>'
+      + '</div>';
+    var close = function () { m.remove(); document.removeEventListener('keydown', onKey); };
+    var onKey = function (ev) { if (ev.key === 'Escape') { close(); } };
+    m.addEventListener('click', function (ev) { if (ev.target === m) { close(); } });
+    m.querySelector('.rclose').onclick = close;
+    m.querySelector('.rpick').onclick = function () {
+      close();
+      state.router = r; setSumModem(); advance(idx);
+    };
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(m);
+  }
+
   function stepModem(idx) {
     var cards = state.routerList.map(function (r, i) {
       return '<div class="rcard">'
@@ -458,10 +519,11 @@ header('Cache-Control: no-store, max-age=0');
         + (r.price ? '<div class="rprice"><span class="amt">' + esc(r.price) + '</span>'
             + '<span class="suf">' + esc(r.priceSuffix) + '</span></div>' : '')
         + (r.features.length
-            ? '<ul class="rfeat">' + r.features.map(function (f) {
+            ? '<ul class="rfeat">' + r.features.slice(0, 5).map(function (f) {
                 return '<li>' + esc(f) + '</li>';
               }).join('') + '</ul>'
             : '')
+        + '<button type="button" class="rinfo" data-i="' + i + '">More info</button>'
         + '<button type="button" class="btn rsel" data-i="' + i + '">Select +</button>'
         + '</div>';
     }).join('');
@@ -481,6 +543,9 @@ header('Cache-Control: no-store, max-age=0');
         state.router = state.routerList[parseInt(b.getAttribute('data-i'), 10)];
         setSumModem(); advance(idx);
       };
+    });
+    Array.prototype.forEach.call(elBody.querySelectorAll('.rinfo'), function (b) {
+      b.onclick = function () { routerModal(idx, parseInt(b.getAttribute('data-i'), 10)); };
     });
   }
 

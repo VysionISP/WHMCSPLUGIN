@@ -170,11 +170,12 @@ try {
                 }
             }
 
-            // Description lines become the card's feature bullets.
+            // Description lines become the feature bullets (card shows the
+            // first few; the More-info modal shows the lot).
             $features = array_slice(array_values(array_filter(array_map(
                 'trim',
                 preg_split('/\r\n|\r|\n/', strip_tags((string) $product->description)) ?: []
-            ), static fn ($line) => $line !== '')), 0, 6);
+            ), static fn ($line) => $line !== '')), 0, 10);
 
             // Optional card photo by convention: assets/img/routers/<pid>.<ext>.
             // png/jpg first so a real photo dropped on the server overrides
