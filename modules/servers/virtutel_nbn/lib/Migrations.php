@@ -13,7 +13,7 @@ use WHMCS\Database\Capsule;
  */
 class Migrations
 {
-    public const SCHEMA_VERSION = 8;
+    public const SCHEMA_VERSION = 9;
 
     private static bool $checkedThisRequest = false;
 
@@ -64,6 +64,9 @@ class Migrations
         }
         if ($current < 8) {
             self::migrateToV8();
+        }
+        if ($current < 9) {
+            self::migrateToV9();
         }
 
         Capsule::table('mod_virtutel_settings')->updateOrInsert(
@@ -238,6 +241,46 @@ class Migrations
                 . '(or another provider) about this service.</p>'
                 . '<p>Not online after 10 minutes? Reply to this email or call us and we\'ll get '
                 . 'you sorted.</p>'
+                . '<p>{$signature}</p>',
+            'custom' => 1,
+            'disabled' => 0,
+            'language' => '',
+            'plaintext' => 0,
+        ]);
+    }
+
+    /**
+     * Signup-wizard welcome email (admin-editable, general type): the
+     * wizard creates accounts with a random password the customer never
+     * sees, so this points them at the password-reset page to set their
+     * own, and sets expectations for what happens next.
+     */
+    private static function migrateToV9(): void
+    {
+        $name = 'Korvix Account Welcome';
+        $exists = Capsule::table('tblemailtemplates')
+            ->where('type', 'general')->where('name', $name)->exists();
+        if ($exists) {
+            return;
+        }
+
+        Capsule::table('tblemailtemplates')->insert([
+            'type' => 'general',
+            'name' => $name,
+            'subject' => 'Welcome to Korvix — set your account password',
+            'message' => '<p>Hi {$first_name},</p>'
+                . '<p>Your Korvix account is ready — we created it while you were signing up '
+                . 'for your NBN service.</p>'
+                . '<p><strong>One thing to do:</strong> set your account password so you can '
+                . 'log in to the portal any time. It takes 30 seconds — just enter your email '
+                . 'address here and follow the link we send you:</p>'
+                . '<p><a href="{$reset_url}">Set my password</a></p>'
+                . '<p><strong>What happens next?</strong> We\'re lodging your order with the '
+                . 'carrier now. We\'ll email you at every step — and if a technician visit or '
+                . 'anything else is needed, we\'ll let you know straight away. You can also '
+                . 'track everything in <a href="{$portal_url}">your portal</a>.</p>'
+                . '<p>Questions? Reply to this email or call us on 03 4130 5013 — a human in '
+                . 'Gippsland picks up.</p>'
                 . '<p>{$signature}</p>',
             'custom' => 1,
             'disabled' => 0,

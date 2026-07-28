@@ -12,6 +12,33 @@ class EmailNotifier
 {
     public const TEMPLATE_APPOINTMENT = 'Virtutel NBN Appointment Required';
     public const TEMPLATE_ACTIVATED = 'Virtutel NBN Service Activated';
+    public const TEMPLATE_WELCOME = 'Korvix Account Welcome';
+
+    /**
+     * Signup-wizard welcome: point the fresh account (random password they
+     * never saw) at the password-reset page, and set expectations.
+     */
+    public static function accountWelcome(int $clientId, string $firstName): void
+    {
+        if (!function_exists('localAPI')) {
+            return;
+        }
+
+        $systemUrl = rtrim((string) (Capsule::table('tblconfiguration')
+            ->where('setting', 'SystemURL')->value('value') ?? ''), '/');
+
+        localAPI('SendEmail', [
+            'messagename' => self::TEMPLATE_WELCOME,
+            'id' => $clientId,
+            'customvars' => base64_encode(serialize([
+                'first_name' => $firstName,
+                'reset_url' => $systemUrl . '/index.php?rp=/password/reset',
+                'portal_url' => $systemUrl . '/clientarea.php',
+            ])),
+        ]);
+
+        logActivity(sprintf('Virtutel NBN: account welcome email sent to client #%d', $clientId));
+    }
 
     /**
      * "You're connected" welcome email with IPoE setup steps, sent once

@@ -127,6 +127,17 @@ $createClient = function (array $payload) use ($respond) {
         $email
     ));
 
+    // Welcome email with the set-your-password link — never blocks signup.
+    try {
+        \WHMCS\Module\Server\VirtutelNbn\Service\EmailNotifier::accountWelcome(
+            $clientId,
+            (string) $payload['first']
+        );
+    } catch (\Throwable $e) {
+        logActivity('Virtutel NBN: welcome email failed for client #' . $clientId
+            . ': ' . $e->getMessage());
+    }
+
     $respond(200, ['ok' => true, 'done' => true]);
 };
 
@@ -291,6 +302,17 @@ try {
 
         $respond(200, ['ok' => true, 'verify' => true,
             'hint' => substr($phone, 0, 6) . '****' . substr($phone, -2)]);
+    }
+
+    if ($action === 'consent') {
+        // Audit trail: the Review step's T&C/CIS tick, recorded against the
+        // just-created client and the visitor IP.
+        logActivity(sprintf(
+            'Virtutel NBN: signup terms + CIS consent recorded (client #%d, IP %s)',
+            (int) ($_SESSION['uid'] ?? 0),
+            (string) RateLimiter::clientIp()
+        ));
+        $respond(200, ['ok' => true]);
     }
 
     if ($action === 'verify') {

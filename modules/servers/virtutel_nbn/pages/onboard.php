@@ -674,11 +674,25 @@ header('Cache-Control: no-store, max-age=0');
       + row('Account', esc(state.email) + (state.existing
           ? ' <span style="color:var(--warn)">(existing — log in at checkout)</span>'
           : ' <span style="color:var(--ok)">✓ ready</span>'))
-      + '<button type="button" class="btn" id="vtWizGo" style="margin-top:16px">'
+      + '<label class="samebox" style="margin-top:16px;font-weight:400;font-size:13.5px">'
+      + '<input type="checkbox" id="vtTos"' + (state.tos ? ' checked' : '') + '>'
+      + '<span>I agree to the <a href="/terms/" target="_blank">Terms of Service</a>, '
+      + '<a href="/privacy/" target="_blank">Privacy Policy</a> and the '
+      + '<a href="/critical-information/" target="_blank">Critical Information Summary</a> '
+      + 'for my plan.</span></label>'
+      + '<button type="button" class="btn" id="vtWizGo" style="margin-top:12px">'
       + 'Continue to secure checkout →</button>'
       + '<button type="button" class="again" id="vtWizBack">Back</button>');
     document.getElementById('vtWizBack').onclick = function () { go(idx - 1); };
+    var tosBox = document.getElementById('vtTos');
+    tosBox.onchange = function () { state.tos = tosBox.checked; };
     document.getElementById('vtWizGo').onclick = function () {
+      if (!tosBox.checked) { return err('Please tick the box to agree to the terms first.'); }
+      // Consent audit log — sendBeacon survives the navigation away.
+      try {
+        navigator.sendBeacon(api,
+          new Blob([JSON.stringify({action: 'consent'})], {type: 'application/json'}));
+      } catch (e) { /* audit is best-effort */ }
       busy(true, 'Continue to secure checkout →');
       location.href = ORDER_URL
         + (state.router ? '&vt_router_pid=' + encodeURIComponent(state.router.pid) : '');
