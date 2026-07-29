@@ -188,7 +188,7 @@ function kx_site_render(string $section, string $arg = ''): void
         'personal' => ['Personal', '/'],
         'business' => ['Business', '/business/'],
     ];
-    $bizSections = ['business', 'biznbn', 'bizha', 'bizcustom'];
+    $bizSections = ['business', 'biznbn', 'bizvoice', 'bizha', 'bizcustom'];
     $family = in_array($section, $bizSections, true) ? 'business' : 'personal';
 
     if ($family === 'personal') {
@@ -210,6 +210,7 @@ function kx_site_render(string $section, string $arg = ''): void
         $nav = [
             ['Overview', '/business/'],
             ['Business NBN', '/business/nbn/'],
+            ['Voice', '/business/voice/'],
             ['High Availability', '/business/ha/'],
             ['Custom Solutions', '/business/custom/'],
             ['Contact', '/contact/'],
@@ -217,6 +218,7 @@ function kx_site_render(string $section, string $arg = ''): void
         $active = [
             'business' => 'Overview',
             'biznbn' => 'Business NBN',
+            'bizvoice' => 'Voice',
             'bizha' => 'High Availability',
             'bizcustom' => 'Custom Solutions',
         ][$section] ?? '';
@@ -230,6 +232,7 @@ function kx_site_render(string $section, string $arg = ''): void
         'homephone' => 'Home Phone — Korvix',
         'business' => 'Business Internet & Services — Korvix',
         'biznbn' => 'Business NBN Plans — Korvix',
+        'bizvoice' => 'Business VoIP & Phone Systems — Korvix',
         'bizha' => 'High-Availability Internet — Korvix',
         'bizcustom' => 'Custom Network Solutions — Korvix',
         'contact' => 'Contact Us — Korvix',
@@ -249,6 +252,7 @@ function kx_site_render(string $section, string $arg = ''): void
         'homephone' => 'Keep your home phone number without the line rental — VoIP home phone over your NBN from $9.95/month.',
         'business' => 'Business internet, email and voice with local support — connectivity your business can bank on.',
         'biznbn' => 'Business NBN with static IPs, priority local support and no lock-in — internet your business can rely on, from Korvix.',
+        'bizvoice' => 'Hosted business VoIP: keep your numbers, drop the PBX hardware — auto attendants, queues, softphones and local support from Korvix.',
         'bizha' => 'High-availability internet: dual-link failover, 4G/5G backup, enhanced restoration SLAs and proactive monitoring from Korvix.',
         'bizcustom' => 'Enterprise Ethernet, multi-site WANs, Layer 2 handoffs, managed routers and voice — custom-engineered by Korvix.',
         'contact' => 'Talk to Korvix — call ' . $phone . ', open a ticket, or start a remote support session.',
@@ -258,6 +262,7 @@ function kx_site_render(string $section, string $arg = ''): void
         'residential' => '/personal/', 'nbn' => '/personal/nbn/', 'signup' => '/personal/nbn/signup/',
         'mobile' => '/personal/mobile/', 'homephone' => '/personal/home-phone/',
         'business' => '/business/', 'biznbn' => '/business/nbn/',
+        'bizvoice' => '/business/voice/',
         'bizha' => '/business/ha/', 'bizcustom' => '/business/custom/',
         'contact' => '/contact/',
     ];
@@ -1431,6 +1436,13 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
         <a class="btn ghost" href="/business/nbn/">Business NBN &rarr;</a>
       </div>
       <div class="card">
+        <div class="ico">&#128222;</div>
+        <h3>Business Voice</h3>
+        <p>Hosted VoIP and SIP trunks &mdash; keep your numbers, drop the PBX hardware,
+          answer calls anywhere.</p>
+        <a class="btn ghost" href="/business/voice/">Business Voice &rarr;</a>
+      </div>
+      <div class="card">
         <div class="ico">&#128737;</div>
         <h3>High Availability</h3>
         <p>Dual-link failover, 4G/5G backup and enhanced restoration SLAs &mdash; internet
@@ -1514,6 +1526,95 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
       <a href="/business/ha/">High Availability</a> page &mdash; or go fully bespoke with
       <a href="/business/custom/">Custom Solutions</a>.</p>
     <a class="btn" href="/personal/nbn/signup/">Check your address</a>
+    &nbsp;
+    <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
+  </div></div>
+</section>
+
+<?php } elseif ($section === 'bizvoice') { ?>
+
+<section class="hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker">Business Voice</div>
+    <h1>Your phone system,<br><span class="grad">minus the phone system</span></h1>
+    <p class="sub">Hosted VoIP that rides your Korvix connection &mdash; keep every number
+      you own, drop the PBX in the cupboard, and answer calls anywhere.</p>
+    <a class="btn" href="/contact/">Get a voice quote</a>
+    &nbsp;
+    <a class="btn ghost" href="/personal/home-phone/">Just need a home line?</a>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">What you get</div>
+    <h2 style="text-align:center">Big-company phones, small-company bill</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">&#128222;</div>
+        <h3>Keep your numbers</h3>
+        <p>We port your existing local, 1300 and 1800 numbers across &mdash; callers notice
+          nothing, and the numbers stay yours.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#127909;</div>
+        <h3>A receptionist that never sick-days</h3>
+        <p>Auto attendants, ring groups, queues, time-based routing, voicemail-to-email &mdash;
+          calls land with the right person, after-hours goes where you want.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128241;</div>
+        <h3>Answer anywhere</h3>
+        <p>Desk handsets at the office, softphone apps on mobiles and laptops everywhere else
+          &mdash; the shop line rings in the ute, and transfers still work.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128279;</div>
+        <h3>SIP trunks for your PBX</h3>
+        <p>Already invested in a PBX or 3CX/FreePBX setup? We&rsquo;ll deliver SIP trunks over
+          your Korvix link with call quality prioritised end to end.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">Getting started</div>
+    <h2 style="text-align:center">Ported without the panic</h2>
+    <div class="hiw-track">
+      <div class="hiw-step">
+        <div class="hiw-ghost">01</div>
+        <div class="hiw-num">1</div>
+        <h3>Tell us your numbers</h3>
+        <p>Bring a recent bill and how you answer calls today &mdash; who rings, who answers,
+          what happens after hours.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-ghost">02</div>
+        <div class="hiw-num">2</div>
+        <h3>We build your call flow</h3>
+        <p>Attendants, queues and routing configured before anything moves &mdash; you test it
+          on temporary numbers while your old service keeps running.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-ghost">03</div>
+        <div class="hiw-num">3</div>
+        <h3>Cutover day is boring</h3>
+        <p>The port completes, handsets light up, calls flow &mdash; usually a few minutes of
+          changeover, planned for your quietest hour.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner"><div class="band">
+    <h2>One supplier for the link and the calls</h2>
+    <p class="sub">When the same people run your internet and your phones, &ldquo;the phones are
+      down&rdquo; has one number to call &mdash; <?php echo $e($phone); ?>.</p>
+    <a class="btn" href="/contact/">Get a voice quote</a>
     &nbsp;
     <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
   </div></div>

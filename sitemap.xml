@@ -7,6 +7,7 @@
   <url><loc>https://korvix.co/personal/mobile/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://korvix.co/business/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://korvix.co/business/nbn/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://korvix.co/business/voice/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://korvix.co/business/ha/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://korvix.co/business/custom/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://korvix.co/contact/</loc><changefreq>yearly</changefreq><priority>0.6</priority></url>
