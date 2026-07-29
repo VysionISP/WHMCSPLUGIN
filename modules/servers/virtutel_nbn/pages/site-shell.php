@@ -93,6 +93,42 @@ function kx_site_phone_plans(): array
 }
 
 /** @return array[] NBN plans: [name, price, down, up] cheapest first */
+/**
+ * Business plan cards: the same live residential products with a flat
+ * business uplift (static IPv4 + priority support queue), FW included —
+ * rural businesses are exactly who Fixed Wireless serves.
+ */
+function kx_site_biz_plans(): array
+{
+    $uplift = 20.00;
+    try {
+        $rows = Capsule::table('tblproducts')
+            ->join('tblpricing', function ($join) {
+                $join->on('tblpricing.relid', '=', 'tblproducts.id')
+                    ->where('tblpricing.type', '=', 'product')
+                    ->where('tblpricing.currency', '=', 1);
+            })
+            ->where('tblproducts.servertype', 'virtutel_nbn')
+            ->where('tblproducts.hidden', 0)
+            ->where('tblproducts.retired', 0)
+            ->where('tblpricing.monthly', '>', 0)
+            ->orderBy('tblpricing.monthly')
+            ->get(['tblproducts.name', 'tblpricing.monthly']);
+        $plans = [];
+        foreach ($rows as $row) {
+            $down = $up = '';
+            if (preg_match('/(\d+)\s*\/\s*(\d+)/', (string) $row->name, $m)) {
+                [, $down, $up] = $m;
+            }
+            $plans[] = [(string) $row->name,
+                number_format((float) $row->monthly + $uplift, 2), $down, $up];
+        }
+        return $plans;
+    } catch (\Throwable $e) {
+        return [];
+    }
+}
+
 function kx_site_plans(): array
 {
     try {
@@ -1594,6 +1630,51 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
     <a class="btn ghost" href="/contact/">Talk to us first</a>
   </div>
 </section>
+
+<?php $bizPlans = kx_site_biz_plans(); if ($bizPlans !== []) {
+    $bizMaxDown = 1;
+    foreach ($bizPlans as $bp) { $bizMaxDown = max($bizMaxDown, (int) $bp[2]); }
+    $bizFeatured = -1;
+    foreach ($bizPlans as $bi => $bp) { if ((int) $bp[2] === 100) { $bizFeatured = $bi; break; } }
+    if ($bizFeatured === -1) { $bizFeatured = (int) floor(count($bizPlans) / 2); }
+?>
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">Plans</div>
+    <h2 style="text-align:center">Same network, business grade</h2>
+    <p class="sub" style="text-align:center">The plans below mirror our residential tiers &mdash;
+      same backhaul, same honest speeds &mdash; plus a static IPv4, the priority support queue
+      and business fault handling on every one.</p>
+    <div class="pgrid" style="justify-content:center;overflow:visible;padding-top:26px;flex-wrap:wrap">
+      <?php foreach ($bizPlans as $bi => [$bName, $bPrice, $bDown, $bUp]) {
+          $bPct = $bDown !== '' ? max(14, (int) round(sqrt((int) $bDown) / sqrt($bizMaxDown) * 100)) : 50;
+      ?>
+      <div class="pcard<?php echo $bi === $bizFeatured ? ' feat' : ''; ?>" style="flex:0 1 250px">
+        <?php if ($bi === $bizFeatured) { ?><div class="tag">Most popular</div><?php } ?>
+        <div class="nm">Business <?php echo $e($bName); ?></div>
+        <div class="sp"><?php echo $bDown !== ''
+            ? $e($bDown) . ' Mbps down &middot; ' . $e($bUp) . ' Mbps up'
+            : 'Speed tier at your address'; ?></div>
+        <div class="bar"><i style="width:<?php echo $bPct; ?>%"></i></div>
+        <div class="pr">$<?php echo $e($bPrice); ?><small>/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Static IPv4 included</li>
+          <li>Priority business support</li>
+          <li>Unlimited data, no lock-in</li>
+        </ul>
+        <a class="btn<?php echo $bi === $bizFeatured ? '' : ' ghost'; ?>"
+           href="/contact/">Get connected</a>
+      </div>
+      <?php } ?>
+    </div>
+    <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
+      Ordering is white-glove: we qualify your address, confirm the right tier and your static
+      IP details, then provision &mdash; <a href="/contact/">enquire</a> or call
+      <?php echo $e($phone); ?>. Fixed Wireless tiers apply at FW addresses only.</p>
+  </div>
+</section>
+<?php } ?>
 
 <section>
   <div class="inner">
