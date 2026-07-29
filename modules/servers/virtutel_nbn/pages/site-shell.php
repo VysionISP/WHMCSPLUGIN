@@ -188,7 +188,8 @@ function kx_site_render(string $section, string $arg = ''): void
         'personal' => ['Personal', '/'],
         'business' => ['Business', '/business/'],
     ];
-    $bizSections = ['business', 'biznbn', 'bizvoice', 'bizha', 'bizcustom'];
+    $bizSections = ['business', 'biznbn', 'bizvoice', 'bizha', 'bizcustom',
+        'bizemail', 'bizsecurity', 'bizbackup'];
     $family = in_array($section, $bizSections, true) ? 'business' : 'personal';
     $activeChild = '';
 
@@ -210,24 +211,32 @@ function kx_site_render(string $section, string $arg = ''): void
     } else {
         $nav = [
             ['Overview', '/business/'],
-            ['Business NBN', '/business/nbn/'],
-            ['Solutions', '/business/voice/', [
-                ['Business Voice', '/business/voice/'],
-                ['High Availability', '/business/ha/'],
+            ['Internet', '/business/nbn/'],
+            ['VoIP', '/business/voice/'],
+            ['Solutions', '/business/ha/', [
+                ['HA Internet', '/business/ha/'],
+                ['Email & Microsoft 365', '/business/email/'],
+                ['Cyber Security', '/business/security/'],
+                ['Backup & Recovery', '/business/backup/'],
                 ['Custom Solutions', '/business/custom/'],
             ]],
             ['Contact', '/contact/'],
         ];
         $active = [
             'business' => 'Overview',
-            'biznbn' => 'Business NBN',
-            'bizvoice' => 'Solutions',
+            'biznbn' => 'Internet',
+            'bizvoice' => 'VoIP',
             'bizha' => 'Solutions',
+            'bizemail' => 'Solutions',
+            'bizsecurity' => 'Solutions',
+            'bizbackup' => 'Solutions',
             'bizcustom' => 'Solutions',
         ][$section] ?? '';
         $activeChild = [
-            'bizvoice' => 'Business Voice',
-            'bizha' => 'High Availability',
+            'bizha' => 'HA Internet',
+            'bizemail' => 'Email & Microsoft 365',
+            'bizsecurity' => 'Cyber Security',
+            'bizbackup' => 'Backup & Recovery',
             'bizcustom' => 'Custom Solutions',
         ][$section] ?? '';
     }
@@ -241,6 +250,9 @@ function kx_site_render(string $section, string $arg = ''): void
         'business' => 'Business Internet & Services — Korvix',
         'biznbn' => 'Business NBN Plans — Korvix',
         'bizvoice' => 'Business VoIP & Phone Systems — Korvix',
+        'bizemail' => 'Email & Microsoft 365 — Korvix',
+        'bizsecurity' => 'Cyber Security for Business — Korvix',
+        'bizbackup' => 'Backup & Recovery — Korvix',
         'bizha' => 'High-Availability Internet — Korvix',
         'bizcustom' => 'Custom Network Solutions — Korvix',
         'contact' => 'Contact Us — Korvix',
@@ -261,6 +273,9 @@ function kx_site_render(string $section, string $arg = ''): void
         'business' => 'Business internet, email and voice with local support — connectivity your business can bank on.',
         'biznbn' => 'Business NBN with static IPs, priority local support and no lock-in — internet your business can rely on, from Korvix.',
         'bizvoice' => 'Hosted business VoIP: keep your numbers, drop the PBX hardware — auto attendants, queues, softphones and local support from Korvix.',
+        'bizemail' => 'Microsoft 365 licensing, business email and done-for-you migration — mailboxes, Office and Teams on one bill with your internet.',
+        'bizsecurity' => 'Practical cyber security for business: email filtering, managed endpoints, firewalls and MFA rollout — the basics done properly, by Korvix.',
+        'bizbackup' => 'Managed backup for servers, workstations and Microsoft 365 with tested restores — plan for the bad day with Korvix.',
         'bizha' => 'High-availability internet: dual-link failover, 4G/5G backup, enhanced restoration SLAs and proactive monitoring from Korvix.',
         'bizcustom' => 'Enterprise Ethernet, multi-site WANs, Layer 2 handoffs, managed routers and voice — custom-engineered by Korvix.',
         'contact' => 'Talk to Korvix — call ' . $phone . ', open a ticket, or start a remote support session.',
@@ -272,6 +287,8 @@ function kx_site_render(string $section, string $arg = ''): void
         'business' => '/business/', 'biznbn' => '/business/nbn/',
         'bizvoice' => '/business/voice/',
         'bizha' => '/business/ha/', 'bizcustom' => '/business/custom/',
+        'bizemail' => '/business/email/', 'bizsecurity' => '/business/security/',
+        'bizbackup' => '/business/backup/',
         'contact' => '/contact/',
     ];
     $metaDesc = $descs[$section] ?? $descs['residential'];
@@ -1476,24 +1493,38 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
     <div class="cards">
       <div class="card">
         <div class="ico">&#128225;</div>
-        <h3>Business NBN</h3>
+        <h3>Internet</h3>
         <p>Static IPs, priority local support and honest speeds on every NBN technology &mdash;
           month to month, no lock-in.</p>
-        <a class="btn ghost" href="/business/nbn/">Business NBN &rarr;</a>
+        <a class="btn ghost" href="/business/nbn/">Business Internet &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#128222;</div>
-        <h3>Business Voice</h3>
+        <h3>VoIP</h3>
         <p>Hosted VoIP and SIP trunks &mdash; keep your numbers, drop the PBX hardware,
           answer calls anywhere.</p>
-        <a class="btn ghost" href="/business/voice/">Business Voice &rarr;</a>
+        <a class="btn ghost" href="/business/voice/">Business VoIP &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#128737;</div>
-        <h3>High Availability</h3>
+        <h3>HA Internet</h3>
         <p>Dual-link failover, 4G/5G backup and enhanced restoration SLAs &mdash; internet
           that doesn&rsquo;t take a day off.</p>
-        <a class="btn ghost" href="/business/ha/">High Availability &rarr;</a>
+        <a class="btn ghost" href="/business/ha/">HA Internet &rarr;</a>
+      </div>
+      <div class="card">
+        <div class="ico">&#9993;</div>
+        <h3>Email &amp; Microsoft 365</h3>
+        <p>Mailboxes, Office and Teams &mdash; licensed, migrated and managed, on one bill
+          with your internet.</p>
+        <a class="btn ghost" href="/business/email/">Email &amp; M365 &rarr;</a>
+      </div>
+      <div class="card">
+        <div class="ico">&#128274;</div>
+        <h3>Cyber Security</h3>
+        <p>Email filtering, managed endpoints, firewalls and MFA &mdash; the practical basics
+          done properly, with <a href="/business/backup/">backup</a> to match.</p>
+        <a class="btn ghost" href="/business/security/">Cyber Security &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#129513;</div>
@@ -1661,6 +1692,180 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
     <p class="sub">When the same people run your internet and your phones, &ldquo;the phones are
       down&rdquo; has one number to call &mdash; <?php echo $e($phone); ?>.</p>
     <a class="btn" href="/contact/">Get a voice quote</a>
+    &nbsp;
+    <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
+  </div></div>
+</section>
+
+<?php } elseif ($section === 'bizemail') { ?>
+
+<section class="hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker">Email &amp; Microsoft 365</div>
+    <h1>Business email that<br><span class="grad">behaves</span></h1>
+    <p class="sub">Microsoft 365 mailboxes, Office apps and Teams &mdash; licensed, migrated
+      and managed by us, on the same bill as your internet.</p>
+    <a class="btn" href="/contact/">Get set up</a>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">What we handle</div>
+    <h2 style="text-align:center">From &ldquo;where&rsquo;s my email&rdquo; to &ldquo;it just works&rdquo;</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">&#128188;</div>
+        <h3>Microsoft 365 licensing</h3>
+        <p>The right plan per seat &mdash; Business Basic for the front desk, Premium where
+          security matters &mdash; reviewed as your team changes, billed with your internet.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128230;</div>
+        <h3>Migration without drama</h3>
+        <p>Coming from Gmail, old IMAP hosting or an ageing Exchange box? Mail, calendars and
+          contacts move over a weekend &mdash; Monday morning looks exactly like Friday.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128274;</div>
+        <h3>Security from day one</h3>
+        <p>MFA on every account, sensible spam and phishing filtering, and impersonation
+          protection &mdash; the settings Microsoft leaves off by default, turned on.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128100;</div>
+        <h3>Admin, handled</h3>
+        <p>New starter Monday? Someone leaving Friday? One call &mdash; accounts, licences and
+          mailbox handovers done, without anyone touching an admin portal.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner"><div class="band">
+    <h2>Email, internet and phones on one bill</h2>
+    <p class="sub">And one number when something needs fixing &mdash; <?php echo $e($phone); ?>.
+      Add <a href="/business/backup/">Microsoft 365 backup</a> and deleted never means gone.</p>
+    <a class="btn" href="/contact/">Talk to us</a>
+    &nbsp;
+    <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
+  </div></div>
+</section>
+
+<?php } elseif ($section === 'bizsecurity') { ?>
+
+<section class="hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker">Cyber Security</div>
+    <h1>Locked down,<br><span class="grad">not locked up</span></h1>
+    <p class="sub">Most breaches aren&rsquo;t clever &mdash; they&rsquo;re a dodgy email and a
+      password from 2015. We do the practical basics properly, so your business isn&rsquo;t the
+      easy target.</p>
+    <a class="btn" href="/contact/">Book a security health check</a>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">The essentials</div>
+    <h2 style="text-align:center">Four layers that stop real attacks</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">&#128231;</div>
+        <h3>Email security</h3>
+        <p>Phishing, spam and impersonation filtering in front of your mailboxes &mdash; the
+          fake-invoice email gets binned before anyone can click it.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128187;</div>
+        <h3>Managed endpoints</h3>
+        <p>Modern endpoint protection on every computer, monitored &mdash; not a forgotten
+          antivirus trial from when the laptop was bought.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128293;</div>
+        <h3>Managed firewall &amp; VPN</h3>
+        <p>A proper firewall on your Korvix link &mdash; content filtering, staff VPN access,
+          and site-to-site tunnels &mdash; managed and patched by us.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128273;</div>
+        <h3>MFA &amp; identity</h3>
+        <p>Multi-factor rolled out across Microsoft 365 and your critical systems &mdash; the
+          single cheapest thing that stops account takeover dead.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner"><div class="band">
+    <h2>Not sure where you stand?</h2>
+    <p class="sub">Start with a plain-English security health check &mdash; we look at email,
+      devices, passwords and backup, and hand you a short list ranked by risk. No scare
+      tactics, no 40-page report.</p>
+    <a class="btn" href="/contact/">Book the health check</a>
+    &nbsp;
+    <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
+  </div></div>
+</section>
+
+<?php } elseif ($section === 'bizbackup') { ?>
+
+<section class="hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker">Backup &amp; Recovery</div>
+    <h1>Plan for the<br><span class="grad">bad day</span></h1>
+    <p class="sub">Ransomware, a dead server, or one wrong click on delete &mdash; what matters
+      is whether yesterday exists somewhere safe, and how fast you get it back.</p>
+    <a class="btn" href="/contact/">Sort my backups</a>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">What we back up</div>
+    <h2 style="text-align:center">Everything you&rsquo;d cry about losing</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">&#128421;</div>
+        <h3>Servers &amp; workstations</h3>
+        <p>Managed backup agents on the machines that matter &mdash; encrypted, versioned and
+          stored off-site in Australia, running on a schedule nobody has to remember.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#9729;</div>
+        <h3>Microsoft 365</h3>
+        <p>Mailboxes, OneDrive and SharePoint backed up independently of Microsoft &mdash;
+          because their retention bin is not a backup, and deleted shouldn&rsquo;t mean gone.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128260;</div>
+        <h3>Restores we actually test</h3>
+        <p>A backup nobody has restored from is a rumour. We run test restores on a schedule
+          and tell you the recovery time before you ever need it.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128110;</div>
+        <h3>Help on the day</h3>
+        <p>When the bad day comes you call <?php echo $e($phone); ?> and we drive the
+          recovery &mdash; you make the coffee, we bring the files back.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner"><div class="band">
+    <h2>When did you last test a restore?</h2>
+    <p class="sub">If the answer is &ldquo;never&rdquo; or &ldquo;what restore&rdquo;, let&rsquo;s
+      fix that this week. Pair it with <a href="/business/security/">Cyber Security</a> and the
+      bad day mostly never comes.</p>
+    <a class="btn" href="/contact/">Talk to us</a>
     &nbsp;
     <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
   </div></div>
