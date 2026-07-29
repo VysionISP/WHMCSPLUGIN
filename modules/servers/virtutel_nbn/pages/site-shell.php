@@ -408,62 +408,34 @@ function kx_site_render(string $section, string $arg = ''): void
   .kx-nav .links a { color:#c7cede; font-weight:600; font-size:15px; }
   .kx-nav .links a:hover, .kx-nav .links a.on { color:#fff; }
   .kx-nav .links a.on { border-bottom:2px solid var(--brand); padding-bottom:3px; }
-  /* business overview: alternating category feature rows */
-  .frow { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:44px;
-          align-items:center; margin-top:54px; text-align:left; }
-  .frow.rev .fvis { order:2; }
+  /* business overview: typography-led editorial rows */
+  .trow { border-top:1px solid var(--line); padding:46px 0 50px; text-align:left;
+          display:grid; grid-template-columns:104px minmax(0,1fr); gap:28px;
+          scroll-margin-top:24px; }
+  .trow .tnum { font-size:58px; font-weight:900; line-height:1; letter-spacing:-.02em;
+                background:linear-gradient(180deg, rgba(190,208,255,.32), rgba(190,208,255,.03));
+                -webkit-background-clip:text; background-clip:text; color:transparent;
+                user-select:none; padding-top:6px; }
+  .trow h2 { font-size:clamp(26px,3.6vw,38px); letter-spacing:-.02em; margin:8px 0 20px; }
+  .tcols { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(0,1fr); gap:46px;
+           align-items:start; }
+  .tcols p.fcopy { color:var(--muted); line-height:1.7; margin:0; font-size:15.5px; }
+  .tside .fticks { flex-direction:column; align-items:flex-start; gap:9px; margin:2px 0 16px; }
+  .tside .fprice { margin:0 0 18px; }
   @media(max-width:820px){
-    .frow { grid-template-columns:1fr; gap:20px; margin-top:40px; }
-    .frow.rev .fvis { order:-1; }
-    .frow .fvis { order:-1; }
+    .trow { grid-template-columns:1fr; gap:6px; padding:36px 0 40px; }
+    .trow .tnum { font-size:38px; padding-top:0; }
+    .tcols { grid-template-columns:1fr; gap:16px; }
   }
-  .frow h2 { margin:6px 0 10px; }
-  .frow p.fcopy { color:var(--muted); line-height:1.65; margin:0 0 4px; }
   .fticks { display:flex; flex-wrap:wrap; gap:8px 18px; margin:14px 0 6px;
             font-size:13.5px; color:var(--muted); }
   .fticks span::before { content:'\2713'; color:#2fbf71; font-weight:800; margin-right:6px; }
   .fprice { font-weight:800; font-size:15.5px; margin:6px 0 16px; }
   .fprice small { color:var(--muted); font-weight:400; font-size:13px; }
-  .fvis { position:relative; border:1px solid var(--line); border-radius:20px;
-          background:var(--surface); min-height:250px; display:flex; align-items:center;
-          justify-content:center; overflow:hidden; }
-  .fvis::before { content:''; position:absolute; inset:0; pointer-events:none;
-    background-image:radial-gradient(rgba(122,146,200,.14) 1px, transparent 1.4px);
-    background-size:22px 22px; }
-  .fvis .fg { position:absolute; width:280px; height:280px; border-radius:50%;
-              filter:blur(75px); opacity:.35; }
-  .fvis .fico { font-size:74px; position:relative; z-index:1;
-                filter:drop-shadow(0 10px 24px rgba(0,0,0,.45)); }
-  .fvis .fchip { position:absolute; z-index:2; background:rgba(14,20,36,.92);
-                 border:1px solid var(--line); border-radius:999px; padding:7px 13px;
-                 font-size:12.5px; font-weight:700; white-space:nowrap;
-                 box-shadow:0 10px 26px rgba(0,0,0,.35);
-                 animation:kxBob 6s ease-in-out infinite; }
-  .fvis .fchip.c1 { top:10%; left:7%; }
-  .fvis .fchip.c2 { bottom:10%; right:7%; animation-delay:1.8s; }
-  .fvis .fchip.c3 { top:20%; right:12%; animation-delay:3.4s; }
-  @media (prefers-reduced-motion: reduce) { .fvis .fchip { animation:none; } }
-  /* ghost row number, like the how-it-works cards */
-  .fvis .fnum { position:absolute; top:-14px; right:6px; font-size:110px; font-weight:900;
-                color:rgba(180,200,255,.05); z-index:0; line-height:1; user-select:none; }
-  /* bespoke mini-illustrations inside the panels */
-  .fvis svg.fart { width:min(84%,320px); height:auto; position:relative; z-index:1; }
-  .fvis svg.fart text { font-family:inherit; }
-  .fvis .flow { stroke-dasharray:4.4 4.4; animation:kxFlow .9s linear infinite; }
-  @media (prefers-reduced-motion: reduce) { .fvis .flow { animation:none; } }
-  .fbars { position:relative; z-index:1; width:74%; display:flex; flex-direction:column; gap:15px; }
-  .fbarrow { display:flex; align-items:center; gap:12px; font-size:12.5px; font-weight:700;
-             color:var(--muted); }
-  .fbarrow > span { width:44px; text-align:right; }
-  .fbtrack { flex:1; height:10px; background:#202a40; border-radius:99px; overflow:hidden; }
-  .fbtrack i { display:block; height:100%; border-radius:99px;
-               background:linear-gradient(90deg,#4d8dff,#7a5cff);
-               transform-origin:left; animation:kxBar 1s ease both; }
-  .jumpchips { display:flex; flex-wrap:wrap; gap:9px; justify-content:center; margin-top:20px; }
+  .jumpchips { display:flex; flex-wrap:wrap; gap:9px; justify-content:center; margin:20px 0 6px; }
   .jumpchips a { border:1px solid var(--line); border-radius:999px; padding:7px 15px;
                  font-size:13px; color:var(--muted); font-weight:600; background:var(--surface); }
   .jumpchips a:hover { color:#fff; border-color:var(--brand); }
-  .frow[id] { scroll-margin-top:24px; }
   /* per-category price showcase rows (business overview) */
   .pxr { display:flex; justify-content:space-between; align-items:baseline; gap:12px;
          padding:8px 0; border-bottom:1px solid var(--line); font-size:14px;
@@ -1579,212 +1551,99 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
       <a href="#backup">Backup</a>
     </div>
 
-    <div class="frow" id="internet">
-      <div class="fvis"><div class="fg" style="background:#2b5cff"></div>
-        <div class="fnum">01</div>
-        <span class="fchip c1">Static IPv4</span>
-        <span class="fchip c2">Priority queue</span>
-        <div class="fbars">
-          <div class="fbarrow"><span>50</span><div class="fbtrack"><i style="width:24%"></i></div></div>
-          <div class="fbarrow"><span>250</span><div class="fbtrack"><i style="width:48%;animation-delay:.12s"></i></div></div>
-          <div class="fbarrow"><span>500</span><div class="fbtrack"><i style="width:68%;animation-delay:.24s"></i></div></div>
-          <div class="fbarrow"><span>1000</span><div class="fbtrack"><i style="width:97%;animation-delay:.36s"></i></div></div>
-        </div>
-      </div>
+    <div class="trow" id="internet">
+      <div class="tnum">01</div>
       <div>
         <div class="kicker">Business Internet</div>
         <h2>The connection everything else <span class="grad">stands on</span></h2>
-        <p class="fcopy">Business NBN on every technology, qualified live against your actual
-          address. A static IPv4 on every plan means VPNs, cameras and remote access just work
-          &mdash; and when something breaks, you&rsquo;re in the priority queue talking to an
-          engineer, not a script.</p>
-        <div class="fticks"><span>Static IPv4 included</span><span>Priority support</span>
-          <span>Every NBN technology</span><span>No lock-in</span></div>
-        <div class="fprice">$105&ndash;$195/mo <small>&mdash; 50/20 up to 1000/100</small></div>
-        <a class="btn" href="/business/nbn/">Explore Business Internet &rarr;</a>
+        <div class="tcols">
+          <p class="fcopy">Business NBN on every technology, qualified live against your actual address. A static IPv4 on every plan means VPNs, cameras and remote access just work &mdash; and when something breaks, you&rsquo;re in the priority queue talking to a Gippsland engineer, not reading a script to a call centre.</p>
+          <div class="tside">
+            <div class="fticks"><span>Static IPv4 included</span><span>Priority support</span><span>Every NBN technology</span><span>No lock-in</span></div>
+            <div class="fprice">$105&ndash;$195/mo <small>&mdash; 50/20 up to 1000/100</small></div>
+            <a class="btn" href="/business/nbn/">Explore Business Internet &rarr;</a>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="frow rev" id="voip">
-      <div class="fvis"><div class="fg" style="background:#7a5cff"></div>
-        <div class="fnum">02</div>
-        <span class="fchip c2">Answer anywhere</span>
-        <svg class="fart" viewBox="0 0 320 190" fill="none">
-          <defs><linearGradient id="kxgv" x1="0" y1="0" x2="1" y2="0">
-            <stop stop-color="#4d8dff"/><stop offset="1" stop-color="#7a5cff"/>
-          </linearGradient></defs>
-          <path class="flow" d="M64 95 H118" stroke="url(#kxgv)" stroke-width="2.4"/>
-          <path class="flow" d="M198 95 C 230 95 230 40 254 40" stroke="url(#kxgv)" stroke-width="2.4"/>
-          <path class="flow" d="M198 95 H254" stroke="url(#kxgv)" stroke-width="2.4"/>
-          <path class="flow" d="M198 95 C 230 95 230 150 254 150" stroke="url(#kxgv)" stroke-width="2.4"/>
-          <circle cx="42" cy="95" r="22" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
-          <text x="42" y="101" text-anchor="middle" font-size="17">&#128222;</text>
-          <text x="42" y="140" text-anchor="middle" font-size="11" fill="#98a2b8" font-weight="700">Caller</text>
-          <rect x="118" y="74" width="80" height="42" rx="12" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
-          <text x="158" y="99" text-anchor="middle" font-size="12" fill="#e6e9f2" font-weight="800">Attendant</text>
-          <g font-size="11.5" font-weight="700" fill="#e6e9f2">
-            <rect x="254" y="24" width="56" height="32" rx="10" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
-            <text x="282" y="44" text-anchor="middle">Sales</text>
-            <rect x="254" y="79" width="56" height="32" rx="10" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
-            <text x="282" y="99" text-anchor="middle">Store</text>
-            <rect x="254" y="134" width="56" height="32" rx="10" fill="#12301f" stroke="#1d5c38" stroke-width="1.5"/>
-            <text x="282" y="154" text-anchor="middle" fill="#7fdcaa">The ute</text>
-          </g>
-        </svg>
-      </div>
+    <div class="trow" id="voip">
+      <div class="tnum">02</div>
       <div>
         <div class="kicker">Business VoIP</div>
         <h2>Your phone system, <span class="grad">minus the phone system</span></h2>
-        <p class="fcopy">Hosted phones that ride your Korvix connection. Keep every number you
-          own, drop the PBX in the cupboard, and answer the shop line from the ute &mdash;
-          auto attendants, queues and voicemail-to-email included, not extra.</p>
-        <div class="fticks"><span>Number porting handled</span><span>Attendants &amp; queues</span>
-          <span>Softphone apps</span><span>SIP trunks for your PBX</span></div>
-        <div class="fprice">From $14.95/seat <small>&mdash; unlimited calls $24.95</small></div>
-        <a class="btn" href="/business/voice/">Explore Business VoIP &rarr;</a>
+        <div class="tcols">
+          <p class="fcopy">Hosted phones that ride your Korvix connection. Keep every number you own, drop the PBX in the cupboard, and answer the shop line from the ute. Auto attendants, queues and voicemail-to-email are included, not extras &mdash; and cutover day is planned for your quietest hour.</p>
+          <div class="tside">
+            <div class="fticks"><span>Number porting handled</span><span>Attendants &amp; queues</span><span>Softphone apps</span><span>SIP trunks for your PBX</span></div>
+            <div class="fprice">From $14.95/seat <small>&mdash; unlimited calls $24.95</small></div>
+            <a class="btn" href="/business/voice/">Explore Business VoIP &rarr;</a>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="frow" id="ha">
-      <div class="fvis"><div class="fg" style="background:#1d9e55"></div>
-        <div class="fnum">03</div>
-        <span class="fchip c1">Seconds to cut over</span>
-        <svg class="fart" viewBox="0 0 320 190" fill="none">
-          <defs><linearGradient id="kxgh" x1="0" y1="0" x2="1" y2="0">
-            <stop stop-color="#4d8dff"/><stop offset="1" stop-color="#7a5cff"/>
-          </linearGradient></defs>
-          <path class="flow" d="M92 78 C 150 50 190 50 238 72" stroke="url(#kxgh)" stroke-width="3"/>
-          <path d="M92 112 C 150 142 190 142 238 118" stroke="#e2a336" stroke-width="2.2"
-                stroke-dasharray="5 6" opacity=".8"/>
-          <rect x="26" y="66" width="66" height="58" rx="12" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
-          <text x="59" y="91" text-anchor="middle" font-size="16">&#127970;</text>
-          <text x="59" y="110" text-anchor="middle" font-size="10.5" fill="#98a2b8" font-weight="700">Your site</text>
-          <circle cx="262" cy="95" r="26" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
-          <text x="262" y="101" text-anchor="middle" font-size="17">&#127760;</text>
-          <rect x="132" y="30" width="62" height="22" rx="11" fill="#12301f" stroke="#1d5c38"/>
-          <text x="163" y="45" text-anchor="middle" font-size="10.5" fill="#7fdcaa" font-weight="800">NBN primary</text>
-          <rect x="134" y="140" width="58" height="22" rx="11" fill="#372a10" stroke="#6b531f"/>
-          <text x="163" y="155" text-anchor="middle" font-size="10.5" fill="#ecc575" font-weight="800">4G backup</text>
-        </svg>
-      </div>
+    <div class="trow" id="ha">
+      <div class="tnum">03</div>
       <div>
         <div class="kicker">HA Internet</div>
         <h2>Internet that <span class="grad">doesn&rsquo;t blink</span></h2>
-        <p class="fcopy">When EFTPOS, bookings and cloud phones are the business, downtime is
-          revenue. HA plans pair your NBN with a 4G backup that cuts over automatically in
-          seconds &mdash; and a static IP that survives the switch, so tills keep trading and
-          phones stay registered.</p>
-        <div class="fticks"><span>Seconds to fail over</span><span>Static IP survives</span>
-          <span>Proactive monitoring</span><span>Restoration SLA add-on</span></div>
-        <div class="fprice">$150&ndash;$275/mo <small>&mdash; backup at 20&ndash;50 Mbps</small></div>
-        <a class="btn" href="/business/ha/">Explore HA Internet &rarr;</a>
+        <div class="tcols">
+          <p class="fcopy">When EFTPOS, bookings and cloud phones are the business, downtime is revenue. HA plans pair your NBN with a 4G backup that cuts over automatically in seconds &mdash; and a static IP that survives the switch, so tills keep trading, phones stay registered, and most of the room never notices.</p>
+          <div class="tside">
+            <div class="fticks"><span>Seconds to fail over</span><span>Static IP survives</span><span>Proactive monitoring</span><span>Restoration SLA add-on</span></div>
+            <div class="fprice">$150&ndash;$275/mo <small>&mdash; backup at 20&ndash;50 Mbps</small></div>
+            <a class="btn" href="/business/ha/">Explore HA Internet &rarr;</a>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="frow rev" id="email">
-      <div class="fvis"><div class="fg" style="background:#4d8dff"></div>
-        <div class="fnum">04</div>
-        <span class="fchip c1">Migrated in a weekend</span>
-        <span class="fchip c2">MFA on by default</span>
-        <svg class="fart" viewBox="0 0 320 190" fill="none">
-          <g font-weight="900" font-size="26" text-anchor="middle">
-            <rect x="58" y="26" width="64" height="64" rx="14" fill="#0F6CBD"/>
-            <text x="90" y="68" fill="#fff">O</text>
-            <rect x="132" y="26" width="64" height="64" rx="14" fill="#2B579A"/>
-            <text x="164" y="68" fill="#fff">W</text>
-            <rect x="206" y="26" width="64" height="64" rx="14" fill="#217346"/>
-            <text x="238" y="68" fill="#fff">X</text>
-          </g>
-          <rect x="58" y="104" width="212" height="34" rx="17" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
-          <text x="164" y="126" text-anchor="middle" font-size="13" fill="#e6e9f2"
-                font-weight="700">you@yourbusiness.com.au</text>
-          <rect x="98" y="150" width="132" height="24" rx="12" fill="#12301f" stroke="#1d5c38"/>
-          <text x="164" y="166" text-anchor="middle" font-size="11" fill="#7fdcaa"
-                font-weight="800">&#10003; MFA &amp; filtering on</text>
-        </svg>
-      </div>
+    <div class="trow" id="email">
+      <div class="tnum">04</div>
       <div>
         <div class="kicker">Email &amp; Microsoft 365</div>
         <h2>Email that <span class="grad">behaves</span></h2>
-        <p class="fcopy">Microsoft 365 licensed, migrated and managed by us. Mail, calendars
-          and files move over a weekend; MFA and filtering are on from day one; and new
-          starters or leavers are a phone call &mdash; nobody at your end touches an admin
-          portal, ever.</p>
-        <div class="fticks"><span>Mailboxes, Office &amp; Teams</span><span>Weekend migrations</span>
-          <span>Security switched on</span><span>Admin handled</span></div>
-        <div class="fprice">$12&ndash;$59/user <small>&mdash; mix plans per person</small></div>
-        <a class="btn" href="/business/email/">Explore Email &amp; M365 &rarr;</a>
+        <div class="tcols">
+          <p class="fcopy">Microsoft 365 licensed, migrated and managed by us. Mail, calendars and files move over a weekend; MFA and filtering are on from day one; and new starters or leavers are a phone call &mdash; nobody at your end touches an admin portal, ever.</p>
+          <div class="tside">
+            <div class="fticks"><span>Mailboxes, Office &amp; Teams</span><span>Weekend migrations</span><span>Security switched on</span><span>Admin handled</span></div>
+            <div class="fprice">$12&ndash;$59/user <small>&mdash; mix plans per person</small></div>
+            <a class="btn" href="/business/email/">Explore Email &amp; M365 &rarr;</a>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="frow" id="security">
-      <div class="fvis"><div class="fg" style="background:#e2a336"></div>
-        <div class="fnum">05</div>
-        <span class="fchip c1">Free health check</span>
-        <span class="fchip c2">We respond to alerts</span>
-        <svg class="fart" viewBox="0 0 320 190" fill="none">
-          <circle cx="160" cy="95" r="78" stroke="#2a3347" stroke-width="1.6"/>
-          <circle cx="160" cy="95" r="56" stroke="#3a4a6b" stroke-width="1.8"/>
-          <circle cx="160" cy="95" r="34" stroke="#4d8dff" stroke-width="2.2"/>
-          <text x="160" y="103" text-anchor="middle" font-size="24">&#128274;</text>
-          <rect x="34" y="26" width="66" height="22" rx="11" fill="#1e2739" stroke="#2a3347"/>
-          <text x="67" y="41" text-anchor="middle" font-size="10.5" fill="#98a2b8" font-weight="800">Email</text>
-          <rect x="222" y="26" width="72" height="22" rx="11" fill="#1e2739" stroke="#2a3347"/>
-          <text x="258" y="41" text-anchor="middle" font-size="10.5" fill="#98a2b8" font-weight="800">Devices</text>
-          <rect x="34" y="144" width="74" height="22" rx="11" fill="#1e2739" stroke="#2a3347"/>
-          <text x="71" y="159" text-anchor="middle" font-size="10.5" fill="#98a2b8" font-weight="800">Network</text>
-          <rect x="222" y="144" width="66" height="22" rx="11" fill="#1e2739" stroke="#2a3347"/>
-          <text x="255" y="159" text-anchor="middle" font-size="10.5" fill="#98a2b8" font-weight="800">People</text>
-        </svg>
-      </div>
+    <div class="trow" id="security">
+      <div class="tnum">05</div>
       <div>
         <div class="kicker">Cyber Security</div>
         <h2>Locked down, <span class="grad">not locked up</span></h2>
-        <p class="fcopy">Most breaches aren&rsquo;t clever &mdash; they&rsquo;re a dodgy email
-          and a password from 2015. We do the practical layers properly: filtering in front of
-          your inboxes, managed protection on every machine, MFA everywhere, and a firewall
-          someone actually patches.</p>
-        <div class="fticks"><span>Email filtering</span><span>Managed endpoints (EDR)</span>
-          <span>MFA rollout</span><span>Managed firewall</span></div>
-        <div class="fprice">$15&ndash;$49/user <small>&mdash; health check free</small></div>
-        <a class="btn" href="/business/security/">Explore Cyber Security &rarr;</a>
+        <div class="tcols">
+          <p class="fcopy">Most breaches aren&rsquo;t clever &mdash; they&rsquo;re a dodgy email and a password from 2015. We do the practical layers properly: filtering in front of your inboxes, managed protection on every machine, MFA everywhere, and a firewall someone actually patches. Start with the free health check &mdash; no scare tactics, just a short list ranked by risk.</p>
+          <div class="tside">
+            <div class="fticks"><span>Email filtering</span><span>Managed endpoints (EDR)</span><span>MFA rollout</span><span>Managed firewall</span></div>
+            <div class="fprice">$15&ndash;$49/user <small>&mdash; health check free</small></div>
+            <a class="btn" href="/business/security/">Explore Cyber Security &rarr;</a>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="frow rev" id="backup">
-      <div class="fvis"><div class="fg" style="background:#b16bff"></div>
-        <div class="fnum">06</div>
-        <span class="fchip c1">Stored in Australia</span>
-        <svg class="fart" viewBox="0 0 320 190" fill="none">
-          <path d="M40 120 H280" stroke="#2a3347" stroke-width="2.4"/>
-          <g fill="#4d8dff">
-            <circle cx="64" cy="120" r="6"/><circle cx="112" cy="120" r="6"/>
-            <circle cx="160" cy="120" r="6"/><circle cx="208" cy="120" r="6"/>
-          </g>
-          <circle cx="256" cy="120" r="9" fill="#12301f" stroke="#2fbf71" stroke-width="2.4"/>
-          <text x="256" y="125" text-anchor="middle" font-size="11" fill="#7fdcaa" font-weight="900">&#10003;</text>
-          <g font-size="10" fill="#98a2b8" text-anchor="middle" font-weight="700">
-            <text x="64" y="142">Mon</text><text x="112" y="142">Tue</text>
-            <text x="160" y="142">Wed</text><text x="208" y="142">Thu</text>
-            <text x="256" y="142" fill="#7fdcaa">Fri</text>
-          </g>
-          <rect x="168" y="52" width="140" height="30" rx="15" fill="#12301f" stroke="#1d5c38"/>
-          <text x="238" y="71" text-anchor="middle" font-size="11.5" fill="#7fdcaa"
-                font-weight="800">Restored in 22 minutes</text>
-          <path class="flow" d="M256 82 V 108" stroke="#2fbf71" stroke-width="2.2"/>
-        </svg>
-      </div>
+    <div class="trow" id="backup">
+      <div class="tnum">06</div>
       <div>
         <div class="kicker">Backup &amp; Recovery</div>
         <h2>Plan for the <span class="grad">bad day</span></h2>
-        <p class="fcopy">Ransomware, a dead server, one wrong click on delete &mdash; what
-          matters is whether yesterday exists somewhere safe. Servers, workstations and
-          Microsoft 365, encrypted off-site in Australia, with restores we test on a schedule
-          &mdash; because a backup nobody has restored from is a rumour.</p>
-        <div class="fticks"><span>Servers &amp; workstations</span><span>Microsoft 365 backup</span>
-          <span>Quarterly restore drills</span><span>Help on the day</span></div>
-        <div class="fprice">From $7/user <small>&mdash; restores always included</small></div>
-        <a class="btn" href="/business/backup/">Explore Backup &amp; Recovery &rarr;</a>
+        <div class="tcols">
+          <p class="fcopy">Ransomware, a dead server, one wrong click on delete &mdash; what matters is whether yesterday exists somewhere safe, and how fast you get it back. Servers, workstations and Microsoft 365, encrypted off-site in Australia, with restores we test on a schedule &mdash; because a backup nobody has restored from is a rumour.</p>
+          <div class="tside">
+            <div class="fticks"><span>Servers &amp; workstations</span><span>Microsoft 365 backup</span><span>Quarterly restore drills</span><span>Help on the day</span></div>
+            <div class="fprice">From $7/user <small>&mdash; restores always included</small></div>
+            <a class="btn" href="/business/backup/">Explore Backup &amp; Recovery &rarr;</a>
+          </div>
+        </div>
       </div>
     </div>
     <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
