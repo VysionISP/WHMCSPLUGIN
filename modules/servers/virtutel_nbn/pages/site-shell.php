@@ -1622,18 +1622,21 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
     }
     if ($bizFeatured === -1) { $bizFeatured = (int) floor(count($bizPlans) / 2); }
 ?>
-<section>
-  <div class="inner">
-    <div class="kicker" style="text-align:center">Plans</div>
-    <h2 style="text-align:center">Same network, business grade</h2>
-    <p class="sub" style="text-align:center">The plans below mirror our residential tiers &mdash;
+<section style="text-align:center;padding-top:30px">
+  <div class="inner" style="max-width:1120px">
+    <div class="kicker">Plans</div>
+    <h2>Same network, business grade</h2>
+    <p class="sub">The plans below mirror our residential tiers &mdash;
       same backhaul, same honest speeds &mdash; plus a static IPv4, the priority support queue
       and business fault handling on every one.</p>
-    <div class="pgrid" style="justify-content:center;overflow:visible;padding-top:26px;flex-wrap:wrap">
+    <div class="pslider" id="kxBizSlider">
+    <button class="pnav prev" type="button" aria-label="Previous plans">&larr;</button>
+    <button class="pnav next" type="button" aria-label="More plans">&rarr;</button>
+    <div class="pgrid">
       <?php foreach ($bizPlans as $bi => [$bName, $bPrice, $bDown, $bUp]) {
           $bPct = $bDown !== '' ? max(14, (int) round(sqrt((int) $bDown) / sqrt($bizMaxDown) * 100)) : 50;
       ?>
-      <div class="pcard<?php echo $bi === $bizFeatured ? ' feat' : ''; ?>" style="flex:0 1 250px">
+      <div class="pcard<?php echo $bi === $bizFeatured ? ' feat' : ''; ?>">
         <?php if ($bi === $bizFeatured) { ?><div class="tag">Most popular</div><?php } ?>
         <div class="nm">Business <?php echo $e($bName); ?></div>
         <div class="sp"><?php echo $bDown !== ''
@@ -1652,6 +1655,20 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
       </div>
       <?php } ?>
     </div>
+    </div>
+    <script>
+    (function(){
+      var s=document.getElementById('kxBizSlider');if(!s){return;}
+      var g=s.querySelector('.pgrid');
+      s.querySelectorAll('.pnav').forEach(function(b){
+        b.addEventListener('click',function(){
+          g.scrollBy({left:(b.classList.contains('next')?1:-1)*288,behavior:'smooth'});
+        });
+      });
+      var f=g.querySelector('.pcard.feat');
+      if(f){g.scrollLeft=Math.max(0,f.offsetLeft-(g.clientWidth-f.offsetWidth)/2);}
+    })();
+    </script>
     <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
       Ordering is white-glove: we qualify your address, confirm the right tier and your static
       IP details, then provision &mdash; <a href="/contact/">enquire</a> or call
@@ -2107,14 +2124,17 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
   </div>
 </section>
 
-<section>
-  <div class="inner">
-    <div class="kicker" style="text-align:center">Plans</div>
-    <h2 style="text-align:center">Uptime, priced simply</h2>
-    <p class="sub" style="text-align:center">Every HA plan is a business NBN service with a
+<section style="text-align:center;padding-top:30px">
+  <div class="inner" style="max-width:1120px">
+    <div class="kicker">Plans</div>
+    <h2>Uptime, priced simply</h2>
+    <p class="sub">Every HA plan is a business NBN service with a
       4G/5G backup link, automatic failover and a static IPv4 that survives the cutover &mdash;
       one price, no surprises.</p>
-    <div class="pgrid" style="justify-content:center;overflow:visible;padding-top:26px;flex-wrap:wrap">
+    <div class="pslider" id="kxHaSlider">
+    <button class="pnav prev" type="button" aria-label="Previous plans">&larr;</button>
+    <button class="pnav next" type="button" aria-label="More plans">&rarr;</button>
+    <div class="pgrid">
       <?php
       $haPlans = [
           ['25', '25/10', '150.00', '20', false],
@@ -2123,11 +2143,15 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
           ['500', '500/50', '230.00', '50', false],
           ['1000', '1000/100', '275.00', '50', false],
       ];
-      foreach ($haPlans as [$haName, $haTier, $haPrice, $haCap, $haFeat]) { ?>
-      <div class="pcard<?php echo $haFeat ? ' feat' : ''; ?>" style="flex:0 1 228px">
+      foreach ($haPlans as [$haName, $haTier, $haPrice, $haCap, $haFeat]) {
+          $haDown = (int) explode('/', $haTier)[0];
+          $haPct = max(14, (int) round(sqrt($haDown) / sqrt(1000) * 100));
+      ?>
+      <div class="pcard<?php echo $haFeat ? ' feat' : ''; ?>">
         <?php if ($haFeat) { ?><div class="tag">Most popular</div><?php } ?>
         <div class="nm">HA Business <?php echo $e($haName); ?></div>
         <div class="sp"><?php echo $e($haTier); ?> Mbps primary link</div>
+        <div class="bar"><i style="width:<?php echo $haPct; ?>%"></i></div>
         <div class="pr">$<?php echo $e($haPrice); ?><small>/mo</small></div>
         <div class="nt">AUD incl. GST</div>
         <ul>
@@ -2140,6 +2164,20 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
       </div>
       <?php } ?>
     </div>
+    </div>
+    <script>
+    (function(){
+      var s=document.getElementById('kxHaSlider');if(!s){return;}
+      var g=s.querySelector('.pgrid');
+      s.querySelectorAll('.pnav').forEach(function(b){
+        b.addEventListener('click',function(){
+          g.scrollBy({left:(b.classList.contains('next')?1:-1)*288,behavior:'smooth'});
+        });
+      });
+      var f=g.querySelector('.pcard.feat');
+      if(f){g.scrollLeft=Math.max(0,f.offsetLeft-(g.clientWidth-f.offsetWidth)/2);}
+    })();
+    </script>
     <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
       Pre-configured failover router quoted with your setup. While failed over, traffic runs on
       the 4G backup at the plan&rsquo;s capped speed (20&nbsp;Mbps on the 25/50/250 plans,
