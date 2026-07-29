@@ -439,10 +439,31 @@ function kx_site_render(string $section, string $arg = ''): void
                  font-size:12.5px; font-weight:700; white-space:nowrap;
                  box-shadow:0 10px 26px rgba(0,0,0,.35);
                  animation:kxBob 6s ease-in-out infinite; }
-  .fvis .fchip.c1 { top:14%; left:9%; }
-  .fvis .fchip.c2 { bottom:16%; right:9%; animation-delay:1.8s; }
+  .fvis .fchip.c1 { top:10%; left:7%; }
+  .fvis .fchip.c2 { bottom:10%; right:7%; animation-delay:1.8s; }
   .fvis .fchip.c3 { top:20%; right:12%; animation-delay:3.4s; }
   @media (prefers-reduced-motion: reduce) { .fvis .fchip { animation:none; } }
+  /* ghost row number, like the how-it-works cards */
+  .fvis .fnum { position:absolute; top:-14px; right:6px; font-size:110px; font-weight:900;
+                color:rgba(180,200,255,.05); z-index:0; line-height:1; user-select:none; }
+  /* bespoke mini-illustrations inside the panels */
+  .fvis svg.fart { width:min(84%,320px); height:auto; position:relative; z-index:1; }
+  .fvis svg.fart text { font-family:inherit; }
+  .fvis .flow { stroke-dasharray:4.4 4.4; animation:kxFlow .9s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .fvis .flow { animation:none; } }
+  .fbars { position:relative; z-index:1; width:74%; display:flex; flex-direction:column; gap:15px; }
+  .fbarrow { display:flex; align-items:center; gap:12px; font-size:12.5px; font-weight:700;
+             color:var(--muted); }
+  .fbarrow > span { width:44px; text-align:right; }
+  .fbtrack { flex:1; height:10px; background:#202a40; border-radius:99px; overflow:hidden; }
+  .fbtrack i { display:block; height:100%; border-radius:99px;
+               background:linear-gradient(90deg,#4d8dff,#7a5cff);
+               transform-origin:left; animation:kxBar 1s ease both; }
+  .jumpchips { display:flex; flex-wrap:wrap; gap:9px; justify-content:center; margin-top:20px; }
+  .jumpchips a { border:1px solid var(--line); border-radius:999px; padding:7px 15px;
+                 font-size:13px; color:var(--muted); font-weight:600; background:var(--surface); }
+  .jumpchips a:hover { color:#fff; border-color:var(--brand); }
+  .frow[id] { scroll-margin-top:24px; }
   /* per-category price showcase rows (business overview) */
   .pxr { display:flex; justify-content:space-between; align-items:baseline; gap:12px;
          padding:8px 0; border-bottom:1px solid var(--line); font-size:14px;
@@ -1552,12 +1573,23 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
     <h2 style="text-align:center">Six things, done properly</h2>
     <p class="sub" style="text-align:center">Every category below stands on its own &mdash;
       together they&rsquo;re your whole IT stack on one bill, with one number to call.</p>
+    <div class="jumpchips">
+      <a href="#internet">Internet</a><a href="#voip">VoIP</a><a href="#ha">HA Internet</a>
+      <a href="#email">Email &amp; M365</a><a href="#security">Cyber Security</a>
+      <a href="#backup">Backup</a>
+    </div>
 
-    <div class="frow">
+    <div class="frow" id="internet">
       <div class="fvis"><div class="fg" style="background:#2b5cff"></div>
+        <div class="fnum">01</div>
         <span class="fchip c1">Static IPv4</span>
-        <span class="fchip c2">up to 1000 Mbps</span>
-        <div class="fico">&#128225;</div>
+        <span class="fchip c2">Priority queue</span>
+        <div class="fbars">
+          <div class="fbarrow"><span>50</span><div class="fbtrack"><i style="width:24%"></i></div></div>
+          <div class="fbarrow"><span>250</span><div class="fbtrack"><i style="width:48%;animation-delay:.12s"></i></div></div>
+          <div class="fbarrow"><span>500</span><div class="fbtrack"><i style="width:68%;animation-delay:.24s"></i></div></div>
+          <div class="fbarrow"><span>1000</span><div class="fbtrack"><i style="width:97%;animation-delay:.36s"></i></div></div>
+        </div>
       </div>
       <div>
         <div class="kicker">Business Internet</div>
@@ -1573,11 +1605,32 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
       </div>
     </div>
 
-    <div class="frow rev">
+    <div class="frow rev" id="voip">
       <div class="fvis"><div class="fg" style="background:#7a5cff"></div>
-        <span class="fchip c1">Keep your numbers</span>
+        <div class="fnum">02</div>
         <span class="fchip c2">Answer anywhere</span>
-        <div class="fico">&#128222;</div>
+        <svg class="fart" viewBox="0 0 320 190" fill="none">
+          <defs><linearGradient id="kxgv" x1="0" y1="0" x2="1" y2="0">
+            <stop stop-color="#4d8dff"/><stop offset="1" stop-color="#7a5cff"/>
+          </linearGradient></defs>
+          <path class="flow" d="M64 95 H118" stroke="url(#kxgv)" stroke-width="2.4"/>
+          <path class="flow" d="M198 95 C 230 95 230 40 254 40" stroke="url(#kxgv)" stroke-width="2.4"/>
+          <path class="flow" d="M198 95 H254" stroke="url(#kxgv)" stroke-width="2.4"/>
+          <path class="flow" d="M198 95 C 230 95 230 150 254 150" stroke="url(#kxgv)" stroke-width="2.4"/>
+          <circle cx="42" cy="95" r="22" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
+          <text x="42" y="101" text-anchor="middle" font-size="17">&#128222;</text>
+          <text x="42" y="140" text-anchor="middle" font-size="11" fill="#98a2b8" font-weight="700">Caller</text>
+          <rect x="118" y="74" width="80" height="42" rx="12" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
+          <text x="158" y="99" text-anchor="middle" font-size="12" fill="#e6e9f2" font-weight="800">Attendant</text>
+          <g font-size="11.5" font-weight="700" fill="#e6e9f2">
+            <rect x="254" y="24" width="56" height="32" rx="10" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
+            <text x="282" y="44" text-anchor="middle">Sales</text>
+            <rect x="254" y="79" width="56" height="32" rx="10" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
+            <text x="282" y="99" text-anchor="middle">Store</text>
+            <rect x="254" y="134" width="56" height="32" rx="10" fill="#12301f" stroke="#1d5c38" stroke-width="1.5"/>
+            <text x="282" y="154" text-anchor="middle" fill="#7fdcaa">The ute</text>
+          </g>
+        </svg>
       </div>
       <div>
         <div class="kicker">Business VoIP</div>
@@ -1592,11 +1645,27 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
       </div>
     </div>
 
-    <div class="frow">
+    <div class="frow" id="ha">
       <div class="fvis"><div class="fg" style="background:#1d9e55"></div>
-        <span class="fchip c1">Automatic failover</span>
-        <span class="fchip c2">4G backup built in</span>
-        <div class="fico">&#128737;</div>
+        <div class="fnum">03</div>
+        <span class="fchip c1">Seconds to cut over</span>
+        <svg class="fart" viewBox="0 0 320 190" fill="none">
+          <defs><linearGradient id="kxgh" x1="0" y1="0" x2="1" y2="0">
+            <stop stop-color="#4d8dff"/><stop offset="1" stop-color="#7a5cff"/>
+          </linearGradient></defs>
+          <path class="flow" d="M92 78 C 150 50 190 50 238 72" stroke="url(#kxgh)" stroke-width="3"/>
+          <path d="M92 112 C 150 142 190 142 238 118" stroke="#e2a336" stroke-width="2.2"
+                stroke-dasharray="5 6" opacity=".8"/>
+          <rect x="26" y="66" width="66" height="58" rx="12" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
+          <text x="59" y="91" text-anchor="middle" font-size="16">&#127970;</text>
+          <text x="59" y="110" text-anchor="middle" font-size="10.5" fill="#98a2b8" font-weight="700">Your site</text>
+          <circle cx="262" cy="95" r="26" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
+          <text x="262" y="101" text-anchor="middle" font-size="17">&#127760;</text>
+          <rect x="132" y="30" width="62" height="22" rx="11" fill="#12301f" stroke="#1d5c38"/>
+          <text x="163" y="45" text-anchor="middle" font-size="10.5" fill="#7fdcaa" font-weight="800">NBN primary</text>
+          <rect x="134" y="140" width="58" height="22" rx="11" fill="#372a10" stroke="#6b531f"/>
+          <text x="163" y="155" text-anchor="middle" font-size="10.5" fill="#ecc575" font-weight="800">4G backup</text>
+        </svg>
       </div>
       <div>
         <div class="kicker">HA Internet</div>
@@ -1612,11 +1681,27 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
       </div>
     </div>
 
-    <div class="frow rev">
+    <div class="frow rev" id="email">
       <div class="fvis"><div class="fg" style="background:#4d8dff"></div>
+        <div class="fnum">04</div>
         <span class="fchip c1">Migrated in a weekend</span>
         <span class="fchip c2">MFA on by default</span>
-        <div class="fico">&#9993;&#65039;</div>
+        <svg class="fart" viewBox="0 0 320 190" fill="none">
+          <g font-weight="900" font-size="26" text-anchor="middle">
+            <rect x="58" y="26" width="64" height="64" rx="14" fill="#0F6CBD"/>
+            <text x="90" y="68" fill="#fff">O</text>
+            <rect x="132" y="26" width="64" height="64" rx="14" fill="#2B579A"/>
+            <text x="164" y="68" fill="#fff">W</text>
+            <rect x="206" y="26" width="64" height="64" rx="14" fill="#217346"/>
+            <text x="238" y="68" fill="#fff">X</text>
+          </g>
+          <rect x="58" y="104" width="212" height="34" rx="17" fill="#1e2739" stroke="#2a3347" stroke-width="1.5"/>
+          <text x="164" y="126" text-anchor="middle" font-size="13" fill="#e6e9f2"
+                font-weight="700">you@yourbusiness.com.au</text>
+          <rect x="98" y="150" width="132" height="24" rx="12" fill="#12301f" stroke="#1d5c38"/>
+          <text x="164" y="166" text-anchor="middle" font-size="11" fill="#7fdcaa"
+                font-weight="800">&#10003; MFA &amp; filtering on</text>
+        </svg>
       </div>
       <div>
         <div class="kicker">Email &amp; Microsoft 365</div>
@@ -1632,11 +1717,25 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
       </div>
     </div>
 
-    <div class="frow">
+    <div class="frow" id="security">
       <div class="fvis"><div class="fg" style="background:#e2a336"></div>
+        <div class="fnum">05</div>
         <span class="fchip c1">Free health check</span>
         <span class="fchip c2">We respond to alerts</span>
-        <div class="fico">&#128274;</div>
+        <svg class="fart" viewBox="0 0 320 190" fill="none">
+          <circle cx="160" cy="95" r="78" stroke="#2a3347" stroke-width="1.6"/>
+          <circle cx="160" cy="95" r="56" stroke="#3a4a6b" stroke-width="1.8"/>
+          <circle cx="160" cy="95" r="34" stroke="#4d8dff" stroke-width="2.2"/>
+          <text x="160" y="103" text-anchor="middle" font-size="24">&#128274;</text>
+          <rect x="34" y="26" width="66" height="22" rx="11" fill="#1e2739" stroke="#2a3347"/>
+          <text x="67" y="41" text-anchor="middle" font-size="10.5" fill="#98a2b8" font-weight="800">Email</text>
+          <rect x="222" y="26" width="72" height="22" rx="11" fill="#1e2739" stroke="#2a3347"/>
+          <text x="258" y="41" text-anchor="middle" font-size="10.5" fill="#98a2b8" font-weight="800">Devices</text>
+          <rect x="34" y="144" width="74" height="22" rx="11" fill="#1e2739" stroke="#2a3347"/>
+          <text x="71" y="159" text-anchor="middle" font-size="10.5" fill="#98a2b8" font-weight="800">Network</text>
+          <rect x="222" y="144" width="66" height="22" rx="11" fill="#1e2739" stroke="#2a3347"/>
+          <text x="255" y="159" text-anchor="middle" font-size="10.5" fill="#98a2b8" font-weight="800">People</text>
+        </svg>
       </div>
       <div>
         <div class="kicker">Cyber Security</div>
@@ -1652,11 +1751,28 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
       </div>
     </div>
 
-    <div class="frow rev">
+    <div class="frow rev" id="backup">
       <div class="fvis"><div class="fg" style="background:#b16bff"></div>
-        <span class="fchip c1">Tested restores</span>
-        <span class="fchip c2">Stored in Australia</span>
-        <div class="fico">&#128190;</div>
+        <div class="fnum">06</div>
+        <span class="fchip c1">Stored in Australia</span>
+        <svg class="fart" viewBox="0 0 320 190" fill="none">
+          <path d="M40 120 H280" stroke="#2a3347" stroke-width="2.4"/>
+          <g fill="#4d8dff">
+            <circle cx="64" cy="120" r="6"/><circle cx="112" cy="120" r="6"/>
+            <circle cx="160" cy="120" r="6"/><circle cx="208" cy="120" r="6"/>
+          </g>
+          <circle cx="256" cy="120" r="9" fill="#12301f" stroke="#2fbf71" stroke-width="2.4"/>
+          <text x="256" y="125" text-anchor="middle" font-size="11" fill="#7fdcaa" font-weight="900">&#10003;</text>
+          <g font-size="10" fill="#98a2b8" text-anchor="middle" font-weight="700">
+            <text x="64" y="142">Mon</text><text x="112" y="142">Tue</text>
+            <text x="160" y="142">Wed</text><text x="208" y="142">Thu</text>
+            <text x="256" y="142" fill="#7fdcaa">Fri</text>
+          </g>
+          <rect x="168" y="52" width="140" height="30" rx="15" fill="#12301f" stroke="#1d5c38"/>
+          <text x="238" y="71" text-anchor="middle" font-size="11.5" fill="#7fdcaa"
+                font-weight="800">Restored in 22 minutes</text>
+          <path class="flow" d="M256 82 V 108" stroke="#2fbf71" stroke-width="2.2"/>
+        </svg>
       </div>
       <div>
         <div class="kicker">Backup &amp; Recovery</div>
