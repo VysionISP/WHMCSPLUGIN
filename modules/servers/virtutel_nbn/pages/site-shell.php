@@ -2117,13 +2117,13 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
     <div class="pgrid" style="justify-content:center;overflow:visible;padding-top:26px;flex-wrap:wrap">
       <?php
       $haPlans = [
-          ['25', '25/10', '150.00', false],
-          ['50', '50/20', '185.00', false],
-          ['250', '250/25', '205.00', true],
-          ['500', '500/50', '230.00', false],
-          ['1000', '1000/100', '275.00', false],
+          ['25', '25/10', '150.00', '20', false],
+          ['50', '50/20', '185.00', '20', false],
+          ['250', '250/25', '205.00', '20', true],
+          ['500', '500/50', '230.00', '50', false],
+          ['1000', '1000/100', '275.00', '50', false],
       ];
-      foreach ($haPlans as [$haName, $haTier, $haPrice, $haFeat]) { ?>
+      foreach ($haPlans as [$haName, $haTier, $haPrice, $haCap, $haFeat]) { ?>
       <div class="pcard<?php echo $haFeat ? ' feat' : ''; ?>" style="flex:0 1 228px">
         <?php if ($haFeat) { ?><div class="tag">Most popular</div><?php } ?>
         <div class="nm">HA Business <?php echo $e($haName); ?></div>
@@ -2131,7 +2131,7 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
         <div class="pr">$<?php echo $e($haPrice); ?><small>/mo</small></div>
         <div class="nt">AUD incl. GST</div>
         <ul>
-          <li>4G/5G backup link included</li>
+          <li>4G backup at up to <?php echo $e($haCap); ?> Mbps</li>
           <li>Automatic failover &amp; recovery</li>
           <li>Static IPv4 that fails over</li>
           <li>Priority business support</li>
@@ -2141,10 +2141,12 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
       <?php } ?>
     </div>
     <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
-      Pre-configured failover router quoted with your setup. Backup link carries the essentials
-      at 4G/5G speeds while the primary is repaired. 250+ tiers need FTTP or HFC &mdash;
-      we&rsquo;ll confirm what your address supports. Enhanced restoration SLA available as an
-      add-on &mdash; <a href="/contact/">ask us</a>.</p>
+      Pre-configured failover router quoted with your setup. While failed over, traffic runs on
+      the 4G backup at the plan&rsquo;s capped speed (20&nbsp;Mbps on the 25/50/250 plans,
+      50&nbsp;Mbps on 500/1000) &mdash; enough to keep EFTPOS, phones and the essentials
+      trading. 250+ tiers need FTTP or HFC &mdash; we&rsquo;ll confirm what your address
+      supports. Enhanced restoration SLA available as an add-on &mdash;
+      <a href="/contact/">ask us</a>.</p>
   </div>
 </section>
 
