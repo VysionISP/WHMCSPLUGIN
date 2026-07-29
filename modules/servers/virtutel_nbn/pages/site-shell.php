@@ -94,39 +94,19 @@ function kx_site_phone_plans(): array
 
 /** @return array[] NBN plans: [name, price, down, up] cheapest first */
 /**
- * Business plan cards: the same live residential products with a flat
- * business uplift (static IPv4 + priority support queue), FW included —
- * rural businesses are exactly who Fixed Wireless serves.
+ * Business plan cards: a curated fixed-line lineup (static IPv4 +
+ * priority support baked into the price) rather than a mirror of every
+ * residential tier — business buyers get a 50 for the counter and the
+ * big tiers for everything else. FW addresses are quoted individually.
  */
 function kx_site_biz_plans(): array
 {
-    $uplift = 20.00;
-    try {
-        $rows = Capsule::table('tblproducts')
-            ->join('tblpricing', function ($join) {
-                $join->on('tblpricing.relid', '=', 'tblproducts.id')
-                    ->where('tblpricing.type', '=', 'product')
-                    ->where('tblpricing.currency', '=', 1);
-            })
-            ->where('tblproducts.servertype', 'virtutel_nbn')
-            ->where('tblproducts.hidden', 0)
-            ->where('tblproducts.retired', 0)
-            ->where('tblpricing.monthly', '>', 0)
-            ->orderBy('tblpricing.monthly')
-            ->get(['tblproducts.name', 'tblpricing.monthly']);
-        $plans = [];
-        foreach ($rows as $row) {
-            $down = $up = '';
-            if (preg_match('/(\d+)\s*\/\s*(\d+)/', (string) $row->name, $m)) {
-                [, $down, $up] = $m;
-            }
-            $plans[] = [(string) $row->name,
-                number_format((float) $row->monthly + $uplift, 2), $down, $up];
-        }
-        return $plans;
-    } catch (\Throwable $e) {
-        return [];
-    }
+    return [
+        ['NBN 50/20', '105.00', '50', '20'],
+        ['NBN 250/25', '135.00', '250', '25'],
+        ['NBN 500/50', '165.00', '500', '50'],
+        ['NBN 1000/100', '195.00', '1000', '100'],
+    ];
 }
 
 function kx_site_plans(): array
@@ -1635,7 +1615,11 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
     $bizMaxDown = 1;
     foreach ($bizPlans as $bp) { $bizMaxDown = max($bizMaxDown, (int) $bp[2]); }
     $bizFeatured = -1;
-    foreach ($bizPlans as $bi => $bp) { if ((int) $bp[2] === 100) { $bizFeatured = $bi; break; } }
+    foreach ([250, 100] as $bTarget) {
+        foreach ($bizPlans as $bi => $bp) {
+            if ((int) $bp[2] === $bTarget) { $bizFeatured = $bi; break 2; }
+        }
+    }
     if ($bizFeatured === -1) { $bizFeatured = (int) floor(count($bizPlans) / 2); }
 ?>
 <section>
@@ -1671,7 +1655,9 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
     <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
       Ordering is white-glove: we qualify your address, confirm the right tier and your static
       IP details, then provision &mdash; <a href="/contact/">enquire</a> or call
-      <?php echo $e($phone); ?>. Fixed Wireless tiers apply at FW addresses only.</p>
+      <?php echo $e($phone); ?>. The 250+ tiers need FTTP or HFC (free FTTP upgrades apply at
+      many addresses &mdash; we&rsquo;ll check). On Fixed Wireless? We&rsquo;ll quote business
+      FW for your address.</p>
   </div>
 </section>
 <?php } ?>
