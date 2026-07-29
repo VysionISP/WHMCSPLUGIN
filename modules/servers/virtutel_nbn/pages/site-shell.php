@@ -406,7 +406,10 @@ function kx_site_render(string $section, string $arg = ''): void
   .kx-drop .menu-in a { display:block; padding:10px 14px; border-radius:8px;
                         font-size:14.5px; white-space:nowrap; border-bottom:0 !important; }
   .kx-drop .menu-in a:hover { background:rgba(77,141,255,.12); }
-  .kx-drop .menu-in a.on { color:#fff; background:rgba(77,141,255,.16); }
+  /* outrank the top-nav active rule (.kx-nav .links a.on), whose 3px
+     padding-bottom + underline otherwise squashes the active row's box */
+  .kx-nav .links .kx-drop .menu-in a.on { color:#fff; background:rgba(77,141,255,.16);
+    padding:10px 14px; border-bottom:0; }
   /* small screens: hover is unreliable — flatten the group into plain
      nav links and hide the toggle */
   @media(max-width:820px){
