@@ -670,3 +670,33 @@ img.card-img-top { filter: brightness(.9); }
 .kx-inline-nav .navbar-nav > li.dropdown:last-child,
 .kx-inline-nav .navbar-nav > li:last-child { margin-left:auto !important; }
 .kx-inline-nav .dropdown-menu { position:absolute; right:0; left:auto; top:100%; z-index:1050; }
+
+/* ---------- submit ticket: helper cards + form polish ---------- */
+.kx-ticket-help { margin: 0 0 22px; }
+.kx-urgent {
+  background: linear-gradient(135deg, rgba(226,163,54,.12), rgba(226,163,54,.05));
+  border: 1px solid #6b531f; border-radius: 12px; padding: 14px 18px;
+  font-size: 14.5px; color: #ecc575; margin-bottom: 12px; line-height: 1.55;
+}
+.kx-urgent a { color: #fff; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.kx-tips {
+  background: var(--kx-surface-1, #171e2e); border: 1px solid var(--kx-border, #2a3347);
+  border-radius: 12px; padding: 14px 18px; font-size: 13.5px;
+  color: var(--kx-text-muted, #98a2b8); line-height: 1.6;
+}
+.kx-tips strong { color: var(--kx-text, #e6e9f2); }
+.kx-tips ul { margin: 8px 0 0; padding-left: 4px; list-style: none; }
+.kx-tips li { margin: 4px 0; }
+.kx-tips li::before { content: '\2713'; color: #2fbf71; font-weight: 800; margin-right: 8px; }
+#frmTicketSubmit .form-control, .submitticket-body .form-control {
+  padding: 11px 14px; font-size: 15px; border-radius: 9px;
+}
+#frmTicketSubmit textarea.form-control { min-height: 190px; line-height: 1.6; }
+#frmTicketSubmit label, .submitticket-body label {
+  font-weight: 700; font-size: 13px; letter-spacing: .02em;
+}
+#frmTicketSubmit .btn-primary, .submitticket-body .btn-primary {
+  padding: 12px 30px; font-weight: 800; font-size: 15px; border-radius: 9px;
+}
+/* attachment rows breathe a little */
+#fileUploadsContainer .file-upload, .drag-and-drop-upload { margin-top: 8px; }

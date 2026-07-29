@@ -560,7 +560,7 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         . "document.addEventListener('DOMContentLoaded',function(){run();setTimeout(run,600);});"
         . "})();</script>";
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=25">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=26">'
         . '<meta name="color-scheme" content="dark">'
         . $whitewash;
 });
@@ -676,6 +676,39 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
         . "setInterval(function(){try{var b=f.contentDocument.body;if(!b){return;}"
         . "var h=b.scrollHeight+24;"
         . "if(h>200&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);"
+        . "});</script>";
+});
+
+/**
+ * Submit-ticket polish: an urgent-call banner (nobody with a dead
+ * connection should be typing a ticket), a what-to-include tips card
+ * that gets faults solved in one round-trip, and useful placeholders.
+ * Styles live in portal-dark.css (kx-ticket-help block).
+ */
+add_hook('ClientAreaHeadOutput', 8, function ($vars) {
+    if (($vars['filename'] ?? '') !== 'submitticket') {
+        return '';
+    }
+
+    return "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "var form=document.getElementById('frmTicketSubmit')"
+        . "||document.querySelector('form[action*=\"submitticket\"]');"
+        . "if(form&&!document.querySelector('.kx-ticket-help')){"
+        . "var help=document.createElement('div');help.className='kx-ticket-help';"
+        . "help.innerHTML='"
+        . '<div class="kx-urgent">&#128222; <strong>No internet right now?</strong> '
+        . 'Don\\\'t wait on a ticket &mdash; call <a href="tel:0341305013">03 4130 5013</a> '
+        . 'and a Gippsland human picks up.</div>'
+        . '<div class="kx-tips"><strong>Help us fix it in one go &mdash; include:</strong>'
+        . '<ul><li>Your service address or AVC ID (starts with AVC&hellip;)</li>'
+        . '<li>What the lights on the NBN box and router are doing</li>'
+        . '<li>When it started, and anything you\\\'ve already tried</li></ul></div>'
+        . "';"
+        . "form.parentNode.insertBefore(help,form);}"
+        . "var subj=document.getElementById('inputSubject');"
+        . "if(subj&&!subj.placeholder){subj.placeholder='e.g. NBN dropping out every evening at 12 Example St';}"
+        . "var msg=document.getElementById('inputMessage');"
+        . "if(msg&&!msg.placeholder){msg.placeholder='What\\'s happening, since when, and what you\\'ve tried so far\\u2026';}"
         . "});</script>";
 });
 
