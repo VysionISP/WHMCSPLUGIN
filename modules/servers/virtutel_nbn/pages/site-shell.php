@@ -408,6 +408,14 @@ function kx_site_render(string $section, string $arg = ''): void
   .kx-nav .links a { color:#c7cede; font-weight:600; font-size:15px; }
   .kx-nav .links a:hover, .kx-nav .links a.on { color:#fff; }
   .kx-nav .links a.on { border-bottom:2px solid var(--brand); padding-bottom:3px; }
+  /* per-category price showcase rows (business overview) */
+  .pxr { display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+         padding:8px 0; border-bottom:1px solid var(--line); font-size:14px;
+         text-align:left; width:100%; }
+  .pxr:last-of-type { border-bottom:0; margin-bottom:6px; }
+  .pxr span { color:var(--muted); }
+  .pxr strong { white-space:nowrap; }
+  .pxr strong small { color:var(--muted); font-weight:400; font-size:11.5px; }
   /* dropdown group: click to open (hover menus reopen under a parked
      cursor after navigation — jank), outside click / Esc closes */
   .kx-drop { position:relative; }
@@ -1506,55 +1514,63 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
 <section>
   <div class="inner">
     <div class="kicker" style="text-align:center">What we do</div>
-    <h2 style="text-align:center">Everything on one bill, one number</h2>
+    <h2 style="text-align:center">What we do, and what it costs</h2>
+    <p class="sub" style="text-align:center">No mystery pricing &mdash; here&rsquo;s the whole
+      menu. Every price is per month, AUD incl. GST, no lock-in.</p>
     <div class="cards">
       <div class="card">
         <div class="ico">&#128225;</div>
         <h3>Internet</h3>
-        <p>Business NBN on every technology &mdash; static IPv4, priority support and honest
-          speeds, month to month.</p>
-        <p style="font-weight:800;margin:0 0 12px">from $105/mo</p>
-        <a class="btn ghost" href="/business/nbn/">Business Internet &rarr;</a>
+        <div class="pxr"><span>Business NBN 50/20</span><strong>$105</strong></div>
+        <div class="pxr"><span>Business NBN 250/25</span><strong>$135</strong></div>
+        <div class="pxr"><span>Business NBN 500/50</span><strong>$165</strong></div>
+        <div class="pxr"><span>Business NBN 1000/100</span><strong>$195</strong></div>
+        <a class="btn ghost" href="/business/nbn/">Full plans &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#128222;</div>
         <h3>VoIP</h3>
-        <p>Hosted phones and SIP trunks &mdash; keep your numbers, drop the PBX hardware,
-          answer calls anywhere.</p>
-        <p style="font-weight:800;margin:0 0 12px">from $14.95/seat</p>
-        <a class="btn ghost" href="/business/voice/">Business VoIP &rarr;</a>
+        <div class="pxr"><span>PAYG Seat</span><strong>$14.95 <small>/seat</small></strong></div>
+        <div class="pxr"><span>Unlimited Seat</span><strong>$24.95 <small>/seat</small></strong></div>
+        <div class="pxr"><span>Front Desk Seat</span><strong>$34.95 <small>/seat</small></strong></div>
+        <div class="pxr"><span>SIP trunks</span><strong>from $12.95 <small>/channel</small></strong></div>
+        <a class="btn ghost" href="/business/voice/">Full plans &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#128737;</div>
         <h3>HA Internet</h3>
-        <p>Dual-link failover with 4G backup and a static IP that survives the cutover &mdash;
-          downtime, engineered out.</p>
-        <p style="font-weight:800;margin:0 0 12px">from $150/mo</p>
-        <a class="btn ghost" href="/business/ha/">HA Internet &rarr;</a>
+        <div class="pxr"><span>HA Business 25</span><strong>$150</strong></div>
+        <div class="pxr"><span>HA Business 50</span><strong>$185</strong></div>
+        <div class="pxr"><span>HA Business 250</span><strong>$205</strong></div>
+        <div class="pxr"><span>HA Business 500 / 1000</span><strong>$230 / $275</strong></div>
+        <a class="btn ghost" href="/business/ha/">Full plans &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#9993;</div>
         <h3>Email &amp; Microsoft 365</h3>
-        <p>Mailboxes, Office and Teams &mdash; licensed, migrated and managed, with starters
-          and leavers a phone call away.</p>
-        <p style="font-weight:800;margin:0 0 12px">from $12/user</p>
-        <a class="btn ghost" href="/business/email/">Email &amp; M365 &rarr;</a>
+        <div class="pxr"><span>Exchange Online</span><strong>$12 <small>/user</small></strong></div>
+        <div class="pxr"><span>365 Business Basic</span><strong>$19 <small>/user</small></strong></div>
+        <div class="pxr"><span>365 Business Standard</span><strong>$39 <small>/user</small></strong></div>
+        <div class="pxr"><span>365 Business Premium</span><strong>$59 <small>/user</small></strong></div>
+        <a class="btn ghost" href="/business/email/">Full plans &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#128274;</div>
         <h3>Cyber Security</h3>
-        <p>Email filtering, managed endpoints, firewalls and MFA &mdash; the practical basics
-          done properly. Free health check.</p>
-        <p style="font-weight:800;margin:0 0 12px">from $15/user</p>
-        <a class="btn ghost" href="/business/security/">Cyber Security &rarr;</a>
+        <div class="pxr"><span>Essentials</span><strong>$15 <small>/user</small></strong></div>
+        <div class="pxr"><span>Protected</span><strong>$29 <small>/user</small></strong></div>
+        <div class="pxr"><span>Fortified</span><strong>$49 <small>/user</small></strong></div>
+        <div class="pxr"><span>Security health check</span><strong>Free</strong></div>
+        <a class="btn ghost" href="/business/security/">Full plans &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#128190;</div>
         <h3>Backup &amp; Recovery</h3>
-        <p>Servers, workstations and Microsoft 365 backed up with tested restores &mdash;
-          plan for the bad day.</p>
-        <p style="font-weight:800;margin:0 0 12px">from $7/user</p>
-        <a class="btn ghost" href="/business/backup/">Backup &amp; Recovery &rarr;</a>
+        <div class="pxr"><span>Microsoft 365 Backup</span><strong>$7 <small>/user</small></strong></div>
+        <div class="pxr"><span>Workstation Backup</span><strong>$19 <small>/device</small></strong></div>
+        <div class="pxr"><span>Server Backup</span><strong>from $99 <small>/server</small></strong></div>
+        <div class="pxr"><span>Restores &amp; test drills</span><strong>Included</strong></div>
+        <a class="btn ghost" href="/business/backup/">Full plans &rarr;</a>
       </div>
     </div>
     <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
