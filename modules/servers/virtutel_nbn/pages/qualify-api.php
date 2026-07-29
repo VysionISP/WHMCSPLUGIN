@@ -269,9 +269,18 @@ try {
                     ->where('hidden', 0)
                     ->get(['id', 'name', 'configoption1']);
 
+                $isFwAddress = ($q['service_type'] ?? '') === 'nwas';
                 foreach ($products as $product) {
                     $enum = trim((string) $product->configoption1);
                     if ($enum === '' || !in_array($enum, $q['speeds'], true)) {
+                        continue;
+                    }
+                    // Speed tiers like 25/5 exist on both Fixed Wireless and
+                    // fixed line, so enum matching alone lets FW plans leak
+                    // onto FTTP (and vice versa) — the product family must
+                    // match the qualified technology too.
+                    $isFwProduct = (bool) preg_match('/\bFW\b|FIXED\s*WIRELESS/i', (string) $product->name);
+                    if ($isFwProduct !== $isFwAddress) {
                         continue;
                     }
                     $tier = SpeedTier::describe($enum);
