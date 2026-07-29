@@ -408,6 +408,41 @@ function kx_site_render(string $section, string $arg = ''): void
   .kx-nav .links a { color:#c7cede; font-weight:600; font-size:15px; }
   .kx-nav .links a:hover, .kx-nav .links a.on { color:#fff; }
   .kx-nav .links a.on { border-bottom:2px solid var(--brand); padding-bottom:3px; }
+  /* business overview: alternating category feature rows */
+  .frow { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:44px;
+          align-items:center; margin-top:54px; text-align:left; }
+  .frow.rev .fvis { order:2; }
+  @media(max-width:820px){
+    .frow { grid-template-columns:1fr; gap:20px; margin-top:40px; }
+    .frow.rev .fvis { order:-1; }
+    .frow .fvis { order:-1; }
+  }
+  .frow h2 { margin:6px 0 10px; }
+  .frow p.fcopy { color:var(--muted); line-height:1.65; margin:0 0 4px; }
+  .fticks { display:flex; flex-wrap:wrap; gap:8px 18px; margin:14px 0 6px;
+            font-size:13.5px; color:var(--muted); }
+  .fticks span::before { content:'\2713'; color:#2fbf71; font-weight:800; margin-right:6px; }
+  .fprice { font-weight:800; font-size:15.5px; margin:6px 0 16px; }
+  .fprice small { color:var(--muted); font-weight:400; font-size:13px; }
+  .fvis { position:relative; border:1px solid var(--line); border-radius:20px;
+          background:var(--surface); min-height:250px; display:flex; align-items:center;
+          justify-content:center; overflow:hidden; }
+  .fvis::before { content:''; position:absolute; inset:0; pointer-events:none;
+    background-image:radial-gradient(rgba(122,146,200,.14) 1px, transparent 1.4px);
+    background-size:22px 22px; }
+  .fvis .fg { position:absolute; width:280px; height:280px; border-radius:50%;
+              filter:blur(75px); opacity:.35; }
+  .fvis .fico { font-size:74px; position:relative; z-index:1;
+                filter:drop-shadow(0 10px 24px rgba(0,0,0,.45)); }
+  .fvis .fchip { position:absolute; z-index:2; background:rgba(14,20,36,.92);
+                 border:1px solid var(--line); border-radius:999px; padding:7px 13px;
+                 font-size:12.5px; font-weight:700; white-space:nowrap;
+                 box-shadow:0 10px 26px rgba(0,0,0,.35);
+                 animation:kxBob 6s ease-in-out infinite; }
+  .fvis .fchip.c1 { top:14%; left:9%; }
+  .fvis .fchip.c2 { bottom:16%; right:9%; animation-delay:1.8s; }
+  .fvis .fchip.c3 { top:20%; right:12%; animation-delay:3.4s; }
+  @media (prefers-reduced-motion: reduce) { .fvis .fchip { animation:none; } }
   /* per-category price showcase rows (business overview) */
   .pxr { display:flex; justify-content:space-between; align-items:baseline; gap:12px;
          padding:8px 0; border-bottom:1px solid var(--line); font-size:14px;
@@ -1514,63 +1549,126 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
 <section>
   <div class="inner">
     <div class="kicker" style="text-align:center">What we do</div>
-    <h2 style="text-align:center">What we do, and what it costs</h2>
-    <p class="sub" style="text-align:center">No mystery pricing &mdash; here&rsquo;s the whole
-      menu. Every price is per month, AUD incl. GST, no lock-in.</p>
-    <div class="cards">
-      <div class="card">
-        <div class="ico">&#128225;</div>
-        <h3>Internet</h3>
-        <div class="pxr"><span>Business NBN 50/20</span><strong>$105</strong></div>
-        <div class="pxr"><span>Business NBN 250/25</span><strong>$135</strong></div>
-        <div class="pxr"><span>Business NBN 500/50</span><strong>$165</strong></div>
-        <div class="pxr"><span>Business NBN 1000/100</span><strong>$195</strong></div>
-        <a class="btn ghost" href="/business/nbn/">Full plans &rarr;</a>
+    <h2 style="text-align:center">Six things, done properly</h2>
+    <p class="sub" style="text-align:center">Every category below stands on its own &mdash;
+      together they&rsquo;re your whole IT stack on one bill, with one number to call.</p>
+
+    <div class="frow">
+      <div class="fvis"><div class="fg" style="background:#2b5cff"></div>
+        <span class="fchip c1">Static IPv4</span>
+        <span class="fchip c2">up to 1000 Mbps</span>
+        <div class="fico">&#128225;</div>
       </div>
-      <div class="card">
-        <div class="ico">&#128222;</div>
-        <h3>VoIP</h3>
-        <div class="pxr"><span>PAYG Seat</span><strong>$14.95 <small>/seat</small></strong></div>
-        <div class="pxr"><span>Unlimited Seat</span><strong>$24.95 <small>/seat</small></strong></div>
-        <div class="pxr"><span>Front Desk Seat</span><strong>$34.95 <small>/seat</small></strong></div>
-        <div class="pxr"><span>SIP trunks</span><strong>from $12.95 <small>/channel</small></strong></div>
-        <a class="btn ghost" href="/business/voice/">Full plans &rarr;</a>
+      <div>
+        <div class="kicker">Business Internet</div>
+        <h2>The connection everything else <span class="grad">stands on</span></h2>
+        <p class="fcopy">Business NBN on every technology, qualified live against your actual
+          address. A static IPv4 on every plan means VPNs, cameras and remote access just work
+          &mdash; and when something breaks, you&rsquo;re in the priority queue talking to an
+          engineer, not a script.</p>
+        <div class="fticks"><span>Static IPv4 included</span><span>Priority support</span>
+          <span>Every NBN technology</span><span>No lock-in</span></div>
+        <div class="fprice">$105&ndash;$195/mo <small>&mdash; 50/20 up to 1000/100</small></div>
+        <a class="btn" href="/business/nbn/">Explore Business Internet &rarr;</a>
       </div>
-      <div class="card">
-        <div class="ico">&#128737;</div>
-        <h3>HA Internet</h3>
-        <div class="pxr"><span>HA Business 25</span><strong>$150</strong></div>
-        <div class="pxr"><span>HA Business 50</span><strong>$185</strong></div>
-        <div class="pxr"><span>HA Business 250</span><strong>$205</strong></div>
-        <div class="pxr"><span>HA Business 500 / 1000</span><strong>$230 / $275</strong></div>
-        <a class="btn ghost" href="/business/ha/">Full plans &rarr;</a>
+    </div>
+
+    <div class="frow rev">
+      <div class="fvis"><div class="fg" style="background:#7a5cff"></div>
+        <span class="fchip c1">Keep your numbers</span>
+        <span class="fchip c2">Answer anywhere</span>
+        <div class="fico">&#128222;</div>
       </div>
-      <div class="card">
-        <div class="ico">&#9993;</div>
-        <h3>Email &amp; Microsoft 365</h3>
-        <div class="pxr"><span>Exchange Online</span><strong>$12 <small>/user</small></strong></div>
-        <div class="pxr"><span>365 Business Basic</span><strong>$19 <small>/user</small></strong></div>
-        <div class="pxr"><span>365 Business Standard</span><strong>$39 <small>/user</small></strong></div>
-        <div class="pxr"><span>365 Business Premium</span><strong>$59 <small>/user</small></strong></div>
-        <a class="btn ghost" href="/business/email/">Full plans &rarr;</a>
+      <div>
+        <div class="kicker">Business VoIP</div>
+        <h2>Your phone system, <span class="grad">minus the phone system</span></h2>
+        <p class="fcopy">Hosted phones that ride your Korvix connection. Keep every number you
+          own, drop the PBX in the cupboard, and answer the shop line from the ute &mdash;
+          auto attendants, queues and voicemail-to-email included, not extra.</p>
+        <div class="fticks"><span>Number porting handled</span><span>Attendants &amp; queues</span>
+          <span>Softphone apps</span><span>SIP trunks for your PBX</span></div>
+        <div class="fprice">From $14.95/seat <small>&mdash; unlimited calls $24.95</small></div>
+        <a class="btn" href="/business/voice/">Explore Business VoIP &rarr;</a>
       </div>
-      <div class="card">
-        <div class="ico">&#128274;</div>
-        <h3>Cyber Security</h3>
-        <div class="pxr"><span>Essentials</span><strong>$15 <small>/user</small></strong></div>
-        <div class="pxr"><span>Protected</span><strong>$29 <small>/user</small></strong></div>
-        <div class="pxr"><span>Fortified</span><strong>$49 <small>/user</small></strong></div>
-        <div class="pxr"><span>Security health check</span><strong>Free</strong></div>
-        <a class="btn ghost" href="/business/security/">Full plans &rarr;</a>
+    </div>
+
+    <div class="frow">
+      <div class="fvis"><div class="fg" style="background:#1d9e55"></div>
+        <span class="fchip c1">Automatic failover</span>
+        <span class="fchip c2">4G backup built in</span>
+        <div class="fico">&#128737;</div>
       </div>
-      <div class="card">
-        <div class="ico">&#128190;</div>
-        <h3>Backup &amp; Recovery</h3>
-        <div class="pxr"><span>Microsoft 365 Backup</span><strong>$7 <small>/user</small></strong></div>
-        <div class="pxr"><span>Workstation Backup</span><strong>$19 <small>/device</small></strong></div>
-        <div class="pxr"><span>Server Backup</span><strong>from $99 <small>/server</small></strong></div>
-        <div class="pxr"><span>Restores &amp; test drills</span><strong>Included</strong></div>
-        <a class="btn ghost" href="/business/backup/">Full plans &rarr;</a>
+      <div>
+        <div class="kicker">HA Internet</div>
+        <h2>Internet that <span class="grad">doesn&rsquo;t blink</span></h2>
+        <p class="fcopy">When EFTPOS, bookings and cloud phones are the business, downtime is
+          revenue. HA plans pair your NBN with a 4G backup that cuts over automatically in
+          seconds &mdash; and a static IP that survives the switch, so tills keep trading and
+          phones stay registered.</p>
+        <div class="fticks"><span>Seconds to fail over</span><span>Static IP survives</span>
+          <span>Proactive monitoring</span><span>Restoration SLA add-on</span></div>
+        <div class="fprice">$150&ndash;$275/mo <small>&mdash; backup at 20&ndash;50 Mbps</small></div>
+        <a class="btn" href="/business/ha/">Explore HA Internet &rarr;</a>
+      </div>
+    </div>
+
+    <div class="frow rev">
+      <div class="fvis"><div class="fg" style="background:#4d8dff"></div>
+        <span class="fchip c1">Migrated in a weekend</span>
+        <span class="fchip c2">MFA on by default</span>
+        <div class="fico">&#9993;&#65039;</div>
+      </div>
+      <div>
+        <div class="kicker">Email &amp; Microsoft 365</div>
+        <h2>Email that <span class="grad">behaves</span></h2>
+        <p class="fcopy">Microsoft 365 licensed, migrated and managed by us. Mail, calendars
+          and files move over a weekend; MFA and filtering are on from day one; and new
+          starters or leavers are a phone call &mdash; nobody at your end touches an admin
+          portal, ever.</p>
+        <div class="fticks"><span>Mailboxes, Office &amp; Teams</span><span>Weekend migrations</span>
+          <span>Security switched on</span><span>Admin handled</span></div>
+        <div class="fprice">$12&ndash;$59/user <small>&mdash; mix plans per person</small></div>
+        <a class="btn" href="/business/email/">Explore Email &amp; M365 &rarr;</a>
+      </div>
+    </div>
+
+    <div class="frow">
+      <div class="fvis"><div class="fg" style="background:#e2a336"></div>
+        <span class="fchip c1">Free health check</span>
+        <span class="fchip c2">We respond to alerts</span>
+        <div class="fico">&#128274;</div>
+      </div>
+      <div>
+        <div class="kicker">Cyber Security</div>
+        <h2>Locked down, <span class="grad">not locked up</span></h2>
+        <p class="fcopy">Most breaches aren&rsquo;t clever &mdash; they&rsquo;re a dodgy email
+          and a password from 2015. We do the practical layers properly: filtering in front of
+          your inboxes, managed protection on every machine, MFA everywhere, and a firewall
+          someone actually patches.</p>
+        <div class="fticks"><span>Email filtering</span><span>Managed endpoints (EDR)</span>
+          <span>MFA rollout</span><span>Managed firewall</span></div>
+        <div class="fprice">$15&ndash;$49/user <small>&mdash; health check free</small></div>
+        <a class="btn" href="/business/security/">Explore Cyber Security &rarr;</a>
+      </div>
+    </div>
+
+    <div class="frow rev">
+      <div class="fvis"><div class="fg" style="background:#b16bff"></div>
+        <span class="fchip c1">Tested restores</span>
+        <span class="fchip c2">Stored in Australia</span>
+        <div class="fico">&#128190;</div>
+      </div>
+      <div>
+        <div class="kicker">Backup &amp; Recovery</div>
+        <h2>Plan for the <span class="grad">bad day</span></h2>
+        <p class="fcopy">Ransomware, a dead server, one wrong click on delete &mdash; what
+          matters is whether yesterday exists somewhere safe. Servers, workstations and
+          Microsoft 365, encrypted off-site in Australia, with restores we test on a schedule
+          &mdash; because a backup nobody has restored from is a rumour.</p>
+        <div class="fticks"><span>Servers &amp; workstations</span><span>Microsoft 365 backup</span>
+          <span>Quarterly restore drills</span><span>Help on the day</span></div>
+        <div class="fprice">From $7/user <small>&mdash; restores always included</small></div>
+        <a class="btn" href="/business/backup/">Explore Backup &amp; Recovery &rarr;</a>
       </div>
     </div>
     <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
