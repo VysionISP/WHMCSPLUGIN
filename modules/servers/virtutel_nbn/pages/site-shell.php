@@ -2009,6 +2009,61 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
 
 <section>
   <div class="inner">
+    <div class="kicker" style="text-align:center">Pricing</div>
+    <h2 style="text-align:center">Per person, no surprises</h2>
+    <p class="sub" style="text-align:center">Security priced like a utility &mdash; per user,
+      month to month. The health check is free and tells you exactly which tier you need.</p>
+    <div class="pgrid" style="justify-content:center;overflow:visible;padding-top:26px">
+      <div class="pcard" style="flex:0 1 250px">
+        <div class="nm">Essentials</div>
+        <div class="sp">Close the easy doors</div>
+        <div class="pr">$15<small>/user/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Email phishing &amp; spam filtering</li>
+          <li>MFA rollout &amp; enforcement</li>
+          <li>Dark-web password monitoring</li>
+          <li>Security posture report, quarterly</li>
+        </ul>
+        <a class="btn ghost" href="/contact/">Get protected</a>
+      </div>
+      <div class="pcard feat" style="flex:0 1 250px">
+        <div class="tag">Most popular</div>
+        <div class="nm">Protected</div>
+        <div class="sp">The full working set</div>
+        <div class="pr">$29<small>/user/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Everything in Essentials</li>
+          <li>Managed endpoint protection (EDR)</li>
+          <li>Device patching &amp; updates</li>
+          <li>We respond to alerts, not you</li>
+        </ul>
+        <a class="btn" href="/contact/">Get protected</a>
+      </div>
+      <div class="pcard" style="flex:0 1 250px">
+        <div class="nm">Fortified</div>
+        <div class="sp">For the can&rsquo;t-be-down crowd</div>
+        <div class="pr">$49<small>/user/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Everything in Protected</li>
+          <li>Managed firewall &amp; content filtering</li>
+          <li>Staff phishing-awareness training</li>
+          <li>Annual security review with you</li>
+        </ul>
+        <a class="btn ghost" href="/contact/">Get protected</a>
+      </div>
+    </div>
+    <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
+      The security health check is free and comes with no obligation. Minimum 3 users per plan.
+      Firewall hardware for Fortified quoted with your site. Pairs with
+      <a href="/business/backup/">Backup &amp; Recovery</a> &mdash; ask about bundling.</p>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
     <div class="kicker" style="text-align:center">The essentials</div>
     <h2 style="text-align:center">Four layers that stop real attacks</h2>
     <div class="cards">
@@ -2062,6 +2117,61 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
     <p class="sub">Ransomware, a dead server, or one wrong click on delete &mdash; what matters
       is whether yesterday exists somewhere safe, and how fast you get it back.</p>
     <a class="btn" href="/contact/">Sort my backups</a>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">Pricing</div>
+    <h2 style="text-align:center">Priced per thing protected</h2>
+    <p class="sub" style="text-align:center">Mailboxes, machines and servers each have a simple
+      monthly price &mdash; add them up and that&rsquo;s the bill. Restores are always included.</p>
+    <div class="pgrid" style="justify-content:center;overflow:visible;padding-top:26px">
+      <div class="pcard feat" style="flex:0 1 250px">
+        <div class="tag">Most popular</div>
+        <div class="nm">Microsoft 365 Backup</div>
+        <div class="sp">Deleted &ne; gone</div>
+        <div class="pr">$7<small>/user/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Mailbox, OneDrive &amp; SharePoint</li>
+          <li>Multiple restore points daily</li>
+          <li>12-month retention included</li>
+          <li>Stored in Australia, encrypted</li>
+        </ul>
+        <a class="btn" href="/contact/">Start backing up</a>
+      </div>
+      <div class="pcard" style="flex:0 1 250px">
+        <div class="nm">Workstation Backup</div>
+        <div class="sp">Laptops &amp; desktops</div>
+        <div class="pr">$19<small>/device/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Managed agent, runs itself</li>
+          <li>Encrypted off-site, versioned</li>
+          <li>File &amp; full-machine restore</li>
+          <li>500GB per device included</li>
+        </ul>
+        <a class="btn ghost" href="/contact/">Start backing up</a>
+      </div>
+      <div class="pcard" style="flex:0 1 250px">
+        <div class="nm">Server Backup</div>
+        <div class="sp">The machines that run the place</div>
+        <div class="pr">from $99<small>/server/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Image-based: whole-server restore</li>
+          <li>Local copy + off-site copy</li>
+          <li>Quarterly test-restore drills</li>
+          <li>Priority recovery on the bad day</li>
+        </ul>
+        <a class="btn ghost" href="/contact/">Get a quote</a>
+      </div>
+    </div>
+    <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
+      Restore help is included on every plan &mdash; no per-restore fees. Big datasets and
+      longer retention quoted fairly. Bundle with
+      <a href="/business/security/">Cyber Security</a> and we&rsquo;ll sharpen the pencil.</p>
   </div>
 </section>
 
