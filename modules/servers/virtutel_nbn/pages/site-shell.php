@@ -1657,6 +1657,61 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
 
 <section>
   <div class="inner">
+    <div class="kicker" style="text-align:center">Pricing</div>
+    <h2 style="text-align:center">Per seat, month to month</h2>
+    <p class="sub" style="text-align:center">A seat is a person (or a spot a phone lives) &mdash;
+      mix seat types, add or drop them as the team changes. Setup and porting handled by us.</p>
+    <div class="pgrid" style="justify-content:center;overflow:visible;padding-top:26px">
+      <div class="pcard" style="flex:0 1 250px">
+        <div class="nm">PAYG Seat</div>
+        <div class="sp">For lines that rarely dial out</div>
+        <div class="pr">$14.95<small>/seat/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Full PBX features included</li>
+          <li>10c local &amp; national (untimed)</li>
+          <li>22c/min to AU mobiles, per-second</li>
+          <li>Softphone apps included</li>
+        </ul>
+        <a class="btn ghost" href="/contact/">Get a quote</a>
+      </div>
+      <div class="pcard feat" style="flex:0 1 250px">
+        <div class="tag">Most popular</div>
+        <div class="nm">Unlimited Seat</div>
+        <div class="sp">Set-and-forget calling</div>
+        <div class="pr">$24.95<small>/seat/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Unlimited local, national &amp; AU mobile</li>
+          <li>Full PBX features included</li>
+          <li>Softphone + desk handset</li>
+          <li>Voicemail to email</li>
+        </ul>
+        <a class="btn" href="/contact/">Get a quote</a>
+      </div>
+      <div class="pcard" style="flex:0 1 250px">
+        <div class="nm">Front Desk Seat</div>
+        <div class="sp">Where the calls land</div>
+        <div class="pr">$34.95<small>/seat/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Everything in Unlimited</li>
+          <li>Auto attendant &amp; call queues</li>
+          <li>Hunt groups &amp; time-based routing</li>
+          <li>Call recording</li>
+        </ul>
+        <a class="btn ghost" href="/contact/">Get a quote</a>
+      </div>
+    </div>
+    <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
+      SIP trunks for your own PBX from $12.95/channel/mo. 13/1300 numbers from $19.95/mo +
+      call rates. Pre-provisioned Yealink handsets from $129 outright. Number porting handled
+      for you. Unlimited plans subject to fair use; international rates on request.</p>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
     <div class="kicker" style="text-align:center">What you get</div>
     <h2 style="text-align:center">Big-company phones, small-company bill</h2>
     <div class="cards">
