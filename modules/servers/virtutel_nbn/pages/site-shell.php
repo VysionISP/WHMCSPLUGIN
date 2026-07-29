@@ -392,13 +392,15 @@ function kx_site_render(string $section, string $arg = ''): void
   .kx-nav .links a { color:#c7cede; font-weight:600; font-size:15px; }
   .kx-nav .links a:hover, .kx-nav .links a.on { color:#fff; }
   .kx-nav .links a.on { border-bottom:2px solid var(--brand); padding-bottom:3px; }
-  /* dropdown group: hover/focus opens; the padded container bridges the
-     gap down to the nav edge so the pointer never falls in a dead zone */
-  .kx-drop { position:relative; padding-bottom:18px; margin-bottom:-18px; }
-  .kx-drop .caret { font-size:10px; opacity:.7; }
-  .kx-drop .menu { display:none; position:absolute; top:100%; left:50%;
-                   transform:translateX(-50%); padding-top:6px; z-index:60; }
-  .kx-drop:hover .menu, .kx-drop:focus-within .menu { display:block; }
+  /* dropdown group: click to open (hover menus reopen under a parked
+     cursor after navigation — jank), outside click / Esc closes */
+  .kx-drop { position:relative; }
+  .kx-drop > a.drophead { cursor:pointer; }
+  .kx-drop .caret { font-size:10px; opacity:.7; transition:transform .15s ease; display:inline-block; }
+  .kx-drop.open .caret { transform:rotate(180deg); }
+  .kx-drop .menu { display:none; position:absolute; top:calc(100% + 10px); left:50%;
+                   transform:translateX(-50%); z-index:60; }
+  .kx-drop.open .menu { display:block; }
   .kx-drop .menu-in { background:#0e1424; border:1px solid #1c2436; border-radius:12px;
                       padding:8px; min-width:210px; box-shadow:0 18px 50px rgba(0,0,0,.5); }
   .kx-drop .menu-in a { display:block; padding:10px 14px; border-radius:8px;
@@ -799,6 +801,33 @@ function kx_site_render(string $section, string $arg = ''): void
     } ?>
   </div>
 </div></div>
+<script>
+(function(){
+  document.querySelectorAll('.kx-drop > a.drophead').forEach(function(a){
+    a.setAttribute('aria-haspopup','true');
+    a.setAttribute('aria-expanded','false');
+    a.addEventListener('click',function(ev){
+      // desktop: the link is a toggle, not navigation (children navigate).
+      // In the flattened mobile nav this link is hidden entirely.
+      ev.preventDefault();
+      var drop=a.parentNode,open=drop.classList.toggle('open');
+      a.setAttribute('aria-expanded',open?'true':'false');
+      document.querySelectorAll('.kx-drop.open').forEach(function(other){
+        if(other!==drop){other.classList.remove('open');}
+      });
+    });
+  });
+  document.addEventListener('click',function(ev){
+    if(ev.target.closest&&ev.target.closest('.kx-drop')){return;}
+    document.querySelectorAll('.kx-drop.open').forEach(function(d){d.classList.remove('open');});
+  });
+  document.addEventListener('keydown',function(ev){
+    if(ev.key==='Escape'){
+      document.querySelectorAll('.kx-drop.open').forEach(function(d){d.classList.remove('open');});
+    }
+  });
+})();
+</script>
 
 <?php if ($section === 'residential' || $section === 'nbn') {
     $plans = kx_site_plans();
