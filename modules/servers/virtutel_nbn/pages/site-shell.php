@@ -1712,6 +1712,74 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
 
 <section>
   <div class="inner">
+    <div class="kicker" style="text-align:center">Plans</div>
+    <h2 style="text-align:center">Per seat, mix and match</h2>
+    <p class="sub" style="text-align:center">Every seat includes local setup and support &mdash;
+      new starters, leavers and licence changes are a phone call, not a portal.</p>
+    <div class="pgrid" style="justify-content:center;overflow:visible;padding-top:26px">
+      <div class="pcard" style="flex:0 1 250px">
+        <div class="nm">Exchange Online</div>
+        <div class="sp">Just email, done properly</div>
+        <div class="pr">$12<small>/user/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>50GB business-class mailbox</li>
+          <li>Your domain, shared calendars</li>
+          <li>Outlook on web &amp; mobile</li>
+          <li>Spam &amp; phishing filtering</li>
+        </ul>
+        <a class="btn ghost" href="/contact/">Get set up</a>
+      </div>
+      <div class="pcard" style="flex:0 1 250px">
+        <div class="nm">365 Business Basic</div>
+        <div class="sp">Email + Teams + cloud Office</div>
+        <div class="pr">$19<small>/user/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>50GB mailbox on your domain</li>
+          <li>Teams meetings &amp; chat</li>
+          <li>Word, Excel &amp; co on the web</li>
+          <li>1TB OneDrive per person</li>
+        </ul>
+        <a class="btn ghost" href="/contact/">Get set up</a>
+      </div>
+      <div class="pcard feat" style="flex:0 1 250px">
+        <div class="tag">Most popular</div>
+        <div class="nm">365 Business Standard</div>
+        <div class="sp">The full desktop Office suite</div>
+        <div class="pr">$39<small>/user/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Everything in Basic</li>
+          <li>Outlook, Word, Excel &amp; PowerPoint installed</li>
+          <li>Works offline, on 5 devices</li>
+          <li>Webinars &amp; bookings tools</li>
+        </ul>
+        <a class="btn" href="/contact/">Get set up</a>
+      </div>
+      <div class="pcard" style="flex:0 1 250px">
+        <div class="nm">365 Business Premium</div>
+        <div class="sp">Standard + serious security</div>
+        <div class="pr">$59<small>/user/mo</small></div>
+        <div class="nt">AUD incl. GST</div>
+        <ul>
+          <li>Everything in Standard</li>
+          <li>Advanced phishing &amp; ransomware defence</li>
+          <li>Manage &amp; wipe company devices</li>
+          <li>Conditional access policies</li>
+        </ul>
+        <a class="btn ghost" href="/contact/">Get set up</a>
+      </div>
+    </div>
+    <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
+      Month to month, mix plans per person. Also available: Exchange Online Plan&nbsp;2
+      (100GB + archiving), Microsoft 365 Apps, and the Copilot AI add-on from
+      $59/user/mo &mdash; <a href="/contact/">ask us</a>. Annual billing discounts available.</p>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
     <div class="kicker" style="text-align:center">What we handle</div>
     <h2 style="text-align:center">From &ldquo;where&rsquo;s my email&rdquo; to &ldquo;it just works&rdquo;</h2>
     <div class="cards">
