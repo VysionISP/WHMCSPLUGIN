@@ -188,7 +188,8 @@ function kx_site_render(string $section, string $arg = ''): void
         'personal' => ['Personal', '/'],
         'business' => ['Business', '/business/'],
     ];
-    $family = $section === 'business' ? 'business' : 'personal';
+    $bizSections = ['business', 'biznbn', 'bizha', 'bizcustom'];
+    $family = in_array($section, $bizSections, true) ? 'business' : 'personal';
 
     if ($family === 'personal') {
         $nav = [
@@ -207,12 +208,18 @@ function kx_site_render(string $section, string $arg = ''): void
         ][$section] ?? '';
     } else {
         $nav = [
-            ['Home', '/'],
-            ['Personal', '/personal/'],
-            ['Business', '/business/'],
+            ['Overview', '/business/'],
+            ['Business NBN', '/business/nbn/'],
+            ['High Availability', '/business/ha/'],
+            ['Custom Solutions', '/business/custom/'],
             ['Contact', '/contact/'],
         ];
-        $active = 'Business';
+        $active = [
+            'business' => 'Overview',
+            'biznbn' => 'Business NBN',
+            'bizha' => 'High Availability',
+            'bizcustom' => 'Custom Solutions',
+        ][$section] ?? '';
     }
 
     $titles = [
@@ -222,6 +229,9 @@ function kx_site_render(string $section, string $arg = ''): void
         'mobile' => 'Mobile — Korvix',
         'homephone' => 'Home Phone — Korvix',
         'business' => 'Business Internet & Services — Korvix',
+        'biznbn' => 'Business NBN Plans — Korvix',
+        'bizha' => 'High-Availability Internet — Korvix',
+        'bizcustom' => 'Custom Network Solutions — Korvix',
         'contact' => 'Contact Us — Korvix',
         'notfound' => 'Page Not Found — Korvix',
     ];
@@ -238,13 +248,18 @@ function kx_site_render(string $section, string $arg = ''): void
         'mobile' => 'Korvix Mobile is coming — SIM-only 5G plans with unlimited national calls and the same local support as our NBN. Register your interest.',
         'homephone' => 'Keep your home phone number without the line rental — VoIP home phone over your NBN from $9.95/month.',
         'business' => 'Business internet, email and voice with local support — connectivity your business can bank on.',
+        'biznbn' => 'Business NBN with static IPs, priority local support and no lock-in — internet your business can rely on, from Korvix.',
+        'bizha' => 'High-availability internet: dual-link failover, 4G/5G backup, enhanced restoration SLAs and proactive monitoring from Korvix.',
+        'bizcustom' => 'Enterprise Ethernet, multi-site WANs, Layer 2 handoffs, managed routers and voice — custom-engineered by Korvix.',
         'contact' => 'Talk to Korvix — call ' . $phone . ', open a ticket, or start a remote support session.',
         'notfound' => 'That page doesn\'t exist — but the internet does. Head back to Korvix.',
     ];
     $canonPaths = [
         'residential' => '/personal/', 'nbn' => '/personal/nbn/', 'signup' => '/personal/nbn/signup/',
         'mobile' => '/personal/mobile/', 'homephone' => '/personal/home-phone/',
-        'business' => '/business/', 'contact' => '/contact/',
+        'business' => '/business/', 'biznbn' => '/business/nbn/',
+        'bizha' => '/business/ha/', 'bizcustom' => '/business/custom/',
+        'contact' => '/contact/',
     ];
     $metaDesc = $descs[$section] ?? $descs['residential'];
     $canonPath = $canonPaths[$section] ?? '';
@@ -1404,11 +1419,246 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
 </section>
 
 <section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">Go deeper</div>
+    <h2 style="text-align:center">Engineered for how you work</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">&#128225;</div>
+        <h3>Business NBN</h3>
+        <p>Static IPs, priority local support and honest speeds on every NBN technology &mdash;
+          month to month, no lock-in.</p>
+        <a class="btn ghost" href="/business/nbn/">Business NBN &rarr;</a>
+      </div>
+      <div class="card">
+        <div class="ico">&#128737;</div>
+        <h3>High Availability</h3>
+        <p>Dual-link failover, 4G/5G backup and enhanced restoration SLAs &mdash; internet
+          that doesn&rsquo;t take a day off.</p>
+        <a class="btn ghost" href="/business/ha/">High Availability &rarr;</a>
+      </div>
+      <div class="card">
+        <div class="ico">&#129513;</div>
+        <h3>Custom Solutions</h3>
+        <p>Enterprise Ethernet, multi-site WANs, Layer&nbsp;2 handoffs and managed gear &mdash;
+          built around your network, not ours.</p>
+        <a class="btn ghost" href="/business/custom/">Custom Solutions &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
   <div class="inner"><div class="band">
     <h2>Let's talk about your setup</h2>
     <p class="sub">Call <?php echo $e($phone); ?> or drop us a line &mdash; we'll design the right mix
       and give you one clear monthly price.</p>
     <a class="btn" href="/contact/">Contact us</a>
+    &nbsp;
+    <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
+  </div></div>
+</section>
+
+<?php } elseif ($section === 'biznbn') { ?>
+
+<section class="hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker">Business NBN</div>
+    <h1>Serious internet for<br><span class="grad">serious work</span></h1>
+    <p class="sub">The same honest NBN we run for homes, hardened for business &mdash; static IPs,
+      priority support from people who know your site, and no lock-in contracts.</p>
+    <a class="btn" href="/personal/nbn/signup/">Check your address</a>
+    &nbsp;
+    <a class="btn ghost" href="/contact/">Talk to us first</a>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">What you get</div>
+    <h2 style="text-align:center">Built for uptime, priced for business</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">&#128204;</div>
+        <h3>Static IPv4 included</h3>
+        <p>A fixed public IP on every business service &mdash; VPNs, cameras, remote access and
+          hosted gear just work. No CGNAT surprises.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#9889;</div>
+        <h3>Every speed, every tech</h3>
+        <p>From 25/10 to 1000/100 across FTTP, HFC, FTTC and FTTN &mdash; we qualify your address
+          live and tell you the fastest tier your line genuinely supports.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128222;</div>
+        <h3>Priority local support</h3>
+        <p>Business faults jump the queue and you talk straight to Gippsland-based engineers &mdash;
+          the people who can actually fix it, not a script.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128203;</div>
+        <h3>No lock-in, clear billing</h3>
+        <p>Month to month with one clear invoice. Add services, change speeds or walk away &mdash;
+          we keep your business by being good at this.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner"><div class="band">
+    <h2>Need more than a single link?</h2>
+    <p class="sub">Failover, backup links and SLAs live on our
+      <a href="/business/ha/">High Availability</a> page &mdash; or go fully bespoke with
+      <a href="/business/custom/">Custom Solutions</a>.</p>
+    <a class="btn" href="/personal/nbn/signup/">Check your address</a>
+    &nbsp;
+    <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
+  </div></div>
+</section>
+
+<?php } elseif ($section === 'bizha') { ?>
+
+<section class="hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker">High Availability</div>
+    <h1>Internet that<br><span class="grad">doesn&rsquo;t blink</span></h1>
+    <p class="sub">When the internet is the business &mdash; EFTPOS, bookings, cloud phones,
+      remote sites &mdash; downtime isn&rsquo;t an inconvenience, it&rsquo;s revenue. We engineer
+      it out.</p>
+    <a class="btn" href="/contact/">Design my setup</a>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">The toolkit</div>
+    <h2 style="text-align:center">Layers of &ldquo;still online&rdquo;</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">&#128257;</div>
+        <h3>Dual-link failover</h3>
+        <p>A second NBN service or 4G/5G backup link with automatic cutover &mdash; when the
+          primary drops, traffic moves in seconds, and moves back when it heals.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128295;</div>
+        <h3>Enhanced restoration SLA</h3>
+        <p>Faster carrier fault-restoration windows on eligible services &mdash; when hardware
+          breaks in the street, your fix is scheduled ahead of the pack.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128225;</div>
+        <h3>Static IPs that fail over</h3>
+        <p>Routing engineered so your services stay reachable during a cutover &mdash; VPNs
+          re-establish, phones re-register, tills keep trading.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128200;</div>
+        <h3>Proactive monitoring</h3>
+        <p>We watch your links from our side &mdash; carrier outage feeds, line health and
+          session state. Often we&rsquo;re calling you before anyone on site has noticed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">How failover works</div>
+    <h2 style="text-align:center">Three layers, zero drama</h2>
+    <div class="hiw-track">
+      <div class="hiw-step">
+        <div class="hiw-ghost">01</div>
+        <div class="hiw-num">1</div>
+        <h3>Two paths in</h3>
+        <p>Your primary NBN link runs the show; a second NBN or 4G/5G path sits warm behind it,
+          tested continuously &mdash; not discovered broken on the day you need it.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-ghost">02</div>
+        <div class="hiw-num">2</div>
+        <h3>Automatic cutover</h3>
+        <p>The router health-checks the primary every few seconds. When it fails, traffic shifts
+          to the backup automatically &mdash; no one touches anything.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-ghost">03</div>
+        <div class="hiw-num">3</div>
+        <h3>Self-healing</h3>
+        <p>When the primary comes good, traffic moves back and we log what happened. You get the
+          story, not the outage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner"><div class="band">
+    <h2>What does an hour of downtime cost you?</h2>
+    <p class="sub">Tell us about your site and we&rsquo;ll spec the right amount of redundancy
+      &mdash; no more, no less &mdash; with one clear monthly price.</p>
+    <a class="btn" href="/contact/">Talk to an engineer</a>
+    &nbsp;
+    <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
+  </div></div>
+</section>
+
+<?php } elseif ($section === 'bizcustom') { ?>
+
+<section class="hero">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="inner">
+    <div class="kicker">Custom Solutions</div>
+    <h1>Built around<br><span class="grad">your network</span></h1>
+    <p class="sub">Off-the-shelf doesn&rsquo;t fit every business. We design, build and run
+      connectivity to your spec &mdash; and you get an engineer&rsquo;s number, not a queue.</p>
+    <a class="btn" href="/contact/">Tell us what you're building</a>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">Capabilities</div>
+    <h2 style="text-align:center">The stuff that doesn&rsquo;t fit a plan card</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">&#128640;</div>
+        <h3>Enterprise Ethernet</h3>
+        <p>Symmetrical business-grade fibre on nbn&reg; Enterprise Ethernet &mdash; dedicated
+          bandwidth, premium SLAs, and free or subsidised builds in Business Fibre Zones.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#127760;</div>
+        <h3>Multi-site &amp; Layer 2</h3>
+        <p>Private WANs between your sites, VLAN handoffs and Layer&nbsp;2 services &mdash; your
+          branches on one network, your traffic never touching the public internet.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128295;</div>
+        <h3>Managed routers &amp; Wi-Fi</h3>
+        <p>We ship pre-configured hardware, monitor it, patch it and replace it when it dies.
+          Your network, our problem &mdash; the way it should be.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128222;</div>
+        <h3>Voice &amp; PBX integration</h3>
+        <p>SIP trunks, number porting and hosted PBX that rides the same managed links &mdash;
+          engineered together so calls stay up when everything else is having a day.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner"><div class="band">
+    <h2>Sketch it on a napkin, we'll build it</h2>
+    <p class="sub">Bring us the problem &mdash; sites, systems, budget &mdash; and we&rsquo;ll come
+      back with a design and one clear monthly price. No obligation, no jargon.</p>
+    <a class="btn" href="/contact/">Start the conversation</a>
     &nbsp;
     <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
   </div></div>
