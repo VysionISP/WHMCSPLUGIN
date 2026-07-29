@@ -190,6 +190,7 @@ function kx_site_render(string $section, string $arg = ''): void
     ];
     $bizSections = ['business', 'biznbn', 'bizvoice', 'bizha', 'bizcustom'];
     $family = in_array($section, $bizSections, true) ? 'business' : 'personal';
+    $activeChild = '';
 
     if ($family === 'personal') {
         $nav = [
@@ -210,15 +211,22 @@ function kx_site_render(string $section, string $arg = ''): void
         $nav = [
             ['Overview', '/business/'],
             ['Business NBN', '/business/nbn/'],
-            ['Voice', '/business/voice/'],
-            ['High Availability', '/business/ha/'],
-            ['Custom Solutions', '/business/custom/'],
+            ['Solutions', '/business/voice/', [
+                ['Business Voice', '/business/voice/'],
+                ['High Availability', '/business/ha/'],
+                ['Custom Solutions', '/business/custom/'],
+            ]],
             ['Contact', '/contact/'],
         ];
         $active = [
             'business' => 'Overview',
             'biznbn' => 'Business NBN',
-            'bizvoice' => 'Voice',
+            'bizvoice' => 'Solutions',
+            'bizha' => 'Solutions',
+            'bizcustom' => 'Solutions',
+        ][$section] ?? '';
+        $activeChild = [
+            'bizvoice' => 'Business Voice',
             'bizha' => 'High Availability',
             'bizcustom' => 'Custom Solutions',
         ][$section] ?? '';
@@ -367,6 +375,29 @@ function kx_site_render(string $section, string $arg = ''): void
   .kx-nav .links a { color:#c7cede; font-weight:600; font-size:15px; }
   .kx-nav .links a:hover, .kx-nav .links a.on { color:#fff; }
   .kx-nav .links a.on { border-bottom:2px solid var(--brand); padding-bottom:3px; }
+  /* dropdown group: hover/focus opens; the padded container bridges the
+     gap down to the nav edge so the pointer never falls in a dead zone */
+  .kx-drop { position:relative; padding-bottom:18px; margin-bottom:-18px; }
+  .kx-drop .caret { font-size:10px; opacity:.7; }
+  .kx-drop .menu { display:none; position:absolute; top:100%; left:50%;
+                   transform:translateX(-50%); padding-top:6px; z-index:60; }
+  .kx-drop:hover .menu, .kx-drop:focus-within .menu { display:block; }
+  .kx-drop .menu-in { background:#0e1424; border:1px solid #1c2436; border-radius:12px;
+                      padding:8px; min-width:210px; box-shadow:0 18px 50px rgba(0,0,0,.5); }
+  .kx-drop .menu-in a { display:block; padding:10px 14px; border-radius:8px;
+                        font-size:14.5px; white-space:nowrap; border-bottom:0 !important; }
+  .kx-drop .menu-in a:hover { background:rgba(77,141,255,.12); }
+  .kx-drop .menu-in a.on { color:#fff; background:rgba(77,141,255,.16); }
+  /* small screens: hover is unreliable — flatten the group into plain
+     nav links and hide the toggle */
+  @media(max-width:820px){
+    .kx-drop { display:contents; }
+    .kx-drop > a.drophead { display:none; }
+    .kx-drop .menu { display:contents; }
+    .kx-drop .menu-in { display:contents; }
+    .kx-drop .menu-in a { display:inline; padding:0; background:none !important;
+                          font-size:15px; white-space:normal; }
+  }
   /* shared sections */
   section { padding:56px 20px; }
   h1 { font-size:clamp(30px,5vw,44px); line-height:1.15; margin:0 0 14px; font-weight:800;
@@ -731,9 +762,24 @@ function kx_site_render(string $section, string $arg = ''): void
       echo $e($logoUrl); ?>" alt="Korvix"
       onerror="this.closest('a').textContent='KORVIX'"><?php } else { ?>KORVIX<?php } ?></a>
   <div class="links">
-    <?php foreach ($nav as [$label, $url]) { ?>
+    <?php foreach ($nav as $item) {
+        [$label, $url] = $item;
+        $children = $item[2] ?? null;
+        if ($children === null) { ?>
       <a href="<?php echo $e($url); ?>"<?php echo $label === $active ? ' class="on"' : ''; ?>><?php echo $e($label); ?></a>
-    <?php } ?>
+    <?php } else { ?>
+      <div class="kx-drop">
+        <a class="drophead<?php echo $label === $active ? ' on' : ''; ?>"
+           href="<?php echo $e($url); ?>"><?php echo $e($label); ?> <span class="caret">&#9662;</span></a>
+        <div class="menu"><div class="menu-in">
+          <?php foreach ($children as [$childLabel, $childUrl]) { ?>
+          <a href="<?php echo $e($childUrl); ?>"<?php
+              echo $childLabel === $activeChild ? ' class="on"' : ''; ?>><?php echo $e($childLabel); ?></a>
+          <?php } ?>
+        </div></div>
+      </div>
+    <?php }
+    } ?>
   </div>
 </div></div>
 
