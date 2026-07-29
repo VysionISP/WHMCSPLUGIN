@@ -1495,91 +1495,155 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
   <div class="inner">
     <div class="kicker">Business</div>
     <h1>Connectivity your business<br>can <span class="grad">bank on</span></h1>
-    <p class="sub">High-availability internet, business email, hosted voice, and backup &mdash;
-      all supported locally, all on one bill.</p>
+    <p class="sub">Internet, phones, email, security and backup &mdash; engineered together,
+      supported by local Gippsland engineers, and billed on one clear invoice.</p>
     <a class="btn" href="/contact/">Talk to us</a>
+    &nbsp;
+    <a class="btn ghost" href="tel:<?php echo $e($tel); ?>">Call <?php echo $e($phone); ?></a>
   </div>
 </section>
 
 <section>
   <div class="inner">
     <div class="kicker" style="text-align:center">What we do</div>
-    <h2 style="text-align:center">Services built for business</h2>
-    <div class="cards">
-      <?php
-      $blurbs = [
-          'business' => ['&#128225;', 'Business-grade connections with high-availability options, static IPs, and priority support.'],
-          'email' => ['&#9993;', 'Business email and Microsoft 365 &mdash; mailboxes, Office apps, and migration handled for you.'],
-          'voip' => ['&#128222;', 'Hosted VoIP phone systems: keep your numbers, drop the PBX hardware, scale by the handset.'],
-          'backup' => ['&#128190;', 'Managed backup for servers and workstations with local support when you need a restore.'],
-      ];
-      foreach ($groups as [$name, $url]) {
-          $lower = strtolower($name);
-          $key = null;
-          if (strpos($lower, 'business') !== false) { $key = 'business'; }
-          elseif (strpos($lower, 'email') !== false) { $key = 'email'; }
-          elseif (strpos($lower, 'voip') !== false) { $key = 'voip'; }
-          elseif (strpos($lower, 'backup') !== false) { $key = 'backup'; }
-          if ($key === null) { continue; }
-          [$ico, $blurb] = $blurbs[$key];
-      ?>
-      <div class="card">
-        <div class="ico"><?php echo $ico; ?></div>
-        <h3><?php echo $e($name); ?></h3>
-        <p><?php echo $blurb; ?></p>
-        <a class="btn ghost" href="<?php echo $e($url); ?>">View plans</a>
-      </div>
-      <?php } ?>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="inner">
-    <div class="kicker" style="text-align:center">Go deeper</div>
-    <h2 style="text-align:center">Engineered for how you work</h2>
+    <h2 style="text-align:center">Everything on one bill, one number</h2>
     <div class="cards">
       <div class="card">
         <div class="ico">&#128225;</div>
         <h3>Internet</h3>
-        <p>Static IPs, priority local support and honest speeds on every NBN technology &mdash;
-          month to month, no lock-in.</p>
+        <p>Business NBN on every technology &mdash; static IPv4, priority support and honest
+          speeds, month to month.</p>
+        <p style="font-weight:800;margin:0 0 12px">from $105/mo</p>
         <a class="btn ghost" href="/business/nbn/">Business Internet &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#128222;</div>
         <h3>VoIP</h3>
-        <p>Hosted VoIP and SIP trunks &mdash; keep your numbers, drop the PBX hardware,
+        <p>Hosted phones and SIP trunks &mdash; keep your numbers, drop the PBX hardware,
           answer calls anywhere.</p>
+        <p style="font-weight:800;margin:0 0 12px">from $14.95/seat</p>
         <a class="btn ghost" href="/business/voice/">Business VoIP &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#128737;</div>
         <h3>HA Internet</h3>
-        <p>Dual-link failover, 4G/5G backup and enhanced restoration SLAs &mdash; internet
-          that doesn&rsquo;t take a day off.</p>
+        <p>Dual-link failover with 4G backup and a static IP that survives the cutover &mdash;
+          downtime, engineered out.</p>
+        <p style="font-weight:800;margin:0 0 12px">from $150/mo</p>
         <a class="btn ghost" href="/business/ha/">HA Internet &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#9993;</div>
         <h3>Email &amp; Microsoft 365</h3>
-        <p>Mailboxes, Office and Teams &mdash; licensed, migrated and managed, on one bill
-          with your internet.</p>
+        <p>Mailboxes, Office and Teams &mdash; licensed, migrated and managed, with starters
+          and leavers a phone call away.</p>
+        <p style="font-weight:800;margin:0 0 12px">from $12/user</p>
         <a class="btn ghost" href="/business/email/">Email &amp; M365 &rarr;</a>
       </div>
       <div class="card">
         <div class="ico">&#128274;</div>
         <h3>Cyber Security</h3>
         <p>Email filtering, managed endpoints, firewalls and MFA &mdash; the practical basics
-          done properly, with <a href="/business/backup/">backup</a> to match.</p>
+          done properly. Free health check.</p>
+        <p style="font-weight:800;margin:0 0 12px">from $15/user</p>
         <a class="btn ghost" href="/business/security/">Cyber Security &rarr;</a>
       </div>
       <div class="card">
-        <div class="ico">&#129513;</div>
-        <h3>Custom Solutions</h3>
-        <p>Enterprise Ethernet, multi-site WANs, Layer&nbsp;2 handoffs and managed gear &mdash;
-          built around your network, not ours.</p>
-        <a class="btn ghost" href="/business/custom/">Custom Solutions &rarr;</a>
+        <div class="ico">&#128190;</div>
+        <h3>Backup &amp; Recovery</h3>
+        <p>Servers, workstations and Microsoft 365 backed up with tested restores &mdash;
+          plan for the bad day.</p>
+        <p style="font-weight:800;margin:0 0 12px">from $7/user</p>
+        <a class="btn ghost" href="/business/backup/">Backup &amp; Recovery &rarr;</a>
+      </div>
+    </div>
+    <p class="sub" style="text-align:center;font-size:13.5px;margin-top:18px">
+      Something that doesn&rsquo;t fit a card? Enterprise Ethernet, multi-site WANs and managed
+      gear live under <a href="/business/custom/">Custom Solutions</a>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">Why Korvix</div>
+    <h2 style="text-align:center">Built for businesses that can&rsquo;t muck around</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">&#128110;</div>
+        <h3>Engineers, not scripts</h3>
+        <p>Business faults jump the queue and you talk to the Gippsland-based people who can
+          actually fix it &mdash; on <?php echo $e($phone); ?>.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#129534;</div>
+        <h3>One bill, one throat to choke</h3>
+        <p>Internet, phones, email, security and backup on a single clear invoice &mdash; and
+          a single number when anything misbehaves.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128275;</div>
+        <h3>No lock-in, ever</h3>
+        <p>Month to month across the board. We keep your business by being good at this, not
+          by holding your contract hostage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">Getting started</div>
+    <h2 style="text-align:center">Three steps, no jargon</h2>
+    <div class="hiw-track">
+      <div class="hiw-step">
+        <div class="hiw-ghost">01</div>
+        <div class="hiw-num">1</div>
+        <h3>Tell us about your site</h3>
+        <p>Ten minutes on the phone &mdash; what you do, what hurts, what an hour of downtime
+          costs. We qualify your address live while we talk.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-ghost">02</div>
+        <div class="hiw-num">2</div>
+        <h3>Get one clear quote</h3>
+        <p>The right mix &mdash; no more, no less &mdash; with one monthly price on it. No
+          surprise line items, no &ldquo;from&rdquo; asterisks when it lands.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-ghost">03</div>
+        <div class="hiw-num">3</div>
+        <h3>White-glove setup</h3>
+        <p>We provision, port, migrate and test &mdash; planned around your quiet hours.
+          Cutover day should be boring, and it is.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <div class="kicker" style="text-align:center">Who we suit</div>
+    <h2 style="text-align:center">Sound familiar?</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">&#128736;</div>
+        <h3>Trades &amp; farms</h3>
+        <p>Answer the shop line from the ute, keep the office connected on Fixed Wireless, and
+          quotes backed up before the laptop meets the weather.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128722;</div>
+        <h3>Retail &amp; hospitality</h3>
+        <p>EFTPOS that stays up on <a href="/business/ha/">HA Internet</a>, a
+          <a href="/business/voice/">phone tree</a> for bookings, and the tills still trading
+          when the street loses NBN.</p>
+      </div>
+      <div class="card">
+        <div class="ico">&#128188;</div>
+        <h3>Professional services</h3>
+        <p><a href="/business/email/">Microsoft 365</a> run properly,
+          <a href="/business/security/">security</a> your insurer will ask about, and
+          <a href="/business/backup/">backups</a> someone has actually tested.</p>
       </div>
     </div>
   </div>
