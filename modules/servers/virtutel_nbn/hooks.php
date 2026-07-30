@@ -29,6 +29,18 @@ define('VIRTUTEL_NBN_HOOKS_LOADED', true);
 
 require_once __DIR__ . '/lib/Autoloader.php';
 
+if (!function_exists('kx_is_auth_page')) {
+    /**
+     * Auth pages (/login, /password/reset...) run chrome-less: they get a
+     * dedicated centred layout instead of the site header/footer.
+     */
+    function kx_is_auth_page(): bool
+    {
+        $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+        return (bool) preg_match('#^/(login$|dologin|password/reset)#', $path);
+    }
+}
+
 add_hook('DailyCronJob', 1, function () {
     try {
         Migrations::ensure();
@@ -680,6 +692,88 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
 });
 
 /**
+ * Dedicated auth layout: /login and /password/reset drop ALL site
+ * chrome (switcher, topbar, nav, footer) and become a centred branded
+ * card — logo above, dot-grid and glows behind, back-to-site link
+ * below. The WHMCS form itself is untouched, so login, captcha and
+ * reset flows keep working.
+ */
+add_hook('ClientAreaHeadOutput', 5, function () {
+    if (!kx_is_auth_page()) {
+        return '';
+    }
+    $logo = '';
+    foreach (['assets/img/logo.png', 'assets/img/logo.jpg'] as $cand) {
+        $root = defined('ROOTDIR') ? ROOTDIR : dirname(__DIR__, 3);
+        if (is_file($root . '/' . $cand)) {
+            $logo = '/' . $cand;
+            break;
+        }
+    }
+    if ($logo === '') {
+        try {
+            $logo = trim((string) (Capsule::table('tblconfiguration')
+                ->where('setting', 'LogoURL')->value('value') ?? ''));
+        } catch (\Throwable $e) {
+            $logo = '';
+        }
+        if ($logo !== '' && !preg_match('#^(https?:)?//#i', $logo) && $logo[0] !== '/') {
+            $logo = '/' . $logo;
+        }
+    }
+    $logoHtml = $logo !== ''
+        ? '<img src="' . htmlspecialchars($logo, ENT_QUOTES) . '" alt="Korvix" '
+            . 'onerror="this.outerHTML=\'<div style=&quot;font-weight:900;font-size:26px;'
+            . 'letter-spacing:.1em;color:#fff&quot;>KORVIX</div>\'">'
+        : '<div style="font-weight:900;font-size:26px;letter-spacing:.1em;color:#fff">KORVIX</div>';
+
+    $head = '<div class="kx-authlogo"><a href="/">' . $logoHtml . '</a>'
+        . '<div class="t">Customer portal</div></div>';
+    $foot = '<div class="kx-authback">&larr; <a href="/">Back to the Korvix site</a>'
+        . ' &nbsp;&middot;&nbsp; Need a hand? <a href="tel:0341305013">03 4130 5013</a></div>';
+    $headJson = json_encode($head, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $footJson = json_encode($foot, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+
+    return '<style>'
+        . '.kx-chrome,.kx-pnav,#header,.app-header,#main-menu,.app-main-menu,'
+        . '#footer,footer,.footer,.breadcrumb,div.topbar{display:none !important}'
+        . 'html,body{min-height:100vh}'
+        . 'body{background:#0f1420 !important;position:relative;overflow-x:hidden}'
+        . 'body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;'
+        . 'background-image:radial-gradient(rgba(122,146,200,.14) 1px,transparent 1.4px);'
+        . 'background-size:26px 26px;'
+        . '-webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 30%,transparent 75%);'
+        . 'mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 30%,transparent 75%)}'
+        . '.kx-authglow{position:fixed;border-radius:50%;filter:blur(100px);opacity:.26;'
+        . 'pointer-events:none;z-index:0}'
+        . '.kx-authglow.g1{width:440px;height:440px;background:#2b5cff;top:-160px;left:-110px}'
+        . '.kx-authglow.g2{width:400px;height:400px;background:#7a5cff;top:-120px;right:-90px}'
+        . '.kx-authlogo{display:flex;flex-direction:column;align-items:center;gap:8px;'
+        . 'margin:7vh auto 26px;position:relative;z-index:1}'
+        . '.kx-authlogo img{height:42px;display:block;'
+        . 'filter:invert(1) hue-rotate(180deg) brightness(1.05)}'
+        . '.kx-authlogo .t{color:#98a2b8;font-size:13.5px;letter-spacing:.06em;'
+        . 'text-transform:uppercase;font-weight:600}'
+        . '.kx-authback{text-align:center;margin:26px auto 8vh;color:#98a2b8;font-size:13.5px;'
+        . 'position:relative;z-index:1}'
+        . '.kx-authback a{color:#c7cede;font-weight:600;text-decoration:none}'
+        . '.kx-authback a:hover{color:#fff}'
+        . '#main-body,.main-content,.app-main{position:relative;z-index:1;padding-top:0 !important}'
+        . '</style>'
+        . "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "document.body.insertAdjacentHTML('afterbegin','<div class=\"kx-authglow g1\"></div><div class=\"kx-authglow g2\"></div>');"
+        . "var pw=document.querySelector('input[type=password],input[name=email],#inputEmail');"
+        . "var card=pw?(pw.closest('.card,.panel,.login-card,.w-full')||pw.closest('form')):null;"
+        . "if(card){"
+        . "var d1=document.createElement('div');d1.innerHTML={$headJson};"
+        . "card.parentNode.insertBefore(d1.firstChild,card);"
+        . "var d2=document.createElement('div');d2.innerHTML={$footJson};"
+        . "if(card.nextSibling){card.parentNode.insertBefore(d2.firstChild,card.nextSibling);}"
+        . "else{card.parentNode.appendChild(d2.firstChild);}"
+        . "}});</script>";
+});
+
+/**
  * Perfect header parity: the theme's two-tier header (logo row + menu
  * bar) is hidden entirely and replaced with a .kx-pnav bar that uses
  * the SAME markup and CSS as the marketing site's .kx-nav — identical
@@ -690,6 +784,9 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
  * pages. Styles: portal-dark.css (.kx-pnav block).
  */
 add_hook('ClientAreaHeadOutput', 6, function () {
+    if (kx_is_auth_page()) {
+        return '';
+    }
     // Same logo resolution as the marketing nav.
     $logo = '';
     foreach (['assets/img/logo.png', 'assets/img/logo.jpg'] as $cand) {
@@ -862,6 +959,9 @@ add_hook('ClientAreaHeadOutput', 9, function ($vars) {
  * Edit the $items / $right arrays to change destinations.
  */
 add_hook('ClientAreaHeadOutput', 4, function () {
+    if (kx_is_auth_page()) {
+        return '';
+    }
     $items = [
         ['Service Status', '/serverstatus.php'],
         ['Get Remote Support', 'https://go.getscreen.me/invite/683032125'],
