@@ -705,51 +705,115 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
         return '';
     }
 
+    $uid = (int) $_SESSION['uid'];
     $first = '';
+    $svcCount = $invCount = $tixCount = null;
     try {
         $first = trim((string) (Capsule::table('tblclients')
-            ->where('id', (int) $_SESSION['uid'])->value('firstname') ?? ''));
+            ->where('id', $uid)->value('firstname') ?? ''));
+        $svcCount = (int) Capsule::table('tblhosting')->where('userid', $uid)
+            ->whereIn('domainstatus', ['Active', 'Pending'])->count();
+        $invCount = (int) Capsule::table('tblinvoices')->where('userid', $uid)
+            ->where('status', 'Unpaid')->count();
+        $tixCount = (int) Capsule::table('tbltickets')->where('userid', $uid)
+            ->whereIn('status', ['Open', 'Answered', 'Customer-Reply', 'In Progress'])->count();
     } catch (\Throwable $e) {
-        $first = '';
+        // greeting still works without counts
     }
-    $hi = 'G&rsquo;day' . ($first !== '' ? ', ' . htmlspecialchars($first, ENT_QUOTES) : '') . '!';
 
-    $hero = '<div class="kx-dash">'
+    $e2 = static fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
+    $hi = 'G&rsquo;day' . ($first !== ''
+        ? ', <span class="kx-grad">' . $e2($first) . '</span>' : '') . '!';
+
+    $svcSub = $svcCount === null ? 'View &amp; manage'
+        : ($svcCount . ' active service' . ($svcCount === 1 ? '' : 's'));
+    $invSub = $invCount === null ? 'View &amp; pay'
+        : ($invCount > 0
+            ? '<span class="w">' . $invCount . ' unpaid</span>'
+            : '<span class="g">All paid &#10003;</span>');
+    $tixSub = $tixCount === null ? 'We\'re here to help'
+        : ($tixCount > 0
+            ? '<span class="w">' . $tixCount . ' open ticket' . ($tixCount === 1 ? '' : 's') . '</span>'
+            : 'No open tickets');
+
+    $icoSvc = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" '
+        . 'stroke-linecap="round"><path d="M5 12.5a10 10 0 0 1 14 0"/>'
+        . '<path d="M8.2 15.7a5.5 5.5 0 0 1 7.6 0"/>'
+        . '<circle cx="12" cy="19" r="1.4" fill="#fff" stroke="none"/></svg>';
+    $icoInv = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" '
+        . 'stroke-linecap="round"><rect x="6" y="3" width="12" height="18" rx="2"/>'
+        . '<path d="M9 8h6M9 12h6M9 16h4"/></svg>';
+    $icoTix = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" '
+        . 'stroke-linecap="round" stroke-linejoin="round">'
+        . '<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4z"/></svg>';
+    $icoSup = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" '
+        . 'stroke-linecap="round"><circle cx="12" cy="12" r="9"/>'
+        . '<circle cx="12" cy="12" r="3.5"/>'
+        . '<path d="M5.8 5.8l3.7 3.7M18.2 5.8l-3.7 3.7M18.2 18.2l-3.7-3.7M5.8 18.2l3.7-3.7"/></svg>';
+
+    $card = static function (string $href, string $ico, string $title, string $sub, string $extra = '') {
+        return '<a href="' . $href . '"' . $extra . '><span class="kicon">' . $ico . '</span>'
+            . '<span class="ktxt"><b>' . $title . '</b><span>' . $sub . '</span></span></a>';
+    };
+    $hero = '<div class="kx-dash"><div class="kx-dash-glow"></div>'
         . '<div class="kx-dash-hi">' . $hi . '</div>'
-        . '<div class="kx-dash-sub">Everything on your account &mdash; services, bills and '
-        . 'support in one spot. Something urgent? Call <a href="tel:0341305013">03 4130 5013</a>.</div>'
+        . '<div class="kx-dash-sub">Everything on your account in one spot. Something urgent? '
+        . 'Call <a href="tel:0341305013">03 4130 5013</a> &mdash; a Gippsland human picks up.</div>'
         . '<div class="kx-dash-actions">'
-        . '<a href="/clientarea.php?action=services"><span>&#128225;</span>My Services</a>'
-        . '<a href="/clientarea.php?action=invoices"><span>&#129534;</span>Invoices</a>'
-        . '<a href="/submitticket.php"><span>&#128172;</span>Open a Ticket</a>'
-        . '<a href="https://go.getscreen.me/invite/683032125" target="_blank" rel="noopener">'
-        . '<span>&#128295;</span>Remote Support</a>'
+        . $card('/clientarea.php?action=services', $icoSvc, 'My Services', $svcSub)
+        . $card('/clientarea.php?action=invoices', $icoInv, 'Invoices', $invSub)
+        . $card('/supporttickets.php', $icoTix, 'Support', $tixSub)
+        . $card('https://go.getscreen.me/invite/683032125', $icoSup, 'Remote Support',
+            'Start a session', ' target="_blank" rel="noopener"')
         . '</div></div>';
     $json = json_encode($hero, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
     return '<style>'
-        . '.kx-dash{margin:26px 0 22px}'
-        . '.kx-dash-hi{font-size:30px;font-weight:800;letter-spacing:-.02em;color:#e6e9f2}'
-        . '.kx-dash-sub{color:#98a2b8;font-size:14.5px;margin:6px 0 18px}'
+        // the dashboard wrapper is full-bleed — the hero carries its own
+        // container ladder so it lines up with the nav and page content
+        . '.kx-dash{margin:30px auto 26px;position:relative;width:100%;'
+        . 'padding-left:15px;padding-right:15px}'
+        . '@media(min-width:576px){.kx-dash{max-width:540px}}'
+        . '@media(min-width:768px){.kx-dash{max-width:720px}}'
+        . '@media(min-width:992px){.kx-dash{max-width:960px}}'
+        . '@media(min-width:1200px){.kx-dash{max-width:1140px}}'
+        . '.kx-dash-glow{position:absolute;top:-80px;left:-60px;width:340px;height:340px;'
+        . 'border-radius:50%;background:#2b5cff;filter:blur(110px);opacity:.16;pointer-events:none}'
+        . '.kx-grad{background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff);'
+        . '-webkit-background-clip:text;background-clip:text;color:transparent}'
+        . '.kx-dash-hi{font-size:34px;font-weight:800;letter-spacing:-.02em;color:#e6e9f2;'
+        . 'position:relative}'
+        . '.kx-dash-sub{color:#98a2b8;font-size:14.5px;margin:8px 0 22px;position:relative}'
         . '.kx-dash-sub a{color:#c7cede;font-weight:700;text-decoration:none}'
-        . '.kx-dash-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}'
-        . '.kx-dash-actions a{display:flex;align-items:center;gap:11px;background:#141b2c;'
-        . 'border:1px solid #2a3347;border-radius:13px;padding:15px 17px;color:#e6e9f2 !important;'
-        . 'font-weight:700;font-size:14.5px;text-decoration:none !important;'
-        . 'transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease}'
-        . '.kx-dash-actions a:hover{transform:translateY(-2px);border-color:#4d8dff;'
-        . 'box-shadow:0 10px 30px rgba(31,66,150,.25)}'
-        . '.kx-dash-actions a span{font-size:20px}'
-        // panels + tiles take the site card language
+        . '.kx-dash-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));'
+        . 'gap:14px;position:relative}'
+        . '.kx-dash-actions a{display:flex;align-items:center;gap:14px;background:#141b2c;'
+        . 'border:1px solid #2a3347;border-radius:15px;padding:17px 18px;'
+        . 'text-decoration:none !important;position:relative;overflow:hidden;'
+        . 'transition:transform .13s ease,border-color .13s ease,box-shadow .13s ease}'
+        . '.kx-dash-actions a::before{content:"";position:absolute;top:0;left:0;right:0;'
+        . 'height:2px;background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff);opacity:0;'
+        . 'transition:opacity .13s ease}'
+        . '.kx-dash-actions a:hover{transform:translateY(-3px);border-color:#3a4a6b;'
+        . 'box-shadow:0 14px 34px rgba(10,16,30,.5)}'
+        . '.kx-dash-actions a:hover::before{opacity:1}'
+        . '.kx-dash-actions .kicon{flex:0 0 44px;width:44px;height:44px;border-radius:12px;'
+        . 'background:linear-gradient(135deg,#4d8dff,#7a5cff);display:flex;align-items:center;'
+        . 'justify-content:center;box-shadow:0 8px 20px rgba(77,141,255,.3)}'
+        . '.kx-dash-actions .kicon svg{width:21px;height:21px}'
+        . '.kx-dash-actions .ktxt{display:flex;flex-direction:column;gap:3px;min-width:0}'
+        . '.kx-dash-actions .ktxt b{color:#e6e9f2;font-weight:800;font-size:14.5px}'
+        . '.kx-dash-actions .ktxt span{color:#98a2b8;font-size:12.5px}'
+        . '.kx-dash-actions .ktxt span .w{color:#ecc575;font-weight:700}'
+        . '.kx-dash-actions .ktxt span .g{color:#7fdcaa;font-weight:700}'
+        // panels take the site card language
         . '#main-body .card,#main-body .panel,.client-home-panels .card'
         . '{background:#141b2c !important;border:1px solid #2a3347 !important;'
-        . 'border-radius:14px !important;box-shadow:none !important}'
+        . 'border-radius:15px !important;box-shadow:none !important}'
         . '#main-body .card-header,#main-body .panel-heading'
         . '{background:transparent !important;border-bottom:1px solid #2a3347 !important;'
-        . 'font-weight:800 !important;color:#e6e9f2 !important}'
-        . '.tilebox,.tile,#stats .col,.stat-item'
-        . '{background:#141b2c !important;border:1px solid #2a3347 !important;'
-        . 'border-radius:13px !important}'
+        . 'font-weight:800 !important;color:#e6e9f2 !important;font-size:13px !important;'
+        . 'text-transform:uppercase;letter-spacing:.07em}'
         // generic page heading dies — the greeting replaces it
         . '.header-lined,.page-header{display:none !important}'
         . '</style>'
@@ -758,13 +822,16 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
         . "if(main&&!document.querySelector('.kx-dash')){"
         . "var d=document.createElement('div');d.innerHTML={$json};"
         . "main.insertBefore(d.firstChild,main.firstChild);}"
-        // dead-weight panels/tiles: anything labelled domains/affiliates
-        . "document.querySelectorAll('.card,.panel,.tile,.tilebox,[class*=tile]').forEach(function(el){"
-        . "var head=el.querySelector('.card-header,.panel-heading,.tile-title,h3,h4,.small,span');"
-        . "var t=((head?head.textContent:el.textContent)||'').replace(/\\s+/g,' ').trim();"
-        . "if(t.length<60&&/domain|affiliate/i.test(t)){el.closest('.col-sm-3,.col-md-3,.col-lg-3,.col,[class*=col-]')"
-        . "?el.closest('.col-sm-3,.col-md-3,.col-lg-3,.col,[class*=col-]').style.setProperty('display','none','important')"
-        . ":el.style.setProperty('display','none','important');}"
+        // stock stat tiles are redundant now (the action cards carry live
+        // counts) — hide the whole tile row plus any domains/affiliate junk
+        . "document.querySelectorAll('.tile,.tilebox,[class*=tile],[class*=stat],.card,.panel,a,div')"
+        . ".forEach(function(el){"
+        . "if(el.closest('.kx-dash')||el.childElementCount>6){return;}"
+        . "var t=(el.textContent||'').replace(/\\s+/g,' ').trim();"
+        . "if(t.length<40&&/^\\d+\\s*(services?|domains?|tickets?|invoices?|quotes?)$/i.test(t)"
+        . "||t.length<60&&/domain|affiliate/i.test(t)){"
+        . "var col=el.closest('[class*=col-]');"
+        . "(col||el).style.setProperty('display','none','important');}"
         . "});});</script>";
 });
 
