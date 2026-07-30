@@ -746,7 +746,7 @@ img.card-img-top { filter: brightness(.9); }
 }
 .kx-pnav .links {
   display: flex; gap: 22px; flex-wrap: wrap; margin-left: auto;
-  align-items: center; flex: 1; min-width: 0;
+  align-items: center;
 }
 .kx-pnav .links a {
   color: #c7cede; font-weight: 600; font-size: 15px; text-decoration: none;
@@ -754,5 +754,4 @@ img.card-img-top { filter: brightness(.9); }
 }
 .kx-pnav .links a:hover { color: #fff; text-decoration: none; }
 .kx-pnav .links a.on { color: #fff; border-bottom: 2px solid #4d8dff; padding-bottom: 3px; }
-.kx-pnav .links .sep { flex: 1; }
-@media (max-width: 640px) { .kx-pnav .links { gap: 16px; } .kx-pnav .links .sep { flex: 0; } }
+@media (max-width: 640px) { .kx-pnav .links { gap: 16px; } }

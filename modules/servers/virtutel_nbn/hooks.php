@@ -560,7 +560,7 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         . "document.addEventListener('DOMContentLoaded',function(){run();setTimeout(run,600);});"
         . "})();</script>";
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=28">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=29">'
         . '<meta name="color-scheme" content="dark">'
         . $whitewash;
 });
@@ -717,16 +717,23 @@ add_hook('ClientAreaHeadOutput', 6, function () {
 
     $uid = !empty($_SESSION['uid']);
     $uri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+    // Guests see the marketing family nav verbatim; clients get the
+    // portal set — in both cases ONE right-aligned cluster, exactly like
+    // the marketing bar (no spacers, no split groups).
     $links = $uid
         ? [
             ['Home', '/clientarea.php', '#^/clientarea\.php$#'],
             ['My Services', '/clientarea.php?action=services', '#action=(services|productdetails)#'],
             ['Invoices', '/clientarea.php?action=invoices', '#action=invoices|viewinvoice\.php#'],
             ['Support', '/supporttickets.php', '#supporttickets|viewticket|submitticket|knowledgebase#'],
+            ['Account', '/clientarea.php?action=details', '#action=details#'],
+            ['Logout', '/logout.php', '#^\x00$#'],
         ]
         : [
-            ['Personal', '/personal/', '#^/personal#'],
-            ['Business', '/business/', '#^/business#'],
+            ['Home', '/', '#^/$|^/index\.php$#'],
+            ['NBN Internet', '/personal/nbn/', '#^/personal/nbn#'],
+            ['Mobile', '/personal/mobile/', '#^/personal/mobile#'],
+            ['Home Phone', '/personal/home-phone/', '#^/personal/home-phone#'],
             ['Contact', '/contact/', '#^/contact#'],
         ];
     $items = '';
@@ -735,13 +742,10 @@ add_hook('ClientAreaHeadOutput', 6, function () {
             . (preg_match($re, $uri) ? ' class="on"' : '') . '>'
             . htmlspecialchars($label, ENT_QUOTES) . '</a>';
     }
-    $right = $uid
-        ? '<a href="/clientarea.php?action=details">Account</a><a href="/logout.php">Logout</a>'
-        : '<a href="/clientarea.php">Log in</a>';
 
     $nav = '<div class="kx-pnav"><div class="in">'
         . '<a class="logo" href="/">' . $logoHtml . '</a>'
-        . '<div class="links">' . $items . '<span class="sep"></span>' . $right . '</div>'
+        . '<div class="links">' . $items . '</div>'
         . '</div></div>';
     $json = json_encode($nav, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
