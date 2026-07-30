@@ -692,6 +692,83 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
 });
 
 /**
+ * Client dashboard overhaul (clientarea.php with no action): a warm
+ * greeting hero with one-tap quick actions replaces the generic
+ * "Dashboard" heading, the stat tiles and panels take the site's card
+ * language, and the stuff we don't sell (domains, affiliates) is
+ * hidden by label so no dead tiles clutter the page.
+ */
+add_hook('ClientAreaHeadOutput', 11, function ($vars) {
+    if (($vars['filename'] ?? '') !== 'clientarea'
+        || !empty($_GET['action']) || !empty($_GET['rp'])
+        || empty($_SESSION['uid'])) {
+        return '';
+    }
+
+    $first = '';
+    try {
+        $first = trim((string) (Capsule::table('tblclients')
+            ->where('id', (int) $_SESSION['uid'])->value('firstname') ?? ''));
+    } catch (\Throwable $e) {
+        $first = '';
+    }
+    $hi = 'G&rsquo;day' . ($first !== '' ? ', ' . htmlspecialchars($first, ENT_QUOTES) : '') . '!';
+
+    $hero = '<div class="kx-dash">'
+        . '<div class="kx-dash-hi">' . $hi . '</div>'
+        . '<div class="kx-dash-sub">Everything on your account &mdash; services, bills and '
+        . 'support in one spot. Something urgent? Call <a href="tel:0341305013">03 4130 5013</a>.</div>'
+        . '<div class="kx-dash-actions">'
+        . '<a href="/clientarea.php?action=services"><span>&#128225;</span>My Services</a>'
+        . '<a href="/clientarea.php?action=invoices"><span>&#129534;</span>Invoices</a>'
+        . '<a href="/submitticket.php"><span>&#128172;</span>Open a Ticket</a>'
+        . '<a href="https://go.getscreen.me/invite/683032125" target="_blank" rel="noopener">'
+        . '<span>&#128295;</span>Remote Support</a>'
+        . '</div></div>';
+    $json = json_encode($hero, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+
+    return '<style>'
+        . '.kx-dash{margin:26px 0 22px}'
+        . '.kx-dash-hi{font-size:30px;font-weight:800;letter-spacing:-.02em;color:#e6e9f2}'
+        . '.kx-dash-sub{color:#98a2b8;font-size:14.5px;margin:6px 0 18px}'
+        . '.kx-dash-sub a{color:#c7cede;font-weight:700;text-decoration:none}'
+        . '.kx-dash-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}'
+        . '.kx-dash-actions a{display:flex;align-items:center;gap:11px;background:#141b2c;'
+        . 'border:1px solid #2a3347;border-radius:13px;padding:15px 17px;color:#e6e9f2 !important;'
+        . 'font-weight:700;font-size:14.5px;text-decoration:none !important;'
+        . 'transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease}'
+        . '.kx-dash-actions a:hover{transform:translateY(-2px);border-color:#4d8dff;'
+        . 'box-shadow:0 10px 30px rgba(31,66,150,.25)}'
+        . '.kx-dash-actions a span{font-size:20px}'
+        // panels + tiles take the site card language
+        . '#main-body .card,#main-body .panel,.client-home-panels .card'
+        . '{background:#141b2c !important;border:1px solid #2a3347 !important;'
+        . 'border-radius:14px !important;box-shadow:none !important}'
+        . '#main-body .card-header,#main-body .panel-heading'
+        . '{background:transparent !important;border-bottom:1px solid #2a3347 !important;'
+        . 'font-weight:800 !important;color:#e6e9f2 !important}'
+        . '.tilebox,.tile,#stats .col,.stat-item'
+        . '{background:#141b2c !important;border:1px solid #2a3347 !important;'
+        . 'border-radius:13px !important}'
+        // generic page heading dies — the greeting replaces it
+        . '.header-lined,.page-header{display:none !important}'
+        . '</style>'
+        . "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "var main=document.getElementById('main-body')||document.querySelector('.main-content,main');"
+        . "if(main&&!document.querySelector('.kx-dash')){"
+        . "var d=document.createElement('div');d.innerHTML={$json};"
+        . "main.insertBefore(d.firstChild,main.firstChild);}"
+        // dead-weight panels/tiles: anything labelled domains/affiliates
+        . "document.querySelectorAll('.card,.panel,.tile,.tilebox,[class*=tile]').forEach(function(el){"
+        . "var head=el.querySelector('.card-header,.panel-heading,.tile-title,h3,h4,.small,span');"
+        . "var t=((head?head.textContent:el.textContent)||'').replace(/\\s+/g,' ').trim();"
+        . "if(t.length<60&&/domain|affiliate/i.test(t)){el.closest('.col-sm-3,.col-md-3,.col-lg-3,.col,[class*=col-]')"
+        . "?el.closest('.col-sm-3,.col-md-3,.col-lg-3,.col,[class*=col-]').style.setProperty('display','none','important')"
+        . ":el.style.setProperty('display','none','important');}"
+        . "});});</script>";
+});
+
+/**
  * Dedicated auth layout: /login and /password/reset drop ALL site
  * chrome (switcher, topbar, nav, footer) and become a centred branded
  * card — logo above, dot-grid and glows behind, back-to-site link
