@@ -870,10 +870,27 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
         . "var col=el.closest('[class*=col-]');"
         . "(col||el).style.setProperty('display','none','important');}"
         . "});"
-        . "document.querySelectorAll('.card,.panel').forEach(function(el){"
-        . "var head=el.querySelector('.card-header,.panel-heading,h3,h4');"
-        . "if(head&&/your active products/i.test(head.textContent||'')){"
+        // stock furniture goes: the Your Info / Contacts / Shortcuts
+        // sidebar, the (empty) Recent News panel, and the redundant
+        // active-products panel — then whatever column holds the
+        // remaining panels stretches to full width
+        . "document.querySelectorAll('.card,.panel,.sidebar,section,div').forEach(function(el){"
+        . "if(el.closest('.kx-dash')||el.childElementCount>10){return;}"
+        . "var head=el.querySelector(':scope>.card-header,:scope>.panel-heading,:scope>h3,:scope>h4,:scope>.card-body>h3');"
+        . "var t=((head?head.textContent:'')||'').replace(/\\s+/g,' ').trim();"
+        . "if(/^(your info|contacts|shortcuts|recent news|your active products)/i.test(t)){"
         . "el.style.setProperty('display','none','important');}"
+        . "});"
+        . "document.querySelectorAll('[class*=col-]').forEach(function(col){"
+        . "var vis=false;col.querySelectorAll('.card,.panel').forEach(function(c){"
+        . "if(c.style.display!=='none'&&c.offsetParent!==null){vis=true;}});"
+        . "if(!vis&&col.querySelector('.card,.panel')){col.style.setProperty('display','none','important');}"
+        . "});"
+        . "document.querySelectorAll('[class*=col-]').forEach(function(col){"
+        . "if(col.style.display==='none'||!col.querySelector('.card,.panel')){return;}"
+        . "if(col.closest('.kx-dash')){return;}"
+        . "col.style.setProperty('flex','0 0 100%','important');"
+        . "col.style.setProperty('max-width','100%','important');"
         . "});});</script>";
 });
 
