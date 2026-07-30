@@ -706,115 +706,153 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
     }
 
     $uid = (int) $_SESSION['uid'];
+    $e2 = static fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
     $first = '';
-    $svcCount = $invCount = $tixCount = null;
+    $invCount = $tixCount = null;
+    $services = [];
     try {
         $first = trim((string) (Capsule::table('tblclients')
             ->where('id', $uid)->value('firstname') ?? ''));
-        $svcCount = (int) Capsule::table('tblhosting')->where('userid', $uid)
-            ->whereIn('domainstatus', ['Active', 'Pending'])->count();
         $invCount = (int) Capsule::table('tblinvoices')->where('userid', $uid)
             ->where('status', 'Unpaid')->count();
         $tixCount = (int) Capsule::table('tbltickets')->where('userid', $uid)
             ->whereIn('status', ['Open', 'Answered', 'Customer-Reply', 'In Progress'])->count();
+
+        $rows = Capsule::table('tblhosting as h')
+            ->join('tblproducts as p', 'p.id', '=', 'h.packageid')
+            ->leftJoin('mod_virtutel_services as v', 'v.whmcs_service_id', '=', 'h.id')
+            ->where('h.userid', $uid)
+            ->whereIn('h.domainstatus', ['Active', 'Pending', 'Suspended'])
+            ->whereIn('p.servertype', ['virtutel_nbn', 'virtutel_phone'])
+            ->orderBy('h.id')
+            ->limit(4)
+            ->get(['h.id', 'h.domainstatus', 'h.domain', 'p.name',
+                'v.status as vstatus', 'v.avc_id', 'v.service_address']);
+        foreach ($rows as $row) {
+            $services[] = $row;
+        }
     } catch (\Throwable $e) {
-        // greeting still works without counts
+        // greeting still renders without data
     }
 
-    $e2 = static fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
     $hi = 'G&rsquo;day' . ($first !== ''
         ? ', <span class="kx-grad">' . $e2($first) . '</span>' : '') . '!';
 
-    $svcSub = $svcCount === null ? 'View &amp; manage'
-        : ($svcCount . ' active service' . ($svcCount === 1 ? '' : 's'));
+    $connCards = '';
+    foreach ($services as $svc) {
+        $vstatus = strtolower((string) ($svc->vstatus ?? ''));
+        if ((string) $svc->domainstatus === 'Suspended') {
+            $cls = 'r'; $label = 'Suspended &mdash; call us on 03 4130 5013';
+        } elseif (str_contains($vstatus, 'disconnect')) {
+            $cls = 'a'; $label = 'Disconnection in progress';
+        } elseif (str_contains($vstatus, 'connect') && $vstatus !== 'connected') {
+            $cls = 'a'; $label = 'Getting you connected';
+        } elseif ((string) $svc->domainstatus === 'Pending') {
+            $cls = 'a'; $label = 'Order in progress';
+        } else {
+            $cls = 'g'; $label = 'Connected';
+        }
+        $addr = trim((string) ($svc->service_address ?? ''));
+        $avc = trim((string) ($svc->avc_id ?? $svc->domain ?? ''));
+        $connCards .= '<div class="kx-conn">'
+            . '<div class="kx-conn-top"><span class="dot ' . $cls . '"></span>'
+            . '<b>' . $label . '</b>'
+            . '<span class="plan">' . $e2($svc->name) . '</span></div>'
+            . ($addr !== '' ? '<div class="kx-conn-addr">' . $e2($addr) . '</div>' : '')
+            . ($avc !== '' ? '<div class="kx-conn-meta">' . $e2($avc) . '</div>' : '')
+            . '<div class="kx-conn-actions">'
+            . '<a class="b1" href="/clientarea.php?action=productdetails&id=' . (int) $svc->id . '">'
+            . 'Manage &amp; test my line</a>'
+            . '<a class="b2" href="/submitticket.php?step=2&deptid=1">Report a fault</a>'
+            . '</div></div>';
+    }
+    if ($connCards === '') {
+        $connCards = '<div class="kx-conn"><div class="kx-conn-top">'
+            . '<span class="dot n"></span><b>No service yet</b></div>'
+            . '<div class="kx-conn-addr">Let&rsquo;s fix that &mdash; check what your address supports.</div>'
+            . '<div class="kx-conn-actions">'
+            . '<a class="b1" href="/personal/nbn/signup/">Check my address</a></div></div>';
+    }
+
     $invSub = $invCount === null ? 'View &amp; pay'
         : ($invCount > 0
             ? '<span class="w">' . $invCount . ' unpaid</span>'
             : '<span class="g">All paid &#10003;</span>');
     $tixSub = $tixCount === null ? 'We\'re here to help'
         : ($tixCount > 0
-            ? '<span class="w">' . $tixCount . ' open ticket' . ($tixCount === 1 ? '' : 's') . '</span>'
+            ? '<span class="w">' . $tixCount . ' open</span>'
             : 'No open tickets');
 
-    $icoSvc = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" '
-        . 'stroke-linecap="round"><path d="M5 12.5a10 10 0 0 1 14 0"/>'
-        . '<path d="M8.2 15.7a5.5 5.5 0 0 1 7.6 0"/>'
-        . '<circle cx="12" cy="19" r="1.4" fill="#fff" stroke="none"/></svg>';
-    $icoInv = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" '
-        . 'stroke-linecap="round"><rect x="6" y="3" width="12" height="18" rx="2"/>'
-        . '<path d="M9 8h6M9 12h6M9 16h4"/></svg>';
-    $icoTix = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" '
-        . 'stroke-linecap="round" stroke-linejoin="round">'
-        . '<path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-5 4z"/></svg>';
-    $icoSup = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" '
-        . 'stroke-linecap="round"><circle cx="12" cy="12" r="9"/>'
-        . '<circle cx="12" cy="12" r="3.5"/>'
-        . '<path d="M5.8 5.8l3.7 3.7M18.2 5.8l-3.7 3.7M18.2 18.2l-3.7-3.7M5.8 18.2l3.7-3.7"/></svg>';
-
-    $card = static function (string $href, string $ico, string $title, string $sub, string $extra = '') {
-        return '<a href="' . $href . '"' . $extra . '><span class="kicon">' . $ico . '</span>'
-            . '<span class="ktxt"><b>' . $title . '</b><span>' . $sub . '</span></span></a>';
-    };
-    $hero = '<div class="kx-dash"><div class="kx-dash-glow"></div>'
+    $hero = '<div class="kx-dash">'
         . '<div class="kx-dash-hi">' . $hi . '</div>'
-        . '<div class="kx-dash-sub">Everything on your account in one spot. Something urgent? '
-        . 'Call <a href="tel:0341305013">03 4130 5013</a> &mdash; a Gippsland human picks up.</div>'
-        . '<div class="kx-dash-actions">'
-        . $card('/clientarea.php?action=services', $icoSvc, 'My Services', $svcSub)
-        . $card('/clientarea.php?action=invoices', $icoInv, 'Invoices', $invSub)
-        . $card('/supporttickets.php', $icoTix, 'Support', $tixSub)
-        . $card('https://go.getscreen.me/invite/683032125', $icoSup, 'Remote Support',
-            'Start a session', ' target="_blank" rel="noopener"')
+        . '<div class="kx-dash-sub">Here&rsquo;s how your connection is looking right now.</div>'
+        . $connCards
+        . '<div class="kx-dash-row">'
+        . '<a href="/clientarea.php?action=invoices"><b>Invoices</b><span>' . $invSub . '</span></a>'
+        . '<a href="/supporttickets.php"><b>Support</b><span>' . $tixSub . '</span></a>'
+        . '<a href="https://go.getscreen.me/invite/683032125" target="_blank" rel="noopener">'
+        . '<b>Remote Support</b><span>Start a session</span></a>'
         . '</div></div>';
     $json = json_encode($hero, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
     return '<style>'
-        // the dashboard wrapper is full-bleed — the hero carries its own
-        // container ladder so it lines up with the nav and page content
         . '.kx-dash{margin:30px auto 26px;position:relative;width:100%;'
         . 'padding-left:15px;padding-right:15px}'
         . '@media(min-width:576px){.kx-dash{max-width:540px}}'
         . '@media(min-width:768px){.kx-dash{max-width:720px}}'
         . '@media(min-width:992px){.kx-dash{max-width:960px}}'
         . '@media(min-width:1200px){.kx-dash{max-width:1140px}}'
-        . '.kx-dash-glow{position:absolute;top:-80px;left:-60px;width:340px;height:340px;'
-        . 'border-radius:50%;background:#2b5cff;filter:blur(110px);opacity:.16;pointer-events:none}'
         . '.kx-grad{background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff);'
         . '-webkit-background-clip:text;background-clip:text;color:transparent}'
-        . '.kx-dash-hi{font-size:34px;font-weight:800;letter-spacing:-.02em;color:#e6e9f2;'
-        . 'position:relative}'
-        . '.kx-dash-sub{color:#98a2b8;font-size:14.5px;margin:8px 0 22px;position:relative}'
-        . '.kx-dash-sub a{color:#c7cede;font-weight:700;text-decoration:none}'
-        . '.kx-dash-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));'
-        . 'gap:14px;position:relative}'
-        . '.kx-dash-actions a{display:flex;align-items:center;gap:14px;background:#141b2c;'
-        . 'border:1px solid #2a3347;border-radius:15px;padding:17px 18px;'
-        . 'text-decoration:none !important;position:relative;overflow:hidden;'
-        . 'transition:transform .13s ease,border-color .13s ease,box-shadow .13s ease}'
-        . '.kx-dash-actions a::before{content:"";position:absolute;top:0;left:0;right:0;'
-        . 'height:2px;background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff);opacity:0;'
-        . 'transition:opacity .13s ease}'
-        . '.kx-dash-actions a:hover{transform:translateY(-3px);border-color:#3a4a6b;'
-        . 'box-shadow:0 14px 34px rgba(10,16,30,.5)}'
-        . '.kx-dash-actions a:hover::before{opacity:1}'
-        . '.kx-dash-actions .kicon{flex:0 0 44px;width:44px;height:44px;border-radius:12px;'
-        . 'background:linear-gradient(135deg,#4d8dff,#7a5cff);display:flex;align-items:center;'
-        . 'justify-content:center;box-shadow:0 8px 20px rgba(77,141,255,.3)}'
-        . '.kx-dash-actions .kicon svg{width:21px;height:21px}'
-        . '.kx-dash-actions .ktxt{display:flex;flex-direction:column;gap:3px;min-width:0}'
-        . '.kx-dash-actions .ktxt b{color:#e6e9f2;font-weight:800;font-size:14.5px}'
-        . '.kx-dash-actions .ktxt span{color:#98a2b8;font-size:12.5px}'
-        . '.kx-dash-actions .ktxt span .w{color:#ecc575;font-weight:700}'
-        . '.kx-dash-actions .ktxt span .g{color:#7fdcaa;font-weight:700}'
-        // panels take the site card language
-        . '#main-body .card,#main-body .panel,.client-home-panels .card'
+        . '.kx-dash-hi{font-size:32px;font-weight:800;letter-spacing:-.02em;color:#e6e9f2}'
+        . '.kx-dash-sub{color:#98a2b8;font-size:14.5px;margin:6px 0 18px}'
+        // the connection card — the hero of the page
+        . '.kx-conn{background:#141b2c;border:1px solid #2a3347;border-radius:16px;'
+        . 'padding:24px 28px;position:relative;overflow:hidden;margin-bottom:14px;'
+        . 'box-shadow:0 18px 50px rgba(0,0,0,.3)}'
+        . '.kx-conn::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;'
+        . 'background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff)}'
+        . '.kx-conn-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}'
+        . '.kx-conn-top b{font-size:19px;font-weight:800;color:#e6e9f2}'
+        . '.kx-conn-top .plan{margin-left:auto;background:#1e2739;border:1px solid #2a3347;'
+        . 'border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700;color:#c7cede}'
+        . '.kx-conn .dot{width:11px;height:11px;border-radius:50%;flex:0 0 11px}'
+        . '.kx-conn .dot.g{background:#2fbf71;box-shadow:0 0 0 0 rgba(47,191,113,.4);'
+        . 'animation:kxDot 2.2s ease-out infinite}'
+        . '.kx-conn .dot.a{background:#e2a336}'
+        . '.kx-conn .dot.r{background:#e2564a}'
+        . '.kx-conn .dot.n{background:#5b6b8f}'
+        . '@keyframes kxDot{0%{box-shadow:0 0 0 0 rgba(47,191,113,.4)}'
+        . '70%{box-shadow:0 0 0 10px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}'
+        . '@media (prefers-reduced-motion:reduce){.kx-conn .dot.g{animation:none}}'
+        . '.kx-conn-addr{color:#c7cede;font-size:15px;font-weight:600;margin:12px 0 2px}'
+        . '.kx-conn-meta{color:#5b6b8f;font-size:12.5px;font-family:ui-monospace,Menlo,monospace}'
+        . '.kx-conn-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}'
+        . '.kx-conn-actions a{text-decoration:none !important;border-radius:9px;'
+        . 'padding:11px 20px;font-weight:800;font-size:14px;'
+        . 'transition:transform .12s ease,box-shadow .12s ease}'
+        . '.kx-conn-actions .b1{background:linear-gradient(135deg,#4d8dff,#7a5cff);color:#fff !important}'
+        . '.kx-conn-actions .b1:hover{transform:translateY(-1px);'
+        . 'box-shadow:0 8px 26px rgba(77,141,255,.35)}'
+        . '.kx-conn-actions .b2{border:1px solid #2a3347;color:#c7cede !important;background:transparent}'
+        . '.kx-conn-actions .b2:hover{border-color:#4d8dff;color:#fff !important}'
+        // slim secondary row
+        . '.kx-dash-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}'
+        . '.kx-dash-row a{display:flex;justify-content:space-between;align-items:center;gap:10px;'
+        . 'background:#11182a;border:1px solid #232d44;border-radius:12px;padding:13px 16px;'
+        . 'text-decoration:none !important;transition:border-color .12s ease}'
+        . '.kx-dash-row a:hover{border-color:#4d8dff}'
+        . '.kx-dash-row b{color:#e6e9f2;font-weight:700;font-size:13.5px}'
+        . '.kx-dash-row span{color:#98a2b8;font-size:12.5px;white-space:nowrap}'
+        . '.kx-dash-row span .w{color:#ecc575;font-weight:700}'
+        . '.kx-dash-row span .g{color:#7fdcaa;font-weight:700}'
+        // panels keep the card language; heading + redundant panels die
+        . '#main-body .card,#main-body .panel'
         . '{background:#141b2c !important;border:1px solid #2a3347 !important;'
         . 'border-radius:15px !important;box-shadow:none !important}'
         . '#main-body .card-header,#main-body .panel-heading'
         . '{background:transparent !important;border-bottom:1px solid #2a3347 !important;'
-        . 'font-weight:800 !important;color:#e6e9f2 !important;font-size:13px !important;'
-        . 'text-transform:uppercase;letter-spacing:.07em}'
-        // generic page heading dies — the greeting replaces it
+        . 'font-weight:800 !important;color:#e6e9f2 !important}'
         . '.header-lined,.page-header{display:none !important}'
         . '</style>'
         . "<script>document.addEventListener('DOMContentLoaded',function(){"
@@ -822,16 +860,20 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
         . "if(main&&!document.querySelector('.kx-dash')){"
         . "var d=document.createElement('div');d.innerHTML={$json};"
         . "main.insertBefore(d.firstChild,main.firstChild);}"
-        // stock stat tiles are redundant now (the action cards carry live
-        // counts) — hide the whole tile row plus any domains/affiliate junk
+        // stock tiles + panels that duplicate the connection card
         . "document.querySelectorAll('.tile,.tilebox,[class*=tile],[class*=stat],.card,.panel,a,div')"
         . ".forEach(function(el){"
-        . "if(el.closest('.kx-dash')||el.childElementCount>6){return;}"
+        . "if(el.closest('.kx-dash')||el.childElementCount>8){return;}"
         . "var t=(el.textContent||'').replace(/\\s+/g,' ').trim();"
         . "if(t.length<40&&/^\\d+\\s*(services?|domains?|tickets?|invoices?|quotes?)$/i.test(t)"
         . "||t.length<60&&/domain|affiliate/i.test(t)){"
         . "var col=el.closest('[class*=col-]');"
         . "(col||el).style.setProperty('display','none','important');}"
+        . "});"
+        . "document.querySelectorAll('.card,.panel').forEach(function(el){"
+        . "var head=el.querySelector('.card-header,.panel-heading,h3,h4');"
+        . "if(head&&/your active products/i.test(head.textContent||'')){"
+        . "el.style.setProperty('display','none','important');}"
         . "});});</script>";
 });
 
