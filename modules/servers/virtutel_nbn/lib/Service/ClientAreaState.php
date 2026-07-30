@@ -16,7 +16,22 @@ class ClientAreaState
             ->where('whmcs_service_id', $whmcsServiceId)->first();
 
         if (!$service) {
-            return ['vt_linked' => false, 'vt_serviceid' => $whmcsServiceId];
+            // Self-heal: an unlinked service whose Domain field carries an
+            // AVC/VT/PRI reference gets one linking attempt per hour, so
+            // customers stop seeing "being set up" on live services that
+            // simply never got linked.
+            $service = self::attemptAutoLink($whmcsServiceId);
+        }
+
+        if (!$service) {
+            $hostingStatus = (string) (Capsule::table('tblhosting')
+                ->where('id', $whmcsServiceId)->value('domainstatus') ?? '');
+
+            return [
+                'vt_linked' => false,
+                'vt_serviceid' => $whmcsServiceId,
+                'vt_hosting_status' => $hostingStatus,
+            ];
         }
 
         $order = Capsule::table('mod_virtutel_orders')
@@ -62,6 +77,49 @@ class ClientAreaState
     }
 
     /** @return string active | in_progress | attention | unknown */
+    /**
+     * One throttled attempt to link an unlinked service from the reference
+     * in its Domain field (AVC/VT/PRI). Returns the fresh link row, or
+     * null when there's nothing to go on / the lookup finds no match.
+     */
+    private static function attemptAutoLink(int $whmcsServiceId): ?object
+    {
+        try {
+            $throttleKey = 'autolink_' . $whmcsServiceId;
+            $lastTry = (int) (\WHMCS\Module\Server\VirtutelNbn\Repository\Settings::get($throttleKey, '0') ?? '0');
+            if ($lastTry > time() - 3600) {
+                return null;
+            }
+
+            $hosting = Capsule::table('tblhosting')
+                ->where('id', $whmcsServiceId)->first(['domain', 'domainstatus']);
+            $ref = strtoupper(trim((string) ($hosting->domain ?? '')));
+            if (!$hosting || !preg_match('/^(AVC\d{12}|VT\d+|PRI[0-9A-Z]+)$/', $ref)) {
+                return null;
+            }
+            \WHMCS\Module\Server\VirtutelNbn\Repository\Settings::set($throttleKey, (string) time());
+
+            $client = \WHMCS\Module\Server\VirtutelNbn\Api\ClientFactory::forWhmcsService($whmcsServiceId);
+            $svc = ServiceLinker::lookup($client, $ref);
+            if ($svc === null) {
+                return null;
+            }
+            ServiceLinker::link($whmcsServiceId, $svc, $client);
+            if (function_exists('logActivity')) {
+                logActivity(sprintf(
+                    'Virtutel NBN: auto-linked service #%d from client-area view (%s)',
+                    $whmcsServiceId,
+                    $ref
+                ));
+            }
+
+            return Capsule::table('mod_virtutel_services')
+                ->where('whmcs_service_id', $whmcsServiceId)->first();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     private static function connectionState(object $service, ?object $order): string
     {
         $orderState = (string) ($order->whmcs_status ?? '');

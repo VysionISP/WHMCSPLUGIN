@@ -1,7 +1,12 @@
 {if $vt_error}
   <div class="alert alert-warning">{$vt_error}</div>
 {elseif !$vt_linked}
+  {if $vt_hosting_status == 'Active'}
+  <div class="alert alert-info">Your service is active. We're still syncing its line details from
+    the carrier &mdash; check back shortly, or call us on 03 4130 5013 if this doesn't update.</div>
+  {else}
   <div class="alert alert-info">Your NBN service is being set up — details will appear here shortly.</div>
+  {/if}
 {else}
 
 {* ---- status hero ---- *}
