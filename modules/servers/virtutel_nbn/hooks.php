@@ -1219,11 +1219,29 @@ add_hook('ClientAreaHeadOutput', 8, function ($vars) {
 });
 
 /**
+ * The WHMCS front page (/) was a lesser duplicate of the /personal/
+ * marketing page — one homepage is enough, so / redirects there for
+ * everyone. rp/action/module requests (login, password reset, ...)
+ * and non-GETs pass through untouched.
+ */
+add_hook('ClientAreaPage', 1, function ($vars) {
+    $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+    if (($path === '/' || $path === '/index.php')
+        && empty($_GET['rp']) && empty($_GET['action']) && empty($_GET['m'])
+        && (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET')) {
+        header('Location: /personal/', true, 302);
+        exit;
+    }
+});
+
+/**
  * Landing homepage: the portal front page (/) becomes a full marketing
  * landing — hero with the embedded address checker, features, live plan
  * cards, steps, FAQ — while keeping the theme's nav and footer. Content
  * comes from pages/home-landing.php (fetched same-origin and injected;
  * scripts can't ride innerHTML, so behaviour lives here).
+ * (Normally unreachable now that / redirects to /personal/ — kept as
+ * the fallback if the redirect hook is ever disabled.)
  */
 add_hook('ClientAreaHeadOutput', 9, function ($vars) {
     $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
