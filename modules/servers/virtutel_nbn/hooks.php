@@ -762,42 +762,68 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         // The card itself, restyled to the site language: gradient
         // hairline, 18px radius, deep shadow, form-width like the signup
         // walkthrough card.
-        . '.kx-authcard{background:#141b2c !important;border:1px solid #2a3347 !important;'
+        . 'div.kx-authcard{background:#141b2c !important;border:1px solid #2a3347 !important;'
         . 'border-radius:18px !important;box-shadow:0 24px 70px rgba(0,0,0,.45) !important;'
-        . 'max-width:440px !important;width:100% !important;margin:0 auto !important;'
-        . 'padding:32px 34px 26px !important;position:relative;overflow:hidden}'
+        . 'max-width:420px !important;width:100% !important;margin:0 auto !important;'
+        . 'padding:32px 32px 24px !important;position:relative;overflow:hidden}'
         . '.kx-authcard::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;'
         . 'background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff)}'
+        // the template lays fields out on a grid — force one full-width column
+        . '.kx-authcard .row{margin:0 !important;display:block !important}'
+        . '.kx-authcard [class*="col-"],.kx-authcard [class*="grid"],.kx-authcard form>div'
+        . '{width:100% !important;max-width:100% !important;flex:0 0 100% !important;'
+        . 'padding-left:0 !important;padding-right:0 !important}'
         . '.kx-authcard h1,.kx-authcard h2,.kx-authcard h3,.kx-authcard .card-title'
-        . '{font-size:24px !important;font-weight:800 !important;letter-spacing:-.02em}'
-        . '.kx-authcard .form-control{background:#0a0e18 !important;border:1px solid #2a3347 !important;'
-        . 'border-radius:9px !important;padding:12px 14px !important;font-size:15px !important;'
-        . 'box-shadow:none !important;color:#e6e9f2 !important}'
-        . '.kx-authcard .form-control:focus{border-color:#4d8dff !important}'
-        // icon prefixes go — site inputs are plain; keep the password eye
-        . '.kx-authcard .input-group-prepend,.kx-authcard .input-group-text:first-child'
-        . '{display:none !important}'
-        . '.kx-authcard .input-group{background:transparent !important;border:0 !important;'
-        . 'border-radius:9px !important}'
-        . '.kx-authcard .input-group .input-group-append,'
-        . '.kx-authcard .input-group .input-group-text{background:#0a0e18 !important;'
-        . 'border:1px solid #2a3347 !important;border-left:0 !important;color:#98a2b8 !important;'
-        . 'border-radius:0 9px 9px 0 !important}'
-        . '.kx-authcard button[type=submit],.kx-authcard input[type=submit],.kx-authcard .btn-primary'
-        . '{display:block;width:100% !important;background:linear-gradient(135deg,#4d8dff,#7a5cff) !important;'
+        . '{font-size:24px !important;font-weight:800 !important;letter-spacing:-.02em;'
+        . 'margin:0 0 4px !important}'
+        . '.kx-authcard p{color:#98a2b8 !important;font-size:14px;margin:0 0 18px !important}'
+        . '.kx-authcard label{font-weight:700 !important;font-size:13px !important;'
+        . 'color:#e6e9f2 !important;margin:0 0 6px !important}'
+        // inputs by ELEMENT, not class — whatever the template calls them
+        . '.kx-authcard input[type=text],.kx-authcard input[type=email],'
+        . '.kx-authcard input[type=password]'
+        . '{display:block;width:100% !important;background:#0a0e18 !important;'
+        . 'border:1px solid #2a3347 !important;border-radius:9px !important;'
+        . 'padding:12px 14px !important;font-size:15px !important;color:#e6e9f2 !important;'
+        . 'box-shadow:none !important;margin:0 0 16px !important;height:auto !important}'
+        . '.kx-authcard input:focus{border-color:#4d8dff !important;outline:none !important}'
+        . '.kx-authcard input[type=password]{padding-right:48px !important}'
+        // icon prefixes die; the password eye floats INSIDE its field
+        . '.kx-authcard .input-group-prepend,'
+        . '.kx-authcard .input-group-text:first-child{display:none !important}'
+        . '.kx-authcard .input-group{position:relative !important;display:block !important;'
+        . 'background:transparent !important;border:0 !important;width:100% !important}'
+        . '.kx-authcard .input-group-append,.kx-authcard .input-group>span:last-child,'
+        . '.kx-authcard .input-group>div:last-child:not(:first-child)'
+        . '{position:absolute !important;right:4px;top:22px;transform:translateY(-50%);'
+        . 'background:transparent !important;border:0 !important;margin:0 !important;'
+        . 'height:auto !important;z-index:3}'
+        . '.kx-authcard .input-group-append *,.kx-authcard .input-group button'
+        . '{background:transparent !important;border:0 !important;color:#98a2b8 !important;'
+        . 'box-shadow:none !important}'
+        // submit: full-width gradient, Remember Me centred under it
+        . '.kx-authcard button[type=submit],.kx-authcard input[type=submit],'
+        . '.kx-authcard .btn-primary'
+        . '{display:block !important;width:100% !important;max-width:100% !important;'
+        . 'background:linear-gradient(135deg,#4d8dff,#7a5cff) !important;'
         . 'border:0 !important;border-radius:9px !important;padding:13px 22px !important;'
         . 'font-weight:800 !important;font-size:15.5px !important;color:#fff !important;'
+        . 'margin:4px 0 0 !important;'
         . 'transition:transform .12s ease,box-shadow .12s ease}'
         . '.kx-authcard button[type=submit]:hover,.kx-authcard .btn-primary:hover'
         . '{transform:translateY(-1px);box-shadow:0 8px 26px rgba(77,141,255,.35)}'
-        . '.kx-authactions{display:flex !important;flex-direction:column;gap:12px;'
-        . 'align-items:stretch !important;margin-top:6px}'
-        . '.kx-authactions label,.kx-authactions .custom-control'
-        . '{align-self:center;color:#98a2b8;font-weight:400 !important;font-size:13.5px}'
-        . '.kx-authcard a{color:#7aa5ff}'
-        . '.kx-authcard a:hover{color:#fff}'
-        . '.kx-authcard .card-footer,.kx-authcard hr{border-color:#2a3347 !important;'
-        . 'background:transparent !important}'
+        . '.kx-authactions{display:block !important;width:100% !important}'
+        . '.kx-authactions label,.kx-authactions .custom-control,.kx-authcard .kx-remember'
+        . '{display:flex !important;justify-content:center;align-items:center;gap:8px;'
+        . 'color:#98a2b8 !important;font-weight:400 !important;font-size:13.5px !important;'
+        . 'margin:14px 0 0 !important}'
+        . '.kx-authcard input[type=checkbox]{accent-color:#4d8dff;margin:0 !important;'
+        . 'width:auto !important;display:inline-block}'
+        . '.kx-authcard a{color:#7aa5ff !important}'
+        . '.kx-authcard a:hover{color:#fff !important}'
+        . '.kx-authcard .card-footer,.kx-authcard hr'
+        . '{border-color:#2a3347 !important;background:transparent !important;'
+        . 'text-align:center;margin-top:18px !important}'
         . '</style>'
         . "<script>document.addEventListener('DOMContentLoaded',function(){"
         . "document.body.insertAdjacentHTML('afterbegin','<div class=\"kx-authglow g1\"></div><div class=\"kx-authglow g2\"></div>');"
@@ -816,8 +842,7 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         . "if(sub){var host=sub.parentElement;host.classList.add('kx-authactions');"
         . "var rem=null;card.querySelectorAll('label').forEach(function(l){"
         . "if(/remember/i.test(l.textContent||'')){rem=l.closest('.custom-control')||l;}});"
-        . "if(rem&&!host.contains(rem)){host.appendChild(rem);}"
-        . "else if(rem){host.appendChild(rem);}}"
+        . "if(rem){rem.classList.add('kx-remember');host.appendChild(rem);}}"
         . "}});</script>";
 });
 
