@@ -700,3 +700,22 @@ img.card-img-top { filter: brightness(.9); }
 }
 /* attachment rows breathe a little */
 #fileUploadsContainer .file-upload, .drag-and-drop-upload { margin-top: 8px; }
+
+/* ---------- header bar = marketing nav, exactly ----------
+   After the one-row relocation the visible bar is #header (the old
+   #main-menu is hidden), so IT must carry the marketing nav's look:
+   solid #0b0f1a, 1px #1c2436 hairline, ~72px tall. */
+#header, .app-header, header#header, #header.navbar, nav#header {
+  background: #0b0f1a !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-bottom: 1px solid #1c2436 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* height parity: marketing = 36px logo + 18px padding each side (72px).
+   brand already carries 8px, the row adds the last 10px. */
+.kx-onerow { padding-top: 10px !important; padding-bottom: 10px !important; }
+/* link tone parity with .kx-nav .links a */
+.kx-inline-nav .navbar-nav > li > a { color: #c7cede !important; }
+.kx-inline-nav .navbar-nav > li > a:hover { color: #fff !important; }
