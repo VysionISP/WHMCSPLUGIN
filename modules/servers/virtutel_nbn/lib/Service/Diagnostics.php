@@ -79,7 +79,7 @@ class Diagnostics
                     'TestCompleted', 'TestCancelled', 'TestRejected',
                 ], true);
 
-                return ['done' => $done, 'html' => self::renderOne($test)];
+                return ['done' => $done, 'html' => self::renderCustomer($test)];
             }
         }
 
@@ -251,6 +251,110 @@ class Diagnostics
             'FW', 'FIXED WIRELESS' => 'NWAS',
             default => 'NCAS', // FTTN / FTTB / FTTC copper family
         };
+    }
+
+    /**
+     * Customer-facing result: an overall verdict banner plus the parsed
+     * indicators as tidy rows — network internals (VLANs, revision
+     * timestamps) filtered out, and never the raw JSON payload.
+     */
+    public static function renderCustomer(array $test): string
+    {
+        $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
+        $status = (string) ($test['status'] ?? '');
+        $typeLabel = ucwords(strtolower(str_replace('_', ' ', (string) ($test['type'] ?? 'Check'))));
+
+        // Overall verdict from the first result entry that reports one.
+        $result = '';
+        foreach ((array) ($test['results'] ?? []) as $entry) {
+            if (is_array($entry) && (string) ($entry['result'] ?? '') !== '') {
+                $result = (string) $entry['result'];
+                break;
+            }
+        }
+
+        if ($status === 'TestCompleted' && strcasecmp($result, 'Passed') === 0) {
+            $bg = '#e7f6ec'; $line = '#b7e3c6'; $ink = '#177a43'; $icon = '&#10003;';
+            $head = 'All good &mdash; this check passed';
+            $sub = 'The NBN network reports your equipment is healthy.';
+        } elseif (in_array($status, ['TestCancelled', 'TestRejected'], true)
+            || ($result !== '' && strcasecmp($result, 'Passed') !== 0)) {
+            $bg = '#fdecea'; $line = '#f3b6b0'; $ink = '#a83227'; $icon = '&#33;';
+            $head = $status === 'TestCompleted'
+                ? 'This check found a problem'
+                : 'The check couldn&rsquo;t run';
+            $sub = 'Give us a call on 03 4130 5013 and we&rsquo;ll take it from here.';
+        } else {
+            $bg = '#fdf1e0'; $line = '#f0d9a8'; $ink = '#a3690e'; $icon = '&#8987;';
+            $head = 'Still running&hellip;';
+            $sub = 'Checks usually finish within a couple of minutes.';
+        }
+
+        $html = '<div style="text-align:left">'
+            . '<div style="background:' . $bg . ';border:1px solid ' . $line . ';color:' . $ink . ';'
+            . 'border-radius:10px;padding:13px 16px;display:flex;gap:11px;align-items:flex-start">'
+            . '<span style="font-weight:900;font-size:16px;line-height:1.3">' . $icon . '</span>'
+            . '<span><strong style="font-size:15px">' . $head . '</strong>'
+            . '<span style="display:block;font-size:12.5px;margin-top:2px">' . $sub . '</span></span>'
+            . '</div>';
+
+        $indicators = [];
+        self::collectIndicators((array) ($test['results'] ?? []), $indicators);
+        $labels = [
+            'Operational State' => 'Connection box',
+            'Reporting State' => 'Line reporting',
+            'Serial Number' => 'Serial number',
+            'NTD ID' => 'NBN box ID',
+            'Battery Fail Status' => 'Backup battery',
+            'Battery Missing Status' => 'Battery installed',
+        ];
+        $rows = '';
+        $shown = 0;
+        foreach ($indicators as $ind) {
+            if (preg_match('/vlan|enni|revision|timestamp/i', $ind['id']) || $ind['value'] === '') {
+                continue; // network internals mean nothing to customers
+            }
+            $value = $ind['value'];
+            $good = (bool) preg_match('/^(up|ok|pass(ed)?|no defect|in sync|normal|good|connected)$/i', trim($value));
+            $bad = !$good && (bool) preg_match('/fail|down|defect|error|missing/i', $value)
+                && strcasecmp(trim($value), 'N/A') !== 0;
+            $muted = strcasecmp(trim($value), 'N/A') === 0;
+            $vColor = $good ? '#177a43' : ($bad ? '#a83227' : ($muted ? '#98a2b8' : '#1b2333'));
+            $rows .= '<div style="display:flex;justify-content:space-between;gap:14px;'
+                . 'padding:9px 2px;border-bottom:1px solid #e8ecf3;font-size:13px">'
+                . '<span style="color:#66708a">' . $e($labels[$ind['id']] ?? $ind['id']) . '</span>'
+                . '<strong style="color:' . $vColor . ';text-align:right">' . $e($value) . '</strong>'
+                . '</div>';
+            if (++$shown >= 12) {
+                break;
+            }
+        }
+        if ($rows !== '') {
+            $html .= '<div style="margin-top:12px">' . $rows . '</div>';
+        }
+
+        $html .= '<div style="margin-top:10px;color:#9aa3b8;font-size:11px">'
+            . $e($typeLabel) . ' &middot; ref ' . $e($test['id'] ?? '')
+            . (isset($test['at']) ? ' &middot; ' . date('j M Y, g:ia', (int) $test['at']) : '')
+            . '</div></div>';
+
+        return $html;
+    }
+
+    /** Depth-first sweep for {"@type":"Indicator","id","value"} nodes. */
+    private static function collectIndicators($node, array &$out): void
+    {
+        if (!is_array($node)) {
+            return;
+        }
+        if ((string) ($node['@type'] ?? '') === 'Indicator' && isset($node['id'])) {
+            $out[] = ['id' => (string) $node['id'], 'value' => (string) ($node['value'] ?? '')];
+
+            return;
+        }
+        foreach ($node as $child) {
+            self::collectIndicators($child, $out);
+        }
     }
 
     /** Renders one history entry (status banner + result summary). */
