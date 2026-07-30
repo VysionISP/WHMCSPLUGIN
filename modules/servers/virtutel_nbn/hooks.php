@@ -727,7 +727,7 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
             ->orderBy('h.id')
             ->limit(4)
             ->get(['h.id', 'h.domainstatus', 'h.domain', 'p.name',
-                'v.status as vstatus', 'v.avc_id', 'v.service_address']);
+                'v.carrier_status as vstatus', 'v.avc_id', 'v.service_address']);
         foreach ($rows as $row) {
             $services[] = $row;
         }
