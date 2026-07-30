@@ -710,6 +710,7 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
     $first = '';
     $invCount = $tixCount = null;
     $services = [];
+    $tickets = [];
     try {
         $first = trim((string) (Capsule::table('tblclients')
             ->where('id', $uid)->value('firstname') ?? ''));
@@ -730,6 +731,13 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
                 'v.carrier_status as vstatus', 'v.avc_id', 'v.service_address']);
         foreach ($rows as $row) {
             $services[] = $row;
+        }
+
+        $trows = Capsule::table('tbltickets')->where('userid', $uid)
+            ->orderByDesc('lastreply')->limit(3)
+            ->get(['id', 'tid', 'c', 'title', 'status', 'lastreply']);
+        foreach ($trows as $trow) {
+            $tickets[] = $trow;
         }
     } catch (\Throwable $e) {
         // greeting still renders without data
@@ -783,6 +791,22 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
             ? '<span class="w">' . $tixCount . ' open</span>'
             : 'No open tickets');
 
+    $ticketHtml = '';
+    if ($tickets !== []) {
+        $ticketHtml = '<div class="kx-tix"><div class="kx-tix-head">Recent tickets'
+            . '<a href="/supporttickets.php">View all &rarr;</a></div>';
+        foreach ($tickets as $ticket) {
+            $open = in_array((string) $ticket->status,
+                ['Open', 'Answered', 'Customer-Reply', 'In Progress'], true);
+            $ticketHtml .= '<a class="kx-tix-row" href="/viewticket.php?tid='
+                . $e2($ticket->tid) . '&c=' . $e2($ticket->c) . '">'
+                . '<span class="t">' . $e2($ticket->title) . '</span>'
+                . '<span class="s' . ($open ? ' o' : '') . '">' . $e2($ticket->status) . '</span>'
+                . '</a>';
+        }
+        $ticketHtml .= '</div>';
+    }
+
     $hero = '<div class="kx-dash">'
         . '<div class="kx-dash-hi">' . $hi . '</div>'
         . '<div class="kx-dash-sub">Here&rsquo;s how your connection is looking right now.</div>'
@@ -792,12 +816,19 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
         . '<a href="/supporttickets.php"><b>Support</b><span>' . $tixSub . '</span></a>'
         . '<a href="https://go.getscreen.me/invite/683032125" target="_blank" rel="noopener">'
         . '<b>Remote Support</b><span>Start a session</span></a>'
-        . '</div></div>';
+        . '</div>'
+        . $ticketHtml
+        . '</div>';
     $json = json_encode($hero, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
     return '<style>'
-        . '.kx-dash{margin:30px auto 26px;position:relative;width:100%;'
-        . 'padding-left:15px;padding-right:15px}'
+        // the dashboard is 100% ours: everything WHMCS renders inside the
+        // content area is hidden outright — no restyled leftovers
+        . '#main-body>*:not(.kx-dash),.main-content>*:not(.kx-dash)'
+        . '{display:none !important}'
+        . '.kx-dash{display:block !important;margin:34px auto 60px;position:relative;width:100%;'
+        . 'padding-left:15px;padding-right:15px;'
+        . 'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}'
         . '@media(min-width:576px){.kx-dash{max-width:540px}}'
         . '@media(min-width:768px){.kx-dash{max-width:720px}}'
         . '@media(min-width:992px){.kx-dash{max-width:960px}}'
@@ -805,17 +836,16 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
         . '.kx-grad{background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff);'
         . '-webkit-background-clip:text;background-clip:text;color:transparent}'
         . '.kx-dash-hi{font-size:32px;font-weight:800;letter-spacing:-.02em;color:#e6e9f2}'
-        . '.kx-dash-sub{color:#98a2b8;font-size:14.5px;margin:6px 0 18px}'
-        // the connection card — the hero of the page
+        . '.kx-dash-sub{color:#98a2b8;font-size:14.5px;margin:6px 0 22px}'
         . '.kx-conn{background:#141b2c;border:1px solid #2a3347;border-radius:16px;'
-        . 'padding:24px 28px;position:relative;overflow:hidden;margin-bottom:14px;'
+        . 'padding:26px 30px;position:relative;overflow:hidden;margin-bottom:16px;'
         . 'box-shadow:0 18px 50px rgba(0,0,0,.3)}'
         . '.kx-conn::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;'
         . 'background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff)}'
-        . '.kx-conn-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}'
+        . '.kx-conn-top{display:flex;align-items:center;gap:11px;flex-wrap:wrap}'
         . '.kx-conn-top b{font-size:19px;font-weight:800;color:#e6e9f2}'
         . '.kx-conn-top .plan{margin-left:auto;background:#1e2739;border:1px solid #2a3347;'
-        . 'border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700;color:#c7cede}'
+        . 'border-radius:999px;padding:6px 15px;font-size:13px;font-weight:700;color:#c7cede}'
         . '.kx-conn .dot{width:11px;height:11px;border-radius:50%;flex:0 0 11px}'
         . '.kx-conn .dot.g{background:#2fbf71;box-shadow:0 0 0 0 rgba(47,191,113,.4);'
         . 'animation:kxDot 2.2s ease-out infinite}'
@@ -825,9 +855,9 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
         . '@keyframes kxDot{0%{box-shadow:0 0 0 0 rgba(47,191,113,.4)}'
         . '70%{box-shadow:0 0 0 10px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}'
         . '@media (prefers-reduced-motion:reduce){.kx-conn .dot.g{animation:none}}'
-        . '.kx-conn-addr{color:#c7cede;font-size:15px;font-weight:600;margin:12px 0 2px}'
+        . '.kx-conn-addr{color:#c7cede;font-size:15px;font-weight:600;margin:14px 0 3px}'
         . '.kx-conn-meta{color:#5b6b8f;font-size:12.5px;font-family:ui-monospace,Menlo,monospace}'
-        . '.kx-conn-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}'
+        . '.kx-conn-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}'
         . '.kx-conn-actions a{text-decoration:none !important;border-radius:9px;'
         . 'padding:11px 20px;font-weight:800;font-size:14px;'
         . 'transition:transform .12s ease,box-shadow .12s ease}'
@@ -836,23 +866,29 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
         . 'box-shadow:0 8px 26px rgba(77,141,255,.35)}'
         . '.kx-conn-actions .b2{border:1px solid #2a3347;color:#c7cede !important;background:transparent}'
         . '.kx-conn-actions .b2:hover{border-color:#4d8dff;color:#fff !important}'
-        // slim secondary row
         . '.kx-dash-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}'
         . '.kx-dash-row a{display:flex;justify-content:space-between;align-items:center;gap:10px;'
-        . 'background:#11182a;border:1px solid #232d44;border-radius:12px;padding:13px 16px;'
+        . 'background:#11182a;border:1px solid #232d44;border-radius:12px;padding:14px 17px;'
         . 'text-decoration:none !important;transition:border-color .12s ease}'
         . '.kx-dash-row a:hover{border-color:#4d8dff}'
         . '.kx-dash-row b{color:#e6e9f2;font-weight:700;font-size:13.5px}'
         . '.kx-dash-row span{color:#98a2b8;font-size:12.5px;white-space:nowrap}'
         . '.kx-dash-row span .w{color:#ecc575;font-weight:700}'
         . '.kx-dash-row span .g{color:#7fdcaa;font-weight:700}'
-        // panels keep the card language; heading + redundant panels die
-        . '#main-body .card,#main-body .panel'
-        . '{background:#141b2c !important;border:1px solid #2a3347 !important;'
-        . 'border-radius:15px !important;box-shadow:none !important}'
-        . '#main-body .card-header,#main-body .panel-heading'
-        . '{background:transparent !important;border-bottom:1px solid #2a3347 !important;'
-        . 'font-weight:800 !important;color:#e6e9f2 !important}'
+        . '.kx-tix{background:#11182a;border:1px solid #232d44;border-radius:12px;'
+        . 'padding:6px 17px 8px;margin-top:12px}'
+        . '.kx-tix-head{display:flex;justify-content:space-between;align-items:center;'
+        . 'color:#98a2b8;font-size:12px;font-weight:800;text-transform:uppercase;'
+        . 'letter-spacing:.07em;padding:10px 0 6px}'
+        . '.kx-tix-head a{color:#7aa5ff;text-decoration:none;font-weight:700;'
+        . 'text-transform:none;letter-spacing:0;font-size:12.5px}'
+        . '.kx-tix-row{display:flex;justify-content:space-between;align-items:center;gap:14px;'
+        . 'padding:11px 0;border-top:1px solid #1d2740;text-decoration:none !important}'
+        . '.kx-tix-row .t{color:#e6e9f2;font-size:13.5px;font-weight:600;overflow:hidden;'
+        . 'text-overflow:ellipsis;white-space:nowrap}'
+        . '.kx-tix-row .s{color:#5b6b8f;font-size:12px;font-weight:700;white-space:nowrap}'
+        . '.kx-tix-row .s.o{color:#ecc575}'
+        . '.kx-tix-row:hover .t{color:#fff}'
         . '.header-lined,.page-header{display:none !important}'
         . '</style>'
         . "<script>document.addEventListener('DOMContentLoaded',function(){"
@@ -860,38 +896,7 @@ add_hook('ClientAreaHeadOutput', 11, function ($vars) {
         . "if(main&&!document.querySelector('.kx-dash')){"
         . "var d=document.createElement('div');d.innerHTML={$json};"
         . "main.insertBefore(d.firstChild,main.firstChild);}"
-        // stock tiles + panels that duplicate the connection card
-        . "document.querySelectorAll('.tile,.tilebox,[class*=tile],[class*=stat],.card,.panel,a,div')"
-        . ".forEach(function(el){"
-        . "if(el.closest('.kx-dash')||el.childElementCount>8){return;}"
-        . "var t=(el.textContent||'').replace(/\\s+/g,' ').trim();"
-        . "if(t.length<40&&/^\\d+\\s*(services?|domains?|tickets?|invoices?|quotes?)$/i.test(t)"
-        . "||t.length<60&&/domain|affiliate/i.test(t)){"
-        . "var col=el.closest('[class*=col-]');"
-        . "(col||el).style.setProperty('display','none','important');}"
-        . "});"
-        // stock furniture goes: the Your Info / Contacts / Shortcuts
-        // sidebar, the (empty) Recent News panel, and the redundant
-        // active-products panel — then whatever column holds the
-        // remaining panels stretches to full width
-        . "document.querySelectorAll('.card,.panel,.sidebar,section,div').forEach(function(el){"
-        . "if(el.closest('.kx-dash')||el.childElementCount>10){return;}"
-        . "var head=el.querySelector(':scope>.card-header,:scope>.panel-heading,:scope>h3,:scope>h4,:scope>.card-body>h3');"
-        . "var t=((head?head.textContent:'')||'').replace(/\\s+/g,' ').trim();"
-        . "if(/^(your info|contacts|shortcuts|recent news|your active products)/i.test(t)){"
-        . "el.style.setProperty('display','none','important');}"
-        . "});"
-        . "document.querySelectorAll('[class*=col-]').forEach(function(col){"
-        . "var vis=false;col.querySelectorAll('.card,.panel').forEach(function(c){"
-        . "if(c.style.display!=='none'&&c.offsetParent!==null){vis=true;}});"
-        . "if(!vis&&col.querySelector('.card,.panel')){col.style.setProperty('display','none','important');}"
-        . "});"
-        . "document.querySelectorAll('[class*=col-]').forEach(function(col){"
-        . "if(col.style.display==='none'||!col.querySelector('.card,.panel')){return;}"
-        . "if(col.closest('.kx-dash')){return;}"
-        . "col.style.setProperty('flex','0 0 100%','important');"
-        . "col.style.setProperty('max-width','100%','important');"
-        . "});});</script>";
+        . "});</script>";
 });
 
 /**
