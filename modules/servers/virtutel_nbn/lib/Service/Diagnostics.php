@@ -263,6 +263,8 @@ class Diagnostics
         $e = fn ($v) => htmlspecialchars((string) $v, ENT_QUOTES);
         $status = (string) ($test['status'] ?? '');
         $typeLabel = ucwords(strtolower(str_replace('_', ' ', (string) ($test['type'] ?? 'Check'))));
+        $typeLabel = str_replace(['Ntd', 'Wntd', 'Dpu', 'Ncd', 'Uni D', 'Uni V', 'Nni'],
+            ['NTD', 'WNTD', 'DPU', 'NCD', 'UNI-D', 'UNI-V', 'NNI'], $typeLabel);
 
         // Overall verdict from the first result entry that reports one.
         $result = '';
@@ -274,18 +276,18 @@ class Diagnostics
         }
 
         if ($status === 'TestCompleted' && strcasecmp($result, 'Passed') === 0) {
-            $bg = '#e7f6ec'; $line = '#b7e3c6'; $ink = '#177a43'; $icon = '&#10003;';
+            $bg = '#12301f'; $line = '#1d5c38'; $ink = '#7fdcaa'; $icon = '&#10003;';
             $head = 'All good &mdash; this check passed';
             $sub = 'The NBN network reports your equipment is healthy.';
         } elseif (in_array($status, ['TestCancelled', 'TestRejected'], true)
             || ($result !== '' && strcasecmp($result, 'Passed') !== 0)) {
-            $bg = '#fdecea'; $line = '#f3b6b0'; $ink = '#a83227'; $icon = '&#33;';
+            $bg = '#3a1512'; $line = '#722a24'; $ink = '#ffa198'; $icon = '&#33;';
             $head = $status === 'TestCompleted'
                 ? 'This check found a problem'
                 : 'The check couldn&rsquo;t run';
             $sub = 'Give us a call on 03 4130 5013 and we&rsquo;ll take it from here.';
         } else {
-            $bg = '#fdf1e0'; $line = '#f0d9a8'; $ink = '#a3690e'; $icon = '&#8987;';
+            $bg = '#372a10'; $line = '#6b531f'; $ink = '#ecc575'; $icon = '&#8987;';
             $head = 'Still running&hellip;';
             $sub = 'Checks usually finish within a couple of minutes.';
         }
@@ -319,10 +321,10 @@ class Diagnostics
             $bad = !$good && (bool) preg_match('/fail|down|defect|error|missing/i', $value)
                 && strcasecmp(trim($value), 'N/A') !== 0;
             $muted = strcasecmp(trim($value), 'N/A') === 0;
-            $vColor = $good ? '#177a43' : ($bad ? '#a83227' : ($muted ? '#98a2b8' : '#1b2333'));
+            $vColor = $good ? '#7fdcaa' : ($bad ? '#ff9088' : ($muted ? '#5b6b8f' : '#e6e9f2'));
             $rows .= '<div style="display:flex;justify-content:space-between;gap:14px;'
-                . 'padding:9px 2px;border-bottom:1px solid #e8ecf3;font-size:13px">'
-                . '<span style="color:#66708a">' . $e($labels[$ind['id']] ?? $ind['id']) . '</span>'
+                . 'padding:9px 2px;border-bottom:1px solid #2a3347;font-size:13px">'
+                . '<span style="color:#98a2b8">' . $e($labels[$ind['id']] ?? $ind['id']) . '</span>'
                 . '<strong style="color:' . $vColor . ';text-align:right">' . $e($value) . '</strong>'
                 . '</div>';
             if (++$shown >= 12) {
@@ -333,8 +335,8 @@ class Diagnostics
             $html .= '<div style="margin-top:12px">' . $rows . '</div>';
         }
 
-        $html .= '<div style="margin-top:10px;color:#9aa3b8;font-size:11px">'
-            . $e($typeLabel) . ' &middot; ref ' . $e($test['id'] ?? '')
+        $html .= '<div style="margin-top:10px;color:#5b6b8f;font-size:11px">'
+            . $e($typeLabel)
             . (isset($test['at']) ? ' &middot; ' . date('j M Y, g:ia', (int) $test['at']) : '')
             . '</div></div>';
 

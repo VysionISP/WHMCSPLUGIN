@@ -182,16 +182,19 @@
     var ov=document.createElement('div');
     ov.style.cssText='position:fixed;inset:0;background:rgba(10,14,24,.72);z-index:99999;'
       +'display:flex;align-items:center;justify-content:center';
-    ov.innerHTML='<div style="background:#fff;color:#222;padding:26px 34px;border-radius:12px;'
+    ov.innerHTML='<div style="background:#141b2c;color:#e6e9f2;border:1px solid #2a3347;'
+      +'padding:26px 30px;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.55);'
       +'text-align:center;max-width:560px;width:92%;max-height:82vh;overflow:auto">'
-      +'<div id="vtCliSpin" style="width:38px;height:38px;border:4px solid #dde3ee;'
-      +'border-top-color:#1a5fd0;border-radius:50%;margin:0 auto 14px;animation:vtspin 1s linear infinite"></div>'
+      +'<div id="vtCliSpin" style="width:38px;height:38px;border:4px solid #2a3347;'
+      +'border-top-color:#4d8dff;border-radius:50%;margin:0 auto 14px;animation:vtspin 1s linear infinite"></div>'
       +'<style>@keyframes vtspin{to{transform:rotate(360deg)}}</style>'
       +'<div id="vtCliMsg" style="font-weight:600">Starting '+label+'&hellip;</div>'
-      +'<div id="vtCliSub" style="color:#667;font-size:12px;margin-top:6px">This usually takes '
+      +'<div id="vtCliSub" style="color:#98a2b8;font-size:12px;margin-top:6px">This usually takes '
       +'under a couple of minutes &mdash; hang tight.</div>'
-      +'<button type="button" id="vtCliClose" class="btn btn-default btn-sm" '
-      +'style="margin-top:14px">Close</button></div>';
+      +'<button type="button" id="vtCliClose" '
+      +'style="margin-top:16px;background:linear-gradient(135deg,#4d8dff,#7a5cff);color:#fff;'
+      +'border:0;border-radius:9px;padding:10px 26px;font-weight:800;font-size:14px;cursor:pointer">'
+      +'Close</button></div>';
     document.body.appendChild(ov);
     var closed=false;
     ov.querySelector('#vtCliClose').addEventListener('click',function(){closed=true;ov.remove();});
