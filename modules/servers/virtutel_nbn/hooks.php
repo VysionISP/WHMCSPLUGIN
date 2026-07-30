@@ -791,8 +791,16 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         // icon prefixes die; the password eye floats INSIDE its field
         . '.kx-authcard .input-group-prepend,'
         . '.kx-authcard .input-group-text:first-child{display:none !important}'
-        . '.kx-authcard .input-group{position:relative !important;display:block !important;'
-        . 'background:transparent !important;border:0 !important;width:100% !important}'
+        // the wrapper itself must never paint chrome — the theme gives
+        // .input-group its own border/padding on :focus-within, which drew
+        // a second ghost box around the focused field
+        . '.kx-authcard .input-group,.kx-authcard .input-group:focus-within'
+        . '{position:relative !important;display:block !important;'
+        . 'background:transparent !important;border:0 !important;box-shadow:none !important;'
+        . 'outline:none !important;padding:0 !important;margin:0 0 16px !important;'
+        . 'min-height:0 !important;height:auto !important;border-radius:0 !important;'
+        . 'width:100% !important;overflow:visible !important}'
+        . '.kx-authcard .input-group input{margin:0 !important}'
         . '.kx-authcard .input-group-append,.kx-authcard .input-group>span:last-child,'
         . '.kx-authcard .input-group>div:last-child:not(:first-child)'
         . '{position:absolute !important;right:4px;top:22px;transform:translateY(-50%);'
@@ -817,8 +825,18 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         . '{display:flex !important;justify-content:center;align-items:center;gap:8px;'
         . 'color:#98a2b8 !important;font-weight:400 !important;font-size:13.5px !important;'
         . 'margin:14px 0 0 !important}'
-        . '.kx-authcard input[type=checkbox]{accent-color:#4d8dff;margin:0 !important;'
-        . 'width:auto !important;display:inline-block}'
+        // Remember Me: the theme uses a hidden input + pseudo-element
+        // checkbox positioned absolutely, which lands on top of the label
+        // text once the row is re-centred — force a plain native checkbox
+        . '.kx-remember input[type=checkbox],.kx-authcard input[type=checkbox]'
+        . '{position:static !important;opacity:1 !important;appearance:auto !important;'
+        . '-webkit-appearance:checkbox !important;width:16px !important;height:16px !important;'
+        . 'margin:0 !important;display:inline-block !important;accent-color:#4d8dff;'
+        . 'left:auto !important;top:auto !important}'
+        . '.kx-remember::before,.kx-remember::after,'
+        . '.kx-remember span::before,.kx-remember span::after,'
+        . '.kx-remember label::before,.kx-remember label::after'
+        . '{display:none !important;content:none !important}'
         . '.kx-authcard a{color:#7aa5ff !important}'
         . '.kx-authcard a:hover{color:#fff !important}'
         . '.kx-authcard .card-footer,.kx-authcard hr'
