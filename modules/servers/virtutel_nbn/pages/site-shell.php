@@ -436,6 +436,32 @@ function kx_site_render(string $section, string $arg = ''): void
   .jumpchips a { border:1px solid var(--line); border-radius:999px; padding:7px 15px;
                  font-size:13px; color:var(--muted); font-weight:600; background:var(--surface); }
   .jumpchips a:hover { color:#fff; border-color:var(--brand); }
+  /* contact page */
+  .cwrap { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:22px;
+           align-items:stretch; text-align:left; }
+  @media(max-width:820px){ .cwrap { grid-template-columns:1fr; } }
+  .callpanel { background:var(--surface); border:1px solid var(--line); border-radius:18px;
+               padding:30px 34px; position:relative; overflow:hidden;
+               box-shadow:0 18px 50px rgba(0,0,0,.3); }
+  .callpanel::before { content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff); }
+  .bignum { display:inline-block; font-size:clamp(34px,5vw,46px); font-weight:900;
+            letter-spacing:-.02em; text-decoration:none !important; margin-top:6px; }
+  .hrow { display:flex; align-items:baseline; gap:10px; padding:10px 0;
+          border-top:1px solid var(--line); font-size:14px; color:var(--muted); }
+  .hrow b { color:#e6e9f2; white-space:nowrap; }
+  .hdot { width:9px; height:9px; border-radius:50%; flex:0 0 9px; align-self:center; }
+  .hdot.g { background:#2fbf71; } .hdot.a { background:#e2a336; }
+  .cstack { display:flex; flex-direction:column; gap:12px; }
+  .crow { flex:1; display:flex; align-items:center; justify-content:space-between; gap:16px;
+          background:var(--surface); border:1px solid var(--line); border-radius:14px;
+          padding:18px 22px; text-decoration:none !important;
+          transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease; }
+  .crow:hover { transform:translateY(-2px); border-color:var(--brand);
+                box-shadow:0 12px 32px rgba(31,66,150,.22); }
+  .crow b { color:#e6e9f2; font-size:15px; font-weight:800; display:block; margin-bottom:3px; }
+  .crow span { color:var(--muted); font-size:13px; line-height:1.5; }
+  .crow .arr { color:var(--brand); font-size:19px; font-weight:800; flex:0 0 auto; }
   /* per-category price showcase rows (business overview) */
   .pxr { display:flex; justify-content:space-between; align-items:baseline; gap:12px;
          padding:8px 0; border-bottom:1px solid var(--line); font-size:14px;
@@ -2584,7 +2610,7 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
 
 <?php } elseif ($section === 'contact') { ?>
 
-<section class="hero" style="padding-bottom:20px">
+<section class="hero" style="padding-bottom:26px">
   <div class="glow g1"></div><div class="glow g2"></div>
   <div class="inner">
     <div class="kicker">Contact</div>
@@ -2594,25 +2620,58 @@ document.querySelectorAll('[data-kxlead]').forEach(function(f){
   </div>
 </section>
 
-<section style="text-align:center;padding-top:0">
+<section style="padding-top:0">
   <div class="inner" style="max-width:1120px">
-    <div class="cards" style="text-align:left">
-      <div class="card"><div class="ico">&#128222;&#65038;</div><h3>Call us</h3>
-        <p>Sales, support, faults &mdash; one number for all of it.</p>
-        <a class="btn" href="tel:<?php echo $e($tel); ?>"><?php echo $e($phone); ?></a></div>
-      <div class="card"><div class="ico">&#127915;&#65038;</div><h3>Open a ticket</h3>
-        <p>Best for anything with details worth keeping &mdash; billing questions, changes,
-           non-urgent faults.</p>
-        <a class="btn ghost" href="/submitticket.php">Open a ticket</a></div>
-      <div class="card"><div class="ico">&#128421;&#65038;</div><h3>Remote support</h3>
-        <p>On the phone with us and need to share your screen? Start a secure session here.</p>
-        <a class="btn ghost" href="https://go.getscreen.me/invite/683032125" target="_blank" rel="noopener">Get remote support</a></div>
-      <div class="card"><div class="ico">&#128337;&#65038;</div><h3>When we answer</h3>
-        <p>Business hours for sales and everyday support. Existing customers with a service-down
-           fault: call any time &mdash; the message tells you where to go next.</p>
-        <a class="btn ghost" href="/serverstatus.php">Check network status</a></div>
+    <div class="cwrap">
+      <div class="callpanel">
+        <div class="kicker">The fast way</div>
+        <h2 style="margin:4px 0 2px">Just call</h2>
+        <a class="bignum grad" href="tel:<?php echo $e($tel); ?>"><?php echo $e($phone); ?></a>
+        <p class="sub" style="margin:8px 0 20px;max-width:none">Sales, support, billing, faults
+          &mdash; one number, straight to someone who can fix it.</p>
+        <div class="hrow"><span class="hdot g"></span><b>Mon&ndash;Fri</b>
+          <span>Sales &amp; everyday support</span></div>
+        <div class="hrow"><span class="hdot g"></span><b>Any time</b>
+          <span>Existing customers with a service-down fault</span></div>
+        <div class="hrow"><span class="hdot a"></span><b>After hours?</b>
+          <span>Leave a message &mdash; it goes to a human, not a void</span></div>
+      </div>
+      <div class="cstack">
+        <a class="crow" href="/submitticket.php">
+          <div><b>Open a ticket</b>
+          <span>Best for anything with details worth keeping &mdash; billing, changes,
+            non-urgent faults.</span></div>
+          <span class="arr">&rarr;</span>
+        </a>
+        <a class="crow" href="https://go.getscreen.me/invite/683032125" target="_blank" rel="noopener">
+          <div><b>Remote support</b>
+          <span>On the phone with us? Share your screen through a secure session.</span></div>
+          <span class="arr">&rarr;</span>
+        </a>
+        <a class="crow" href="/serverstatus.php">
+          <div><b>Network status</b>
+          <span>Something down? Check for known outages and planned maintenance first.</span></div>
+          <span class="arr">&rarr;</span>
+        </a>
+        <a class="crow" href="/clientarea.php">
+          <div><b>Customer portal</b>
+          <span>Invoices, line tests and your service details &mdash; self-serve, any hour.</span></div>
+          <span class="arr">&rarr;</span>
+        </a>
+      </div>
     </div>
   </div>
+</section>
+
+<section>
+  <div class="inner"><div class="band">
+    <h2>Not with us yet?</h2>
+    <p class="sub">Check your address and see exactly what your place supports &mdash; takes
+      about ten seconds, no obligation.</p>
+    <a class="btn" href="/personal/nbn/signup/">Check my address</a>
+    &nbsp;
+    <a class="btn ghost" href="/business/">Business? Start here</a>
+  </div></div>
 </section>
 
 <?php } elseif ($section === 'notfound') { ?>
