@@ -759,17 +759,65 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         . '.kx-authback a{color:#c7cede;font-weight:600;text-decoration:none}'
         . '.kx-authback a:hover{color:#fff}'
         . '#main-body,.main-content,.app-main{position:relative;z-index:1;padding-top:0 !important}'
+        // The card itself, restyled to the site language: gradient
+        // hairline, 18px radius, deep shadow, form-width like the signup
+        // walkthrough card.
+        . '.kx-authcard{background:#141b2c !important;border:1px solid #2a3347 !important;'
+        . 'border-radius:18px !important;box-shadow:0 24px 70px rgba(0,0,0,.45) !important;'
+        . 'max-width:440px !important;width:100% !important;margin:0 auto !important;'
+        . 'padding:32px 34px 26px !important;position:relative;overflow:hidden}'
+        . '.kx-authcard::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;'
+        . 'background:linear-gradient(92deg,#4d8dff,#7a5cff 55%,#b16bff)}'
+        . '.kx-authcard h1,.kx-authcard h2,.kx-authcard h3,.kx-authcard .card-title'
+        . '{font-size:24px !important;font-weight:800 !important;letter-spacing:-.02em}'
+        . '.kx-authcard .form-control{background:#0a0e18 !important;border:1px solid #2a3347 !important;'
+        . 'border-radius:9px !important;padding:12px 14px !important;font-size:15px !important;'
+        . 'box-shadow:none !important;color:#e6e9f2 !important}'
+        . '.kx-authcard .form-control:focus{border-color:#4d8dff !important}'
+        // icon prefixes go — site inputs are plain; keep the password eye
+        . '.kx-authcard .input-group-prepend,.kx-authcard .input-group-text:first-child'
+        . '{display:none !important}'
+        . '.kx-authcard .input-group{background:transparent !important;border:0 !important;'
+        . 'border-radius:9px !important}'
+        . '.kx-authcard .input-group .input-group-append,'
+        . '.kx-authcard .input-group .input-group-text{background:#0a0e18 !important;'
+        . 'border:1px solid #2a3347 !important;border-left:0 !important;color:#98a2b8 !important;'
+        . 'border-radius:0 9px 9px 0 !important}'
+        . '.kx-authcard button[type=submit],.kx-authcard input[type=submit],.kx-authcard .btn-primary'
+        . '{display:block;width:100% !important;background:linear-gradient(135deg,#4d8dff,#7a5cff) !important;'
+        . 'border:0 !important;border-radius:9px !important;padding:13px 22px !important;'
+        . 'font-weight:800 !important;font-size:15.5px !important;color:#fff !important;'
+        . 'transition:transform .12s ease,box-shadow .12s ease}'
+        . '.kx-authcard button[type=submit]:hover,.kx-authcard .btn-primary:hover'
+        . '{transform:translateY(-1px);box-shadow:0 8px 26px rgba(77,141,255,.35)}'
+        . '.kx-authactions{display:flex !important;flex-direction:column;gap:12px;'
+        . 'align-items:stretch !important;margin-top:6px}'
+        . '.kx-authactions label,.kx-authactions .custom-control'
+        . '{align-self:center;color:#98a2b8;font-weight:400 !important;font-size:13.5px}'
+        . '.kx-authcard a{color:#7aa5ff}'
+        . '.kx-authcard a:hover{color:#fff}'
+        . '.kx-authcard .card-footer,.kx-authcard hr{border-color:#2a3347 !important;'
+        . 'background:transparent !important}'
         . '</style>'
         . "<script>document.addEventListener('DOMContentLoaded',function(){"
         . "document.body.insertAdjacentHTML('afterbegin','<div class=\"kx-authglow g1\"></div><div class=\"kx-authglow g2\"></div>');"
         . "var pw=document.querySelector('input[type=password],input[name=email],#inputEmail');"
         . "var card=pw?(pw.closest('.card,.panel,.login-card,.w-full')||pw.closest('form')):null;"
         . "if(card){"
+        . "card.classList.add('kx-authcard');"
         . "var d1=document.createElement('div');d1.innerHTML={$headJson};"
         . "card.parentNode.insertBefore(d1.firstChild,card);"
         . "var d2=document.createElement('div');d2.innerHTML={$footJson};"
         . "if(card.nextSibling){card.parentNode.insertBefore(d2.firstChild,card.nextSibling);}"
         . "else{card.parentNode.appendChild(d2.firstChild);}"
+        // stack the submit row: full-width gradient button with the
+        // Remember Me checkbox centred beneath it
+        . "var sub=card.querySelector('button[type=submit],input[type=submit],.btn-primary');"
+        . "if(sub){var host=sub.parentElement;host.classList.add('kx-authactions');"
+        . "var rem=null;card.querySelectorAll('label').forEach(function(l){"
+        . "if(/remember/i.test(l.textContent||'')){rem=l.closest('.custom-control')||l;}});"
+        . "if(rem&&!host.contains(rem)){host.appendChild(rem);}"
+        . "else if(rem){host.appendChild(rem);}}"
         . "}});</script>";
 });
 
