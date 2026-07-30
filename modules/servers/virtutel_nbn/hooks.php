@@ -699,7 +699,12 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
  * hidden by label so no dead tiles clutter the page.
  */
 add_hook('ClientAreaHeadOutput', 11, function ($vars) {
-    if (($vars['filename'] ?? '') !== 'clientarea'
+    // Path-gated to the literal dashboard URL: the filename check alone
+    // also matches / and /index.php, and the takeover CSS must never
+    // touch the marketing homepage.
+    $path = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+    if ($path !== '/clientarea.php'
+        || ($vars['filename'] ?? '') !== 'clientarea'
         || !empty($_GET['action']) || !empty($_GET['rp'])
         || empty($_SESSION['uid'])) {
         return '';
