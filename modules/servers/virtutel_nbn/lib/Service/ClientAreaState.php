@@ -69,6 +69,7 @@ class ClientAreaState
             'vt_is_reschedule' => $isReschedule,
             'vt_booking_url' => EmailNotifier::bookingUrl($whmcsServiceId),
             'vt_conn_state' => self::connectionState($service, $order),
+            'vt_change_note' => self::changeNote($service, $order),
             'vt_cpe' => Diagnostics::cpe($whmcsServiceId),
             'vt_order_status_label' => isset($order->status)
                 ? ucwords(strtolower(str_replace('_', ' ', (string) $order->status))) : null,
@@ -120,17 +121,48 @@ class ClientAreaState
         }
     }
 
+    /**
+     * Friendly banner line for a change order riding on an active service
+     * (the hero stays Connected; this explains what's in flight).
+     */
+    private static function changeNote(object $service, ?object $order): string
+    {
+        if (self::connectionState($service, $order) !== 'active' || !$order) {
+            return '';
+        }
+        $orderState = (string) ($order->whmcs_status ?? '');
+        if (!in_array($orderState, ['pending', 'in_progress', 'action_required'], true)) {
+            return '';
+        }
+
+        $type = strtolower((string) ($order->order_type ?? ''));
+
+        return match (true) {
+            $type === 'modify_speed' => 'Speed change in progress — your connection stays up until the switch.',
+            str_starts_with($type, 'modify') => 'A change to this service is in progress.',
+            $type === 'disconnect' => 'Disconnection in progress.',
+            default => '',
+        };
+    }
+
     private static function connectionState(object $service, ?object $order): string
     {
         $orderState = (string) ($order->whmcs_status ?? '');
-        if (in_array($orderState, ['pending', 'in_progress', 'action_required'], true)) {
+        $orderType = strtolower((string) ($order->order_type ?? ''));
+        $inFlight = in_array($orderState, ['pending', 'in_progress', 'action_required'], true);
+        $carrier = strtolower((string) ($service->carrier_status ?? ''));
+        $carrierActive = $carrier === '' || str_contains($carrier, 'active');
+
+        // Only a CONNECT order in flight means "getting you connected" —
+        // a modify/disconnect order on an already-active service must not
+        // demote the hero from Connected.
+        if ($inFlight && ($orderType === 'connect' || !$carrierActive)) {
             return 'in_progress';
         }
-        if ($orderState === StatusMapper::CANCELLED) {
+        if ($orderState === StatusMapper::CANCELLED && !$carrierActive) {
             return 'attention';
         }
-        $carrier = strtolower((string) ($service->carrier_status ?? ''));
-        if ($carrier === '' || str_contains($carrier, 'active')) {
+        if ($carrierActive) {
             return 'active';
         }
 
@@ -146,6 +178,12 @@ class ClientAreaState
     {
         $orderState = (string) ($order->whmcs_status ?? '');
         if (!$order || !in_array($orderState, ['pending', 'in_progress', 'action_required'], true)) {
+            return [];
+        }
+        // The lodged->activation->online journey only describes CONNECT
+        // orders; speed changes and disconnects on live services don't get
+        // a provisioning timeline.
+        if (strtolower((string) ($order->order_type ?? '')) !== 'connect') {
             return [];
         }
 

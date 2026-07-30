@@ -17,6 +17,9 @@
       <div>
         <div style="font-size:20px;font-weight:800">Your NBN is active</div>
         <div style="color:#98a2b8;font-size:13.5px">{$vt_technology|default:'NBN'}{if $vt_speed} &middot; {$vt_speed}{/if}</div>
+        {if $vt_change_note}
+        <div style="color:#ecc575;font-size:13px;margin-top:5px">&#8635; {$vt_change_note}</div>
+        {/if}
       </div>
     {elseif $vt_conn_state == 'in_progress'}
       <span style="width:14px;height:14px;border-radius:50%;background:#e2a336;box-shadow:0 0 12px rgba(226,163,54,.8)"></span>
