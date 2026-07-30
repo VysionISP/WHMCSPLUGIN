@@ -560,7 +560,7 @@ add_hook('ClientAreaHeadOutput', 5, function () {
         . "document.addEventListener('DOMContentLoaded',function(){run();setTimeout(run,600);});"
         . "})();</script>";
 
-    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=27">'
+    return '<link rel="stylesheet" href="/modules/servers/virtutel_nbn/pages/portal-dark.css?v=28">'
         . '<meta name="color-scheme" content="dark">'
         . $whitewash;
 });
@@ -676,6 +676,83 @@ add_hook('ClientAreaHeadOutput', 6, function ($vars) {
         . "setInterval(function(){try{var b=f.contentDocument.body;if(!b){return;}"
         . "var h=b.scrollHeight+24;"
         . "if(h>200&&Math.abs(h-f.offsetHeight)>8){f.style.height=h+'px';}}catch(e){}},400);"
+        . "});</script>";
+});
+
+/**
+ * Perfect header parity: the theme's two-tier header (logo row + menu
+ * bar) is hidden entirely and replaced with a .kx-pnav bar that uses
+ * the SAME markup and CSS as the marketing site's .kx-nav — identical
+ * by construction, not by imitation. Logged-in clients get portal
+ * links (Home / My Services / Invoices / Support + Account / Logout);
+ * guests get the marketing family (Personal / Business / Contact +
+ * Log in). Renders after the kx-chrome topbar, like the marketing
+ * pages. Styles: portal-dark.css (.kx-pnav block).
+ */
+add_hook('ClientAreaHeadOutput', 6, function () {
+    // Same logo resolution as the marketing nav.
+    $logo = '';
+    foreach (['assets/img/logo.png', 'assets/img/logo.jpg'] as $cand) {
+        $root = defined('ROOTDIR') ? ROOTDIR : dirname(__DIR__, 3);
+        if (is_file($root . '/' . $cand)) {
+            $logo = '/' . $cand;
+            break;
+        }
+    }
+    if ($logo === '') {
+        try {
+            $logo = trim((string) (Capsule::table('tblconfiguration')
+                ->where('setting', 'LogoURL')->value('value') ?? ''));
+        } catch (\Throwable $e) {
+            $logo = '';
+        }
+        if ($logo !== '' && !preg_match('#^(https?:)?//#i', $logo) && $logo[0] !== '/') {
+            $logo = '/' . $logo;
+        }
+    }
+    $logoHtml = $logo !== ''
+        ? '<img src="' . htmlspecialchars($logo, ENT_QUOTES) . '" alt="Korvix" '
+            . 'onerror="this.parentNode.textContent=\'KORVIX\'">'
+        : 'KORVIX';
+
+    $uid = !empty($_SESSION['uid']);
+    $uri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+    $links = $uid
+        ? [
+            ['Home', '/clientarea.php', '#^/clientarea\.php$#'],
+            ['My Services', '/clientarea.php?action=services', '#action=(services|productdetails)#'],
+            ['Invoices', '/clientarea.php?action=invoices', '#action=invoices|viewinvoice\.php#'],
+            ['Support', '/supporttickets.php', '#supporttickets|viewticket|submitticket|knowledgebase#'],
+        ]
+        : [
+            ['Personal', '/personal/', '#^/personal#'],
+            ['Business', '/business/', '#^/business#'],
+            ['Contact', '/contact/', '#^/contact#'],
+        ];
+    $items = '';
+    foreach ($links as [$label, $url, $re]) {
+        $items .= '<a href="' . htmlspecialchars($url, ENT_QUOTES) . '"'
+            . (preg_match($re, $uri) ? ' class="on"' : '') . '>'
+            . htmlspecialchars($label, ENT_QUOTES) . '</a>';
+    }
+    $right = $uid
+        ? '<a href="/clientarea.php?action=details">Account</a><a href="/logout.php">Logout</a>'
+        : '<a href="/clientarea.php">Log in</a>';
+
+    $nav = '<div class="kx-pnav"><div class="in">'
+        . '<a class="logo" href="/">' . $logoHtml . '</a>'
+        . '<div class="links">' . $items . '<span class="sep"></span>' . $right . '</div>'
+        . '</div></div>';
+    $json = json_encode($nav, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+
+    return '<style>#header,.app-header,header#header,#main-menu,.app-main-menu'
+        . '{display:none !important}</style>'
+        . "<script>document.addEventListener('DOMContentLoaded',function(){"
+        . "if(document.querySelector('.kx-pnav')){return;}"
+        . "var d=document.createElement('div');d.innerHTML={$json};"
+        . "var chrome=document.querySelector('.kx-chrome');"
+        . "if(chrome){chrome.insertAdjacentElement('afterend',d.firstChild);}"
+        . "else{document.body.insertBefore(d.firstChild,document.body.firstChild);}"
         . "});</script>";
 });
 
@@ -1046,20 +1123,9 @@ add_hook('ClientAreaFooterOutput', 5, function ($vars) {
         . "var box=inp.closest('form,.search-container,section,div');"
         . "if(box){box.remove();}else{inp.remove();}"
         . "});"
-        // Single-row header on desktop, matching the marketing shell: the
-        // theme's two-tier header (logo row + separate nav row) is
-        // collapsed by moving the primary menu up beside the logo.
-        . "if(window.matchMedia('(min-width:992px)').matches){"
-        . "var pm=document.querySelector('#main-menu .navbar-nav,.app-main-menu .navbar-nav');"
-        . "var brand=document.querySelector('.navbar-brand,#logo a,header a[href=\"/\"],a[href*=\"index.php\"] img');"
-        . "if(brand&&brand.tagName==='IMG'){brand=brand.closest('a');}"
-        . "if(pm&&brand&&brand.parentElement){"
-        . "var wrap=document.createElement('div');wrap.className='kx-inline-nav';wrap.appendChild(pm);"
-        . "brand.insertAdjacentElement('afterend',wrap);"
-        . "var host=brand.parentElement;host.classList.add('kx-onerow');"
-        . "var bar=document.getElementById('main-menu')||document.querySelector('.app-main-menu');"
-        . "if(bar&&!bar.querySelector('.navbar-nav')){bar.style.display='none';}"
-        . "}}"
+        // (The old one-row header relocation lived here; the theme header
+        // is now replaced wholesale by the injected .kx-pnav bar — see the
+        // dedicated hook below.)
         . "});</script>";
 });
 
