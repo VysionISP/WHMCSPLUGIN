@@ -1,0 +1,27 @@
+{
+    "name": "vysion/whmcs-virtutel-nbn",
+    "description": "WHMCS provisioning module for NBN services via the VirtuTel wholesale API",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1",
+        "ext-curl": "*",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Vysion\\VirtutelNbn\\": "lib/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Vysion\\VirtutelNbn\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit --colors=always tests"
+    }
+}
