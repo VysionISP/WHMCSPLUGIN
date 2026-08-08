@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: curl, json
+          coverage: none
+
+      - name: Install dependencies
+        working-directory: modules/servers/virtutelnbn
+        run: composer install --no-interaction --no-progress
+
+      - name: Run unit tests
+        working-directory: modules/servers/virtutelnbn
+        run: ./vendor/bin/phpunit
+
+      - name: Verify tag matches Version.php
+        run: |
+          CODE_VERSION=$(php -r "require 'modules/servers/virtutelnbn/lib/Version.php'; echo \Vysion\VirtutelNbn\Version::VERSION;")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$CODE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match Version::VERSION ($CODE_VERSION)." >&2
+            echo "Bump lib/Version.php before tagging." >&2
+            exit 1
+          fi
+
+      - name: Build module ZIP
+        run: ./build.sh
+
+      - name: Create GitHub Release with ZIP
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.zip \
+            --title "VirtuTel NBN module $GITHUB_REF_NAME" \
+            --generate-notes

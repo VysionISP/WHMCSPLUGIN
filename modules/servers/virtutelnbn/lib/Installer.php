@@ -5,13 +5,20 @@ namespace Vysion\VirtutelNbn;
 use Illuminate\Database\Schema\Blueprint;
 use WHMCS\Database\Capsule;
 
+use Vysion\VirtutelNbn\Repository\SettingRepository;
+
 /**
- * Creates the module's database tables. Server modules have no activation
- * hook, so ensureInstalled() is invoked lazily from every entry point and
- * is a no-op once the tables exist.
+ * Creates the module's database tables and applies schema migrations.
+ * Server modules have no activation hook, so ensureInstalled() is invoked
+ * lazily from every entry point and is a no-op once up to date — which is
+ * what makes "update = overwrite the module files" safe: the first request
+ * after an update migrates the database automatically.
  */
 final class Installer
 {
+    /** Bump when adding a migration step in applyMigrations(). */
+    private const SCHEMA_VERSION = 1;
+
     public static function ensureInstalled(): void
     {
         static $done = false;
@@ -87,5 +94,36 @@ final class Installer
                 $table->timestamp('created_at')->nullable();
             });
         }
+
+        if (!$schema->hasTable('mod_virtutel_setting')) {
+            $schema->create('mod_virtutel_setting', function (Blueprint $table) {
+                $table->increments('id');
+                $table->string('name', 64)->unique();
+                $table->text('value');
+                $table->timestamp('updated_at')->nullable();
+            });
+        }
+
+        self::applyMigrations();
+    }
+
+    /**
+     * Incremental migrations for updates that change existing tables
+     * (fresh installs already get the final shape from the create()
+     * calls above, so steps must be written to tolerate that — e.g.
+     * guard column adds with hasColumn()).
+     */
+    private static function applyMigrations(): void
+    {
+        $settings = new SettingRepository();
+        $current = (int) ($settings->get('schema_version') ?? 0);
+
+        if ($current >= self::SCHEMA_VERSION) {
+            return;
+        }
+
+        // if ($current < 2) { ... alter tables for v2 ... }
+
+        $settings->put('schema_version', (string) self::SCHEMA_VERSION);
     }
 }

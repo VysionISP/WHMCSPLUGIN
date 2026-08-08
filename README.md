@@ -21,7 +21,37 @@ Module path: `modules/servers/virtutelnbn/`
 
 ## Installation
 
-1. Copy `modules/servers/virtutelnbn/` into your WHMCS installation.
+**From a release (recommended):** download `virtutelnbn-<version>.zip` from
+[GitHub Releases](https://github.com/VysionISP/WHMCSPLUGIN/releases) and extract
+it into your WHMCS root — it unpacks to `modules/servers/virtutelnbn/`:
+
+```bash
+unzip -o virtutelnbn-<version>.zip -d /path/to/whmcs
+```
+
+Then continue with the configuration steps below.
+
+**From source:** copy `modules/servers/virtutelnbn/` into your WHMCS
+installation (step 1 below).
+
+## Updating
+
+Download the newer release ZIP and extract it over the top (same `unzip -o`
+command). That's the whole update: database migrations run automatically on
+the first request after the files change, and your server credentials, product
+settings and existing service/order data are untouched. When a newer release
+exists, the module shows a banner in the WHMCS admin area (checked once a day
+via the GitHub releases API — requires the repository's releases to be
+publicly visible).
+
+Cutting a release (for developers): bump `lib/Version.php`, commit, tag it
+`v<version>` and push the tag — the release workflow runs the tests, builds
+the ZIP and attaches it to a GitHub Release.
+
+## Configuration
+
+1. Copy `modules/servers/virtutelnbn/` into your WHMCS installation (skip if
+   you installed from a release ZIP).
 2. Create the server entry (Setup → Products/Services → Servers):
    - **Hostname**: VirtuTel API base URL (HTTPS enforced)
    - **Username**: VirtuTel Client ID
