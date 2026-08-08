@@ -22,8 +22,16 @@ Module path: `modules/servers/virtutelnbn/`
 ## Installation
 
 **From a release (recommended):** download `virtutelnbn-<version>.zip` from
-[GitHub Releases](https://github.com/VysionISP/WHMCSPLUGIN/releases) and extract
-it into your WHMCS root — it unpacks to `modules/servers/virtutelnbn/`:
+[GitHub Releases](https://github.com/VysionISP/WHMCSPLUGIN/releases) and run the
+updater script on the server (it auto-detects the WHMCS root, backs up any
+existing module version to /tmp, extracts, and fixes ownership/permissions):
+
+```bash
+sudo bash scripts/updatewhmcsplugin.sh /path/to/virtutelnbn-<version>.zip
+```
+
+Pass the WHMCS root as a second argument if auto-detection picks the wrong
+directory. Or do it manually — the ZIP is rooted at `modules/`:
 
 ```bash
 unzip -o virtutelnbn-<version>.zip -d /path/to/whmcs
