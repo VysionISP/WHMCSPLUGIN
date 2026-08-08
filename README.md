@@ -1,111 +1,67 @@
-# WHMCS VirtuTel NBN Provisioning Module
+# Virtutel NBN Suite for WHMCS (Korvix)
 
-A WHMCS **server (provisioning) module** that provisions NBN services through the
-VirtuTel wholesale API, keeps WHMCS in sync via **signed inbound webhooks**, and is
-structured so additional upstream carriers can be added behind the same interface.
+Production WHMCS integration for provisioning NBN services through the
+**Virtutel wholesale API**, plus the surrounding Korvix retail stack. This repo
+is the canonical source (adopted from the v1.40.x line); releases are built and
+published from here.
 
-Module path: `modules/servers/virtutelnbn/`
+## What's in the package
 
-## How it plugs into WHMCS
-
-| WHMCS touchpoint | Behaviour |
+| Path | Purpose |
 |---|---|
-| Setup → Servers | Add a server of type **VirtuTel NBN Provisioning**. Hostname = API base URL, Password = API key, Access Hash = webhook secret. |
-| Product Module Settings | Select the module, set the VirtuTel **Plan Code** (speed tier) per product. |
-| Order paid / accepted | WHMCS calls `CreateAccount` → address is qualified, connect order placed. |
-| Overdue / cancellation automation | `SuspendAccount` / `UnsuspendAccount` / `TerminateAccount` → matching VirtuTel actions. |
-| Upgrade/downgrade | `ChangePackage` → speed-tier modify order. |
-| Admin service page | VirtuTel service id, AVC id, provider status and recent orders. |
-| Client area | Connection status, AVC id, plan. |
-| WHMCS cron | Processes the queued webhook events every run (`hooks.php`). |
+| `modules/servers/virtutel_nbn/` | The core provisioning module: Virtutel API client (token auth, cached ~30-day tokens), qualification, product orders, appointments, webhooks/callbacks, RADIUS (FreeRADIUS SQL + CoA) provisioning, SMS + email notifications, diagnostics |
+| `modules/servers/virtutel_phone/` | Phone service module |
+| `modules/addons/virtutel_nbn_admin/` | Admin addon (dashboard/tools) |
+| `includes/hooks/virtutel_nbn.php` | Unconditional hook loader |
+| `modules/servers/virtutel_nbn/pages/` | Public signup portal (qualify, order, onboard, service test APIs) |
+| `templates/korvix-dark/` | Korvix dark WHMCS theme + invoice PDF |
+| `business/`, `personal/`, `residential/`, legal pages, `404.php`, `robots.txt`, `sitemap.xml` | Public site pages served from the WHMCS webroot |
 
-## Installation
+Database: `mod_virtutel_*` tables (settings, leads, tokens, services, orders,
+appointments, callback_events, ratelimit) are created/updated automatically by
+`lib/Migrations.php` — updates never need manual SQL.
 
-**From a release (recommended):** download `virtutelnbn-<version>.zip` from
-[GitHub Releases](https://github.com/VysionISP/WHMCSPLUGIN/releases) and run the
-updater script on the server (it auto-detects the WHMCS root, backs up any
-existing module version to /tmp, extracts, and fixes ownership/permissions):
+## WHMCS configuration (server record)
 
-```bash
-sudo bash scripts/updatewhmcsplugin.sh /path/to/virtutelnbn-<version>.zip
-```
+*System Settings → Products/Services → Servers*:
 
-Pass the WHMCS root as a second argument if auto-detection picks the wrong
-directory. Or do it manually — the ZIP is rooted at `modules/`:
+| Field | Value |
+|---|---|
+| **Hostname** | Virtutel API host — `mars.as24516.net` (default if blank) |
+| **Port** | `443` = production, `8443` = sandbox |
+| **Username** | Virtutel **client_id** |
+| **Password** | Virtutel **client_secret** (WHMCS-encrypted) |
+| **Access Hash** | **Callback base URL** — the public HTTPS base Virtutel should send webhooks to, e.g. `https://backend.korvix.co` |
 
-```bash
-unzip -o virtutelnbn-<version>.zip -d /path/to/whmcs
-```
+Access tokens are generated via `/oauth/tokens`, cached in
+`mod_virtutel_tokens`, kept warm by cron, and refreshed-and-retried once on any
+auth failure. **Test Connection** verifies auth *and* self-registers the
+callback URL with Virtutel.
 
-Then continue with the configuration steps below.
+Product **Module Settings**: module `Virtutel NBN`, plus
+**Speed Tier** (e.g. `100/20`, blank when using configurable options) and
+**RADIUS Group** (`radusergroup` applied to the product's services).
 
-**From source:** copy `modules/servers/virtutelnbn/` into your WHMCS
-installation (step 1 below).
+Service custom fields (**Location ID, Churn AVC, Authority Date, NTD ID,
+UNI-D Port, Copper Pair ID**) are created automatically on the product
+(admin-only) — do not create them by hand.
 
-## Updating
-
-Download the newer release ZIP and extract it over the top (same `unzip -o`
-command). That's the whole update: database migrations run automatically on
-the first request after the files change, and your server credentials, product
-settings and existing service/order data are untouched. When a newer release
-exists, the module shows a banner in the WHMCS admin area (checked once a day
-via the GitHub releases API — requires the repository's releases to be
-publicly visible).
-
-Cutting a release (for developers): bump `lib/Version.php`, commit, tag it
-`v<version>` and push the tag — the release workflow runs the tests, builds
-the ZIP and attaches it to a GitHub Release.
-
-## Configuration
-
-1. Copy `modules/servers/virtutelnbn/` into your WHMCS installation (skip if
-   you installed from a release ZIP).
-2. Create the server entry (Setup → Products/Services → Servers):
-   - **Hostname**: VirtuTel API base URL (HTTPS enforced)
-   - **Username**: VirtuTel Client ID
-   - **Password**: VirtuTel Client Secret (WHMCS stores it encrypted)
-   - **Access Hash**: webhook shared secret — generate with `openssl rand -hex 32`
-
-   You never enter an access token yourself: the module exchanges the Client
-   ID + Secret for a ~28-day token, caches it encrypted in the database
-   (`mod_virtutel_token`), renews it automatically 2 days before expiry
-   (checked on every WHMCS cron run), and refreshes immediately on a 401.
-3. Configure your NBN product(s): Module Settings tab → VirtuTel NBN Provisioning → set the Plan Code.
-4. Add two **custom fields** to each NBN product (admin-only or on order form as you prefer):
-   - `NBN Location ID` (preferred, e.g. `LOC000012345678`)
-   - `Service Address` (free-text fallback used for qualification)
-5. Register the webhook endpoint with VirtuTel:
-   `https://<your-whmcs>/modules/servers/virtutelnbn/webhook.php`
-   with the same shared secret you put in Access Hash.
-
-Database tables (`mod_virtutel_*`) are created automatically on first use.
-
-## Webhook security model
-
-- **HMAC-SHA256** over `"{timestamp}.{rawBody}"` with the shared secret,
-  sent in `X-Virtutel-Signature`; compared with `hash_equals` (constant time).
-- **Replay protection**: `X-Virtutel-Timestamp` must be within ±5 minutes.
-- **Idempotency**: every event carries an id, unique-indexed in
-  `mod_virtutel_webhook_event` — duplicate deliveries are acknowledged but not reprocessed.
-- **Fast ACK, async work**: the endpoint stores and returns 200; the WHMCS cron
-  processes the queue.
-- **Trust but verify**: critical transitions (active / cancelled / terminated) are
-  re-fetched from the VirtuTel API before WHMCS state changes.
-- Outbound calls: TLS verification on, bearer auth, bounded timeouts/retries,
-  secrets redacted from all logs.
-
-## Pending: VirtuTel API specification
-
-Endpoint paths, payload field names and webhook header names are a placeholder REST
-shape, isolated in `lib/Provider/Virtutel/`. Search for `TODO(virtutel-spec)` — those
-are the only places to adjust once the official spec/sandbox credentials are available.
-
-## Development
+## Install / update on the server
 
 ```bash
-cd modules/servers/virtutelnbn
-composer install
-composer test        # phpunit — lib/ runs without a live WHMCS
+sudo bash scripts/updatewhmcsplugin.sh /path/to/virtutel_nbn_v<version>.zip
 ```
 
-Architecture and data-model details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+The script validates the package, finds the WHMCS root (pass it as a second
+argument to override), backs up everything the overlay touches to
+`/tmp/virtutel_nbn-backup-<timestamp>.tar.gz`, extracts, and fixes
+ownership/permissions. Rollback = extract the backup tar over the WHMCS root.
+
+## Cutting a release
+
+1. Update `modules/servers/virtutel_nbn/VERSION` (first token is the version).
+2. Commit, then tag and push: `git tag v1.41.0 && git push origin v1.41.0`.
+3. GitHub Actions lints, verifies the tag matches VERSION, builds
+   `virtutel_nbn_v<version>.zip` and attaches it to a GitHub Release.
+
+`./build.sh` produces the same ZIP locally in `dist/`.

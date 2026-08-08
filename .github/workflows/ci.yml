@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,15 +20,10 @@ jobs:
           extensions: curl, json
           coverage: none
 
-      - name: Syntax check
+      - name: Syntax check all PHP
         run: |
-          find modules -name '*.php' -not -path '*/vendor/*' -print0 \
+          find . -name '*.php' -not -path './vendor/*' -print0 \
             | xargs -0 -n1 php -l
 
-      - name: Install dependencies
-        working-directory: modules/servers/virtutelnbn
-        run: composer install --no-interaction --no-progress
-
-      - name: Run unit tests
-        working-directory: modules/servers/virtutelnbn
-        run: ./vendor/bin/phpunit
+      - name: Build package
+        run: ./build.sh

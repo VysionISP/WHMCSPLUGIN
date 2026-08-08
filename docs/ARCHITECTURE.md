@@ -1,82 +1,56 @@
-# Architecture — VirtuTel NBN Provisioning Module
+# Architecture — Virtutel NBN Suite
 
-## Overview
+Canonical source imported from the production v1.40.x line. This doc is a
+map, not a spec — the code is the source of truth.
 
-A WHMCS server (provisioning) module. All business logic lives in a PSR-4
-autoloaded `lib/` (`Vysion\VirtutelNbn\`) so it is unit-testable without a
-running WHMCS; the WHMCS-facing files (`virtutelnbn.php`, `hooks.php`,
-`webhook.php`) are thin adapters.
+## Core provisioning module (`modules/servers/virtutel_nbn/`)
 
-```
-WHMCS billing events ──> virtutelnbn.php ──> ProvisioningService ──> ProviderInterface ──> VirtuTel API
-                                                     │
-                                                     └──> mod_virtutel_service / mod_virtutel_order
+- **`lib/Api/`** — `VirtutelClient` (endpoint catalogue for
+  `https://<host>:<port>/api/v1`: `/oauth/tokens`, `/locations`,
+  `/service-qualifications`, `/product-order-qualifications`,
+  `/product-orders`, `/appointments{,/timeslots}`, `/services`,
+  `/suspensions`, `/callbacks/{urls,tests}`), `HttpClient` (masked logging),
+  `TokenStore` (cached ~30-day bearer tokens per environment, proactive
+  refresh, single refresh-and-retry on auth errors), `ApiResponse`,
+  `ApiException`.
+- **`lib/Service/`** — provisioning orchestration (`ProvisioningService`,
+  `LifecycleService`, `OrderPayloadBuilder`, `OrderCompletion`,
+  `ConnectReadiness`), qualification (`QualificationService`), appointments
+  (`AppointmentService`, booking page), signup capture, speed tiers,
+  `CustomFields` (auto-creates admin-only service fields: Location ID,
+  Churn AVC, Authority Date, NTD ID, UNI-D Port, Copper Pair ID),
+  notifications (`EmailNotifier`, `Sms`), `CallbackRegistrar` (self-registers
+  the webhook URL from the server record's Access Hash field),
+  `RateLimiter`, `Diagnostics`, `StatusMapper`.
+- **`lib/Webhook/`** — `callback/webhook.php` endpoint →
+  `CallbackAuthenticator` / `CallbackEnvelope` / `CallbackDispatcher` →
+  `Handlers/` (OrderStatus, ServiceStatus, ServiceHealth, ServiceTest,
+  Appointment).
+- **`lib/Radius/`** — FreeRADIUS SQL provisioning + CoA client so active
+  services get session credentials; product config option `radius_group`.
+- **`lib/Migrations.php`** — creates/evolves `mod_virtutel_settings`,
+  `mod_virtutel_leads`, `mod_virtutel_ratelimit`, `mod_virtutel_tokens`,
+  `mod_virtutel_services`, `mod_virtutel_orders`,
+  `mod_virtutel_appointments`, `mod_virtutel_callback_events`.
+- **`hooks.php`** — cron (Daily + AfterCron: token keep-warm, queues),
+  checkout capture/validation, extensive client-area UI hooks;
+  `includes/hooks/virtutel_nbn.php` guarantees loading.
+- **`pages/`** — public signup portal (qualify/order/onboard + JSON APIs,
+  service test) rendered through `site-shell.php`.
 
-VirtuTel webhooks ──> webhook.php ──> WebhookController (verify+dedupe+store)
-                                              │
-WHMCS cron (hooks.php) ──> EventProcessor ────┴──> StatusMapper ──> WHMCS service status
-                                (re-fetches order state from the API on critical transitions)
-```
+## Companions
 
-## Layers
+- `modules/servers/virtutel_phone/` — phone service module.
+- `modules/addons/virtutel_nbn_admin/` — admin addon.
+- `templates/korvix-dark/` — WHMCS theme + invoice PDF template.
+- Webroot pages (`business/`, `personal/`, legal pages, robots/sitemap).
 
-- **`Provider/`** — `ProviderInterface` abstracts the upstream carrier
-  (qualify / connect / modify / suspend / unsuspend / disconnect / getOrder /
-  getService / ping). `Provider/Virtutel/` is the only code that knows
-  VirtuTel's wire format; a second carrier is a new implementation, no other
-  changes.
-- **`Service/`** — orchestration (`ProvisioningService`), NBN service
-  qualification (`QualificationService`), and pure status mapping
-  (`StatusMapper`).
-- **`Webhook/`** — inbound pipeline. `WebhookController` verifies + stores;
-  `EventProcessor` runs on the WHMCS cron and applies state changes.
-- **`Repository/`** — Capsule (Laravel query builder) access to the module's
-  tables. `Installer` creates them lazily (server modules have no activation
-  hook).
+## Release engineering (this repo)
 
-## Data model
-
-| Table | Purpose | Key relationships |
-|---|---|---|
-| `mod_virtutel_service` | Bridge between WHMCS `tblhosting` and the carrier service (AVC id, LOC id, plan, status) | 1:1 `tblhosting.id` |
-| `mod_virtutel_order` | Every upstream mutation (connect/modify/disconnect) with request/response audit | N:1 service |
-| `mod_virtutel_webhook_event` | Inbound event queue; `external_event_id` unique → idempotency | N:1 order (nullable — matched during processing) |
-| `mod_virtutel_api_log` | Redacted outbound request/response log | standalone |
-
-Status vocabulary: provider strings → internal
-(`pending / in_progress / held / active / suspended / cancelled / terminated`)
-→ WHMCS `domainstatus` (only for terminal-ish states; order-progress statuses
-don't touch WHMCS state).
-
-## Security decisions
-
-1. Secrets live in the WHMCS server record (Username = Client ID, Password =
-   Client Secret, WHMCS-encrypted); never in code. Access tokens obtained from
-   them are cached WHMCS-encrypted in `mod_virtutel_token`.
-2. Auth: OAuth2-style client-credentials flow (`Auth/TokenManager`). VirtuTel
-   issues ~28-day access tokens; the manager renews 2 days before expiry, a
-   cron keep-alive (hooks.php) guarantees renewal even with no traffic, and a
-   401 from the API triggers exactly one forced refresh + retry in
-   `VirtutelClient`.
-3. Outbound: HTTPS enforced at config parse time, TLS peer verification on,
-   bounded timeouts and retries, bearer auth, log redaction
-   (`VirtutelClient::redact`).
-4. Inbound: HMAC-SHA256 over `timestamp.body`, constant-time compare, ±300 s
-   replay window, 1 MiB payload cap, POST-only, generic error bodies,
-   unique-event-id idempotency.
-5. Webhook payloads are treated as *signals*, not facts: transitions to
-   active/cancelled/terminated re-fetch the order from the API before WHMCS
-   state changes.
-6. Processing is asynchronous (cron) so the public endpoint does minimal work
-   under attacker-controllable input.
-
-## Incremental roadmap
-
-1. ✅ Skeleton, installer, config, TestConnection, unit tests.
-2. ✅ API client + qualification + CreateAccount happy path (placeholder wire
-   format pending VirtuTel spec — grep `TODO(virtutel-spec)`).
-3. ✅ Webhook pipeline + cron processor + status sync + admin/client views.
-4. ⬜ Bind wire format to the official VirtuTel API spec; sandbox end-to-end test.
-5. ⬜ Order-status history table in admin UI, notifications (ticket/email on held
-   orders), optional IP allowlist for the webhook endpoint.
-6. ⬜ Second provider implementation if/when required.
+- `build.sh` → `dist/virtutel_nbn_v<version>.zip`, version read from
+  `modules/servers/virtutel_nbn/VERSION`, ZIP rooted at the WHMCS webroot.
+- `scripts/updatewhmcsplugin.sh` → validated install/update with full
+  overlay backup to /tmp and ownership/permission normalisation.
+- CI (`.github/workflows/ci.yml`): php -l on 8.1–8.3 + package build.
+- Releases (`.github/workflows/release.yml`): tag `v*` must match VERSION;
+  builds and attaches the ZIP to a GitHub Release.

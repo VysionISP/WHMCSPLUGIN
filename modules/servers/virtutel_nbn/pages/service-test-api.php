@@ -1,0 +1,117 @@
+<?php
+
+/**
+ * Client-area diagnostics API (JSON): runs/polls customer self-serve line
+ * checks. Auth is explicit: a logged-in client session whose account owns
+ * the service — WHMCS's modop=custom dispatch bounced fetch requests to
+ * the login page, so this endpoint replaces it.
+ */
+
+use WHMCS\Database\Capsule;
+use WHMCS\Module\Server\VirtutelNbn\Migrations;
+use WHMCS\Module\Server\VirtutelNbn\Repository\Settings;
+use WHMCS\Module\Server\VirtutelNbn\Service\Diagnostics;
+
+require_once __DIR__ . '/../../../../init.php';
+require_once __DIR__ . '/../lib/Autoloader.php';
+
+header('Content-Type: application/json');
+header('Cache-Control: no-store, max-age=0');
+
+$respond = function (int $status, array $payload): void {
+    http_response_code($status);
+    echo json_encode($payload);
+    exit;
+};
+
+$uid = (int) ($_SESSION['uid'] ?? 0);
+if ($uid === 0) {
+    $respond(401, ['ok' => false, 'error' => 'Please log in and try again.']);
+}
+
+$serviceId = (int) ($_REQUEST['serviceid'] ?? 0);
+$owned = $serviceId > 0 && Capsule::table('tblhosting')
+    ->where('id', $serviceId)
+    ->where('userid', $uid)
+    ->exists();
+if (!$owned) {
+    $respond(403, ['ok' => false, 'error' => 'That service isn\'t on your account.']);
+}
+
+try {
+    Migrations::ensure();
+    $action = (string) ($_REQUEST['do'] ?? '');
+
+    if ($action === 'run') {
+        // CSRF hardening: line resets are state-changing, so require POST
+        // and a same-origin Origin/Referer — a hostile page must not be
+        // able to drop a customer's connection via an embedded URL.
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            $respond(405, ['ok' => false, 'error' => 'POST required.']);
+        }
+        $ownHost = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
+        $srcHost = '';
+        foreach (['HTTP_ORIGIN', 'HTTP_REFERER'] as $header) {
+            $value = (string) ($_SERVER[$header] ?? '');
+            if ($value !== '') {
+                $srcHost = strtolower((string) (parse_url($value, PHP_URL_HOST) ?? ''));
+                break;
+            }
+        }
+        if ($ownHost === '' || $srcHost !== $ownHost) {
+            $respond(403, ['ok' => false, 'error' => 'Cross-origin request refused.']);
+        }
+
+        $testType = strtoupper(trim((string) ($_REQUEST['testtype'] ?? '')));
+
+        $row = Capsule::table('mod_virtutel_services')
+            ->where('whmcs_service_id', $serviceId)
+            ->first();
+        $allowed = $row
+            ? Diagnostics::customerTests((string) ($row->technology_type ?? ''))
+            : [];
+        if (!isset($allowed[$testType])) {
+            $respond(422, ['ok' => false, 'error' => 'That test isn\'t available for your service.']);
+        }
+
+        // 5 customer-initiated tests per service per day.
+        $key = 'ctests_' . $serviceId . '_' . date('Ymd');
+        $count = (int) (Settings::get($key, '0') ?? '0');
+        if ($count >= 5) {
+            $respond(429, ['ok' => false,
+                'error' => 'Daily test limit reached — contact us if you\'re still having trouble.']);
+        }
+        Settings::set($key, (string) ($count + 1));
+
+        try {
+            $respond(200, Diagnostics::queue($serviceId, $testType));
+        } catch (\WHMCS\Module\Server\VirtutelNbn\Api\ApiException $e) {
+            // The carrier API rejected the request — its reason is safe to
+            // show (e.g. "test not allowed for this service type", rate
+            // limit) and beats a generic try-again.
+            if (function_exists('logActivity')) {
+                logActivity(sprintf(
+                    'Virtutel NBN: client test %s rejected for service #%d: %s [%s/%d]',
+                    $testType,
+                    $serviceId,
+                    $e->getMessage(),
+                    $e->getShortError(),
+                    $e->getHttpStatus()
+                ));
+            }
+            $respond(502, ['ok' => false,
+                'error' => 'The network couldn\'t run this check: ' . $e->getMessage()]);
+        }
+    }
+
+    if ($action === 'status') {
+        $respond(200, Diagnostics::statusHtml($serviceId, (string) ($_REQUEST['testid'] ?? '')));
+    }
+
+    $respond(422, ['ok' => false, 'error' => 'Unknown action.']);
+} catch (\Throwable $e) {
+    if (function_exists('logActivity')) {
+        logActivity('Virtutel NBN: client test API error: ' . $e->getMessage());
+    }
+    $respond(500, ['ok' => false, 'error' => 'The check could not be started — please try again shortly.']);
+}

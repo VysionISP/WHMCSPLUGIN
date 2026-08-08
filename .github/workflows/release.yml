@@ -19,25 +19,22 @@ jobs:
           extensions: curl, json
           coverage: none
 
-      - name: Install dependencies
-        working-directory: modules/servers/virtutelnbn
-        run: composer install --no-interaction --no-progress
-
-      - name: Run unit tests
-        working-directory: modules/servers/virtutelnbn
-        run: ./vendor/bin/phpunit
-
-      - name: Verify tag matches Version.php
+      - name: Syntax check all PHP
         run: |
-          CODE_VERSION=$(php -r "require 'modules/servers/virtutelnbn/lib/Version.php'; echo \Vysion\VirtutelNbn\Version::VERSION;")
+          find . -name '*.php' -not -path './vendor/*' -print0 \
+            | xargs -0 -n1 php -l
+
+      - name: Verify tag matches VERSION file
+        run: |
+          CODE_VERSION=$(awk '{print $1; exit}' modules/servers/virtutel_nbn/VERSION)
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           if [ "$CODE_VERSION" != "$TAG_VERSION" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match Version::VERSION ($CODE_VERSION)." >&2
-            echo "Bump lib/Version.php before tagging." >&2
+            echo "Tag $GITHUB_REF_NAME does not match VERSION file ($CODE_VERSION)." >&2
+            echo "Update modules/servers/virtutel_nbn/VERSION before tagging." >&2
             exit 1
           fi
 
-      - name: Build module ZIP
+      - name: Build package ZIP
         run: ./build.sh
 
       - name: Create GitHub Release with ZIP
@@ -45,5 +42,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "$GITHUB_REF_NAME" dist/*.zip \
-            --title "VirtuTel NBN module $GITHUB_REF_NAME" \
+            --title "Virtutel NBN suite $GITHUB_REF_NAME" \
             --generate-notes

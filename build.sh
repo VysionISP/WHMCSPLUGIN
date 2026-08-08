@@ -1,21 +1,28 @@
 #!/usr/bin/env bash
-# Package the module into an installable ZIP: dist/virtutelnbn-<version>.zip
-# The ZIP is rooted at modules/, so it extracts straight into a WHMCS root:
-#   unzip -o virtutelnbn-<version>.zip -d /path/to/whmcs
+# Package the Virtutel suite into an installable ZIP:
+#   dist/virtutel_nbn_v<version>.zip
+# The ZIP is rooted at the WHMCS webroot (modules/, templates/, pages, ...)
+# so it extracts straight over an install:
+#   sudo bash scripts/updatewhmcsplugin.sh dist/virtutel_nbn_v<version>.zip
 set -euo pipefail
 cd "$(dirname "$0")"
 
-VERSION=$(php -r "require 'modules/servers/virtutelnbn/lib/Version.php'; echo \Vysion\VirtutelNbn\Version::VERSION;")
-OUT="dist/virtutelnbn-${VERSION}.zip"
+VERSION=$(awk '{print $1; exit}' modules/servers/virtutel_nbn/VERSION)
+OUT="dist/virtutel_nbn_v${VERSION}.zip"
+
+# Everything that belongs on the server — repo tooling (scripts/, .github/,
+# docs/, build.sh, README) deliberately excluded.
+OVERLAY=(
+    modules includes templates assets
+    business personal residential residental
+    terms privacy acceptable-use complaints financial-hardship
+    critical-information contact
+    404.php robots.txt sitemap.xml
+)
 
 mkdir -p dist
 rm -f "$OUT"
-
-zip -r "$OUT" modules/servers/virtutelnbn \
-    -x 'modules/servers/virtutelnbn/vendor/*' \
-    -x 'modules/servers/virtutelnbn/tests/*' \
-    -x 'modules/servers/virtutelnbn/phpunit.xml' \
-    -x 'modules/servers/virtutelnbn/composer.lock' \
-    -x 'modules/servers/virtutelnbn/.phpunit.result.cache'
+zip -rq "$OUT" "${OVERLAY[@]}"
 
 echo "Built ${OUT}"
+unzip -l "$OUT" | tail -1

@@ -1,0 +1,25 @@
+{
+    "schema": "1.0",
+    "type": "whmcs-servers",
+    "name": "virtutel_nbn",
+    "license": "proprietary",
+    "category": "provisioning",
+    "description": {
+        "name": "Virtutel NBN",
+        "tagline": "Automated NBN provisioning via the Virtutel Customer API",
+        "long": "Provisions, modifies and manages NBN services through the Virtutel Customer API, including service qualification, connect/churn orders, appointments, callback-driven status sync, and FreeRADIUS (IPoE) subscriber provisioning.",
+        "features": [
+            "Service qualification by address or NBN Location ID",
+            "Connect, churn, modify and disconnect orders",
+            "Asynchronous callback (webhook) status tracking",
+            "Appointment management",
+            "FreeRADIUS IPoE provisioning keyed on AVC ID"
+        ]
+    },
+    "authors": [
+        {
+            "name": "Vysion",
+            "homepage": "https://vysion.com.au"
+        }
+    ]
+}

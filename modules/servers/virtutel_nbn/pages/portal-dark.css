@@ -1,0 +1,757 @@
+/**
+ * Korvix Dark v2 — full visual overhaul for the WHMCS client area
+ * (Twenty-One template), injected via the module's Dark Portal Theme
+ * toggle. Modern hosting-SaaS aesthetic: gradient accents, glassy nav,
+ * rounded cards, pill buttons.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --kx-bg: #0b101c;
+  --kx-bg-deep: #070b14;
+  --kx-surface: #131a2b;
+  --kx-surface-2: #1a2338;
+  --kx-surface-3: #222d47;
+  --kx-border: #263251;
+  --kx-text: #e8ecf6;
+  --kx-muted: #a6b2cc;
+  --kx-brand: #4d8dff;
+  --kx-brand-2: #7a5cff;
+  --kx-brand-deep: #2f6fe0;
+  --kx-gradient: linear-gradient(135deg, #4d8dff 0%, #7a5cff 100%);
+  --kx-green: #2fbf71;
+  --kx-amber: #e2a336;
+  --kx-red: #e2564a;
+  --kx-radius: 14px;
+  --kx-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  --kx-glow: 0 0 0 1px rgba(77, 141, 255, .25), 0 8px 30px rgba(77, 141, 255, .12);
+}
+
+/* ---------- Base & typography ---------- */
+body {
+  background: var(--kx-bg) !important;
+  background-image: radial-gradient(1200px 500px at 80% -10%, rgba(122, 92, 255, .10), transparent 60%),
+                    radial-gradient(900px 400px at 10% -10%, rgba(77, 141, 255, .10), transparent 60%) !important;
+  background-attachment: fixed !important;
+  color: var(--kx-text) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+  letter-spacing: .01em;
+}
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, legend, label, dt, .card-title {
+  color: var(--kx-text) !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-weight: 700 !important;
+}
+a { color: var(--kx-brand); text-decoration: none; }
+a:hover, a:focus { color: #8ab2ff; }
+hr { border-color: var(--kx-border); }
+.text-muted, .text-secondary, small, .small { color: var(--kx-muted) !important; }
+.bg-white, .bg-light { background-color: var(--kx-surface) !important; }
+
+/* ---------- Top utility bar: minimal, glassy ---------- */
+#header, .header, .navbar-light, .navbar-default {
+  background: rgba(7, 11, 20, .85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 0 !important;
+  box-shadow: none !important;
+}
+/* The whole nav layer stacks above page content, so open dropdowns can
+   never be painted over by cards (which sit in later DOM order). */
+#header, .header { position: relative; z-index: 1040 !important; }
+#main-menu, nav.navbar { position: relative; z-index: 1039 !important; }
+/* Header search: ONE clean pill — the group is the pill, everything
+   inside is transparent and borderless. */
+#header .input-group, .header .input-group {
+  background: rgba(19, 26, 43, .85) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 999px !important;
+  overflow: hidden;
+  align-items: center;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+#header .input-group:focus-within, .header .input-group:focus-within {
+  border-color: var(--kx-brand) !important;
+  box-shadow: 0 0 0 3px rgba(77, 141, 255, .2) !important;
+}
+#header .input-group .form-control, .header .input-group .form-control,
+#header .input-group input[type=text], .header .input-group input[type=text] {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding-left: 4px !important;
+}
+#header .input-group .input-group-text, .header .input-group .input-group-text,
+#header .input-group .input-group-prepend .input-group-text {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--kx-muted) !important;
+  padding-left: 16px;
+}
+/* standalone header inputs (no group) still get the pill themselves */
+#header > .form-control, #header input.form-control:not(.input-group *) {
+  border-radius: 999px !important;
+  background: rgba(19, 26, 43, .85) !important;
+  border: 1px solid var(--kx-border) !important;
+}
+#header .badge, .header .badge {
+  background: var(--kx-gradient) !important;
+  color: #fff !important;
+}
+
+/* ---------- Main nav: full-width glass bar (no geometry overrides —
+   Twenty-One controls the sizing, we control the look) ---------- */
+#main-menu, #main-menu .navbar, #main-menu.navbar {
+  background: rgba(14, 19, 33, .88) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 0 !important;
+  border-bottom: 1px solid var(--kx-border) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .25) !important;
+  overflow: visible !important;
+}
+
+/* Nav links: quiet by default, gradient underline slides in */
+.navbar .navbar-nav .nav-link, .navbar .nav > li > a, #main-menu .nav > li > a {
+  position: relative;
+  color: #d6dcea !important;
+  font-size: 15px;
+  font-weight: 600 !important;
+  background: transparent !important;
+  transition: color .15s ease;
+}
+.navbar .navbar-nav .nav-link::after, #main-menu .nav > li > a::after {
+  content: '';
+  position: absolute;
+  left: 12px; right: 12px; bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--kx-gradient);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .22s ease;
+}
+.navbar .navbar-nav .nav-link:hover, .navbar .nav > li > a:hover,
+#main-menu .nav > li > a:hover,
+#main-menu .nav > li.active > a, .navbar .navbar-nav .nav-item.active .nav-link {
+  color: #fff !important;
+  background: transparent !important;
+}
+.navbar .navbar-nav .nav-link:hover::after, #main-menu .nav > li > a:hover::after,
+#main-menu .nav > li.active > a::after, .navbar .navbar-nav .nav-item.active .nav-link::after {
+  transform: scaleX(1);
+}
+
+/* Account / right-side actions as a gradient pill */
+#main-menu .navbar-nav.ml-auto > li > a, #main-menu .nav.navbar-right > li > a,
+.navbar .navbar-nav.ml-auto .nav-link.dropdown-toggle {
+  background: var(--kx-gradient) !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+  box-shadow: 0 6px 18px rgba(77, 141, 255, .3);
+}
+#main-menu .navbar-nav.ml-auto > li > a::after,
+.navbar .navbar-nav.ml-auto .nav-link.dropdown-toggle::after { display: inline-block; position: static; transform: none; height: auto; background: none; }
+#main-menu .navbar-nav.ml-auto > li > a:hover { filter: brightness(1.1); }
+
+/* Mobile toggler */
+.navbar-toggler { border-color: var(--kx-border) !important; }
+.navbar-toggler-icon { filter: invert(1); }
+
+/* Belt-and-braces: ANY link living in the header or nav bars renders
+   bright, whatever markup Twenty-One uses for it. */
+#header a, .header a, #main-menu a, nav.navbar a, #main-menu li > a,
+#header .nav-link, #main-menu .nav-link, .navbar li > a,
+#main-menu .dropdown-toggle, #header .dropdown-toggle {
+  color: #dde3f0 !important;
+}
+#header a:hover, .header a:hover, #main-menu a:hover, nav.navbar a:hover,
+#main-menu li > a:hover, .navbar li > a:hover {
+  color: #ffffff !important;
+}
+.header-lined h1 { font-weight: 800 !important; letter-spacing: -.02em; }
+.header-lined { border-color: var(--kx-border) !important; }
+
+/* Logo: dark artwork inverted to white, sized for the bar. */
+#header img, .navbar-brand img, .logo img, #logo img, .header .logo img {
+  filter: invert(1) hue-rotate(180deg) brightness(1.05);
+  /* keep in step with .kx-nav .logo img in site-shell.php */
+  max-height: 36px !important;
+  width: auto !important;
+  padding: 0 !important;
+}
+.navbar-brand, #logo { padding-top: 8px !important; padding-bottom: 8px !important; }
+
+/* Breadcrumb strip: no more light band under the nav. */
+.breadcrumb, .breadcrumb-container, [class*="breadcrumb"], nav[aria-label="breadcrumb"],
+.top-nav-breadcrumb, .container-fluid.header-lined, .app-header-sub {
+  background: transparent !important;
+  border: 0 !important;
+}
+.breadcrumb .breadcrumb-item, .breadcrumb li, .breadcrumb a { color: var(--kx-muted) !important; }
+.breadcrumb .breadcrumb-item.active { color: var(--kx-text) !important; }
+.breadcrumb-item + .breadcrumb-item::before { color: var(--kx-muted) !important; }
+
+/* ---------- Footer ---------- */
+#footer, .footer, footer {
+  background: var(--kx-bg-deep) !important;
+  color: var(--kx-muted) !important;
+  border-top: 1px solid var(--kx-border) !important;
+}
+#footer a, .footer a, footer a { color: var(--kx-muted) !important; }
+#footer a:hover, .footer a:hover { color: var(--kx-text) !important; }
+
+/* ---------- Cards / panels: rounded, soft-shadowed ---------- */
+.card, .panel, .well, .tile, .modal-content, .popover, .jumbotron {
+  background: var(--kx-surface) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: var(--kx-radius) !important;
+  box-shadow: var(--kx-shadow) !important;
+  color: var(--kx-text) !important;
+  overflow: hidden;
+}
+.card-header, .panel-heading, .modal-header {
+  background: var(--kx-surface-2) !important;
+  border-bottom: 1px solid var(--kx-border) !important;
+  color: var(--kx-text) !important;
+  font-weight: 600 !important;
+}
+.card-footer, .panel-footer {
+  background: transparent !important;
+  border-top: 1px solid var(--kx-border) !important;
+}
+/* Empty/near-empty footers render as odd strips — remove them. */
+.card-footer:empty, .panel-footer:empty { display: none !important; }
+.modal-footer {
+  background: var(--kx-surface-2) !important;
+  border-top: 1px solid var(--kx-border) !important;
+}
+
+/* ---------- Rhythm: consistent gaps and breathing room ---------- */
+.card, .panel, .tile { margin-bottom: 24px !important; }
+.card .card, .panel .panel, td .card { margin-bottom: 0 !important; }
+.card-header, .panel-heading { padding: 14px 20px !important; }
+.card-body, .panel-body { padding: 20px 22px !important; }
+.list-group-item { padding: 13px 20px !important; }
+#main-body, .main-content { padding-top: 10px; }
+.header-lined { margin-bottom: 18px !important; padding-bottom: 12px !important; }
+.card:hover { border-color: #2f3d63 !important; }
+.list-group-item {
+  background: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.list-group-item.active {
+  background: var(--kx-gradient) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+.list-group-item-action:hover { background: var(--kx-surface-2) !important; }
+
+/* ---------- Buttons: pills, gradient primary ---------- */
+.btn {
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+  letter-spacing: .01em;
+  transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary, .btn-success {
+  background: var(--kx-gradient) !important;
+  border: 0 !important;
+  color: #fff !important;
+  box-shadow: 0 6px 20px rgba(77, 141, 255, .35) !important;
+}
+.btn-primary:hover, .btn-success:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 8px 26px rgba(77, 141, 255, .45) !important;
+}
+.btn-default, .btn-light, .btn-secondary, .btn-outline-secondary, .btn-info {
+  background: var(--kx-surface-2) !important;
+  border: 1px solid var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.btn-default:hover, .btn-light:hover, .btn-secondary:hover, .btn-outline-secondary:hover {
+  background: var(--kx-surface-3) !important;
+  color: #fff !important;
+}
+.btn-danger { background: var(--kx-red) !important; border: 0 !important; }
+.btn-link { color: var(--kx-brand) !important; }
+
+/* ---------- Tables ---------- */
+.table { color: var(--kx-text) !important; border-color: var(--kx-border) !important; }
+.table th, .table td { border-color: var(--kx-border) !important; vertical-align: middle; }
+.table thead th, .table thead td, table.dataTable thead th {
+  background: var(--kx-surface-2) !important;
+  color: #b6c0d8 !important;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: .08em;
+  border-color: var(--kx-border) !important;
+}
+/* EVERY table body row dark, whatever table class WHMCS/DataTables/
+   standard_cart uses — a dark theme has no white rows, full stop. */
+table tbody tr, table tbody tr.odd, table tbody tr.even, .view-cart .item {
+  background: var(--kx-surface) !important;
+}
+/* standard_cart's viewcart "rows" are DIVS, not table rows:
+   .view-cart-items > .item carries the white. */
+.view-cart-items { background: transparent !important; }
+.view-cart-items .item {
+  background: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.view-cart-items .item .item-title { color: var(--kx-text) !important; }
+.view-cart-items .item .item-group,
+.view-cart-items .item .cycle { color: var(--kx-muted) !important; }
+.view-cart-items .item .item-price,
+.view-cart-items .item .item-price span { color: var(--kx-text) !important; }
+/* Empty Cart: quiet ghost button, not a glowing pill jammed on the
+   divider — it's a destructive afterthought, not a call to action. */
+#btnEmptyCart,
+button[onclick*="emptyCart"], a[onclick*="emptyCart"],
+.btn-empty-cart {
+  background: transparent !important;
+  background-image: none !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 8px !important;
+  color: var(--kx-muted) !important;
+  font-size: 12.5px !important;
+  padding: 5px 14px !important;
+  margin-top: 12px !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+}
+#btnEmptyCart:hover,
+button[onclick*="emptyCart"]:hover, a[onclick*="emptyCart"]:hover,
+.btn-empty-cart:hover {
+  color: #e2564a !important;
+  border-color: rgba(226, 86, 74, .5) !important;
+  background: rgba(226, 86, 74, .08) !important;
+}
+table tbody tr:nth-of-type(even), table tbody tr.even { background: var(--kx-surface-2) !important; }
+table tbody td, table tbody th { color: var(--kx-text) !important; }
+/* Some templates (standard_cart's viewcart) paint the CELLS white or use
+   Bootstrap's inset stripe shadow on them — the row rule above can't win
+   from the tr, so neutralise cell backgrounds too. */
+table tbody td, table tbody th {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+/* ...and the white can sit on the TABLE / tbody / wrapper element itself
+   (standard_cart gives the whole table a white canvas), which shows
+   straight through transparent rows and cells. */
+table, .table, tbody, tfoot,
+.table-responsive, .view-cart-tables, .view-cart-items {
+  background-color: transparent !important;
+}
+/* Template stripe rules like .table-striped>tbody>tr:nth-of-type(odd)
+   carry more specificity than a bare `table tbody tr`, and when both are
+   !important the more specific one wins — outrank them outright. */
+html body table > tbody > tr,
+html body .table-striped > tbody > tr:nth-of-type(odd),
+html body .table-striped > tbody > tr:nth-of-type(even),
+html body .table > tbody > tr {
+  background-color: var(--kx-surface) !important;
+}
+table tbody tr:hover { background: var(--kx-surface-3) !important; }
+table tbody td small, table tbody td .text-muted { color: var(--kx-muted) !important; }
+
+/* Notifications popover (opens from the header bell) */
+.popover { background: var(--kx-surface-2) !important; border: 1px solid var(--kx-border) !important; }
+.popover .popover-body { color: var(--kx-text) !important; }
+.popover .arrow:after, .popover .arrow:before { border-bottom-color: var(--kx-surface-2) !important; }
+.client-alerts a { color: var(--kx-text) !important; }
+.client-alerts a:hover { color: #fff !important; }
+.client-alerts .message { color: var(--kx-muted) !important; }
+
+/* NBN details block inside the cart line item */
+.vt-nbn-inline { color: var(--kx-muted) !important; }
+.vt-nbn-inline span { color: var(--kx-muted) !important; }
+.vt-nbn-inline b { color: var(--kx-text) !important; }
+.dataTables_wrapper, .dataTables_info, .dataTables_filter, .dataTables_length { color: var(--kx-muted) !important; }
+
+/* ---------- Forms ---------- */
+.form-control, .custom-select, select, textarea,
+input[type=text], input[type=email], input[type=password], input[type=number],
+input[type=tel], input[type=search] {
+  background: var(--kx-bg-deep) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 10px !important;
+  color: var(--kx-text) !important;
+}
+.form-control:focus, .custom-select:focus {
+  border-color: var(--kx-brand) !important;
+  box-shadow: 0 0 0 3px rgba(77, 141, 255, .22) !important;
+}
+.form-control::placeholder { color: #74809c !important; }
+.form-control:disabled, .form-control[readonly] { background: var(--kx-surface-2) !important; }
+.input-group-text {
+  background: var(--kx-surface-2) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-muted) !important;
+}
+.field-help-text, .form-text { color: var(--kx-muted) !important; }
+
+/* ---------- Input groups everywhere: one joined control ----------
+   The group is the visible field (border, radius, focus glow); icons,
+   inputs, and attached buttons are flat segments inside it. */
+.input-group {
+  background: var(--kx-bg-deep) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  align-items: stretch;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.input-group:focus-within {
+  border-color: var(--kx-brand) !important;
+  box-shadow: 0 0 0 3px rgba(77, 141, 255, .2) !important;
+}
+.input-group .form-control, .input-group input, .input-group select {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.input-group .input-group-text,
+.input-group .input-group-prepend .input-group-text,
+.input-group .input-group-append .input-group-text {
+  background: var(--kx-surface-2) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--kx-muted) !important;
+}
+.input-group .btn {
+  border-radius: 0 !important;
+  background: var(--kx-surface-2) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--kx-muted) !important;
+  margin: 0 !important;
+}
+.input-group .btn:hover { color: #fff !important; background: var(--kx-surface-3) !important; }
+
+/* ---------- Dropdowns / tabs / pagination ---------- */
+.dropdown-menu {
+  background: var(--kx-surface) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--kx-shadow) !important;
+}
+/* Menus float above sidebars/cards, sized to their content. */
+.dropdown-menu {
+  z-index: 2000 !important;
+  padding: 8px !important;
+  min-width: 220px;
+}
+/* Items carry their own solid background so a short/clipped menu panel
+   can never leave entries floating transparent over the page. */
+.dropdown-item, .dropdown-menu > li > a, .dropdown-menu a {
+  background-color: var(--kx-surface) !important;
+  color: var(--kx-text) !important;
+}
+.dropdown-item:hover, .dropdown-menu > li > a:hover, .dropdown-menu a:hover {
+  background-color: var(--kx-surface-2) !important;
+  color: #fff !important;
+}
+.dropdown-divider { border-color: var(--kx-border) !important; }
+.nav-tabs { border-color: var(--kx-border) !important; }
+.nav-tabs .nav-link { color: var(--kx-muted) !important; border: 0 !important; font-weight: 600; }
+.nav-tabs .nav-link.active {
+  background: transparent !important;
+  color: var(--kx-brand) !important;
+  border-bottom: 2px solid var(--kx-brand) !important;
+  border-radius: 0 !important;
+}
+.pagination .page-link {
+  background: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.pagination .page-item.active .page-link { background: var(--kx-gradient) !important; border-color: transparent !important; }
+
+/* ---------- Alerts / badges ---------- */
+.alert { border-radius: 12px !important; }
+.alert-success { background: #10271b !important; border-color: #1d5c38 !important; color: #7fdcaa !important; }
+.alert-info { background: #101f33 !important; border-color: #1d4c7c !important; color: #8dbdf3 !important; }
+.alert-warning { background: #2b220f !important; border-color: #6b531f !important; color: #ecc575 !important; }
+.alert-danger { background: #2d120f !important; border-color: #722a24 !important; color: #f0968d !important; }
+.badge, .label { border-radius: 999px !important; font-weight: 600 !important; }
+.badge-secondary, .label-default { background: var(--kx-surface-3) !important; color: var(--kx-text) !important; }
+
+/* ---------- Home page tiles ---------- */
+.tiles .tile, .client-home-panels .card { border-radius: var(--kx-radius) !important; }
+.tiles .tile .stat, .tiles .tile .title { color: var(--kx-text) !important; }
+.home-shortcuts {
+  background: var(--kx-surface) !important;
+  border-color: var(--kx-border) !important;
+  border-radius: var(--kx-radius) !important;
+}
+
+/* Knowledgebase search: fully removed, every page (home, KB, support). */
+.search-container, #searchBox,
+form:has(input[placeholder*="knowledgebase" i]),
+input[placeholder*="knowledgebase" i] {
+  display: none !important;
+}
+
+/* ---------- Order form: products as pricing cards ---------- */
+.view-cart .products .product, .products .product {
+  background: var(--kx-surface) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: var(--kx-radius) !important;
+  box-shadow: var(--kx-shadow) !important;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.view-cart .products .product:hover, .products .product:hover {
+  transform: translateY(-3px);
+  border-color: rgba(77, 141, 255, .5) !important;
+  box-shadow: var(--kx-glow) !important;
+}
+/* Everything inside a product card renders bright — names, prices,
+   descriptions — with inner slabs flattened into the card. */
+.products .product, .products .product * {
+  color: var(--kx-text) !important;
+  opacity: 1 !important;
+}
+.products .product header, .products .product header *,
+.products .product .product-title, .products .product h3, .products .product h4 {
+  background: transparent !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  font-size: 19px !important;
+}
+.products .product .product-desc, .products .product p,
+.products .product small, .products .product .cycle {
+  color: var(--kx-muted) !important;
+  font-size: 13px !important;
+}
+.products .product footer, .products .product .product-pricing,
+.products .product .price-container, .products .product .pricing {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.products .product .price, .products .product .product-pricing .amt,
+.products .product .qty-container {
+  color: #fff !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+}
+.products .product .btn, .products .product a.btn {
+  color: #fff !important;
+}
+.order-summary, .summary-container, .view-cart .order-summary, .cart-body .card {
+  background: var(--kx-surface) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: var(--kx-radius) !important;
+  color: var(--kx-text) !important;
+}
+.order-summary .summary-totals, .order-summary .promo-container { border-color: var(--kx-border) !important; }
+.view-cart .item, .review .item { background: var(--kx-surface) !important; border-color: var(--kx-border) !important; }
+.sub-heading span, .cart-body .sub-heading span { background: var(--kx-bg) !important; color: var(--kx-muted) !important; }
+/* Promo / tax tab panels: no leftover light slabs. */
+.tab-content, .tab-pane, .promo-container, .view-cart .tab-content,
+.cart-body .tab-content, #applyCredit, .apply-credit-container {
+  background: transparent !important;
+  border-color: var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+
+/* ---------- Virtutel NBN widgets ---------- */
+.vt-nbn-card, .vt-nbn-checker {
+  background: var(--kx-surface) !important;
+  border: 1px solid var(--kx-border) !important;
+  border-radius: var(--kx-radius) !important;
+  box-shadow: var(--kx-shadow) !important;
+  color: var(--kx-text) !important;
+}
+.vt-nbn-card table td { color: var(--kx-text) !important; }
+.vt-nbn-card table td:first-child { color: var(--kx-muted) !important; }
+.vt-nbn-card > div:first-child { color: var(--kx-brand) !important; }
+.vt-nbn-card > div:last-child, .vt-nbn-checker > div:nth-child(2) { color: var(--kx-muted) !important; }
+.vt-nbn-checker > div:first-child { color: var(--kx-amber) !important; }
+.vt-nbn-checker input {
+  background: var(--kx-bg-deep) !important;
+  border: 1px solid var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.vt-nbn-checker #vtqOut button {
+  background: var(--kx-surface-2) !important;
+  border: 1px solid var(--kx-border) !important;
+  color: var(--kx-text) !important;
+}
+.vt-nbn-checker button { border-radius: 999px; }
+
+/* ---------- Login / register: designed, not default ---------- */
+.card:has(form[action*="dologin"]), .panel:has(form[action*="dologin"]),
+.card:has(#inputNewPassword1), .card:has(form[action*="register"]) {
+  position: relative;
+  max-width: 460px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: 5vh !important;
+  border-radius: 18px !important;
+}
+.card:has(form[action*="dologin"])::before, .card:has(form[action*="register"])::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--kx-gradient);
+}
+.card:has(form[action*="dologin"]) h1, .card:has(form[action*="dologin"]) h2,
+.card:has(form[action*="dologin"]) h3, .card:has(form[action*="dologin"]) .card-title {
+  background: var(--kx-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  font-size: 34px !important;
+  letter-spacing: -.02em;
+}
+form[action*="dologin"] .btn-primary, form[action*="dologin"] input[type=submit] {
+  display: block;
+  width: 100% !important;
+  padding: 13px 0 !important;
+  font-size: 16px !important;
+  margin-top: 6px;
+}
+form[action*="dologin"] .custom-control { margin-top: 14px; }
+
+/* Checkboxes / radios: branded everywhere */
+input[type=checkbox], input[type=radio] {
+  accent-color: var(--kx-brand);
+  width: 17px; height: 17px;
+}
+.custom-control-input:checked ~ .custom-control-label::before {
+  background-color: var(--kx-brand) !important;
+  border-color: var(--kx-brand) !important;
+}
+.custom-control-label::before {
+  background-color: var(--kx-bg-deep) !important;
+  border-color: var(--kx-border) !important;
+}
+
+/* ---------- Misc ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--kx-bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--kx-surface-3); border-radius: 6px; }
+.modal-backdrop { background: #000 !important; }
+.close, .modal .close { color: var(--kx-text) !important; text-shadow: none; }
+code, pre {
+  background: var(--kx-bg-deep) !important;
+  color: #9fc1ff !important;
+  border-color: var(--kx-border) !important;
+  border-radius: 8px;
+}
+img.card-img-top { filter: brightness(.9); }
+
+/* ---------- one-row header (menu relocated beside the logo) ---------- */
+.kx-onerow { display:flex !important; align-items:center; gap:30px; flex-wrap:nowrap; }
+.kx-inline-nav { flex:1; min-width:0; }
+.kx-inline-nav .navbar-nav {
+  display:flex !important; flex-direction:row; align-items:center; gap:22px;
+  margin:0 !important; padding:0 !important; list-style:none;
+}
+.kx-inline-nav .navbar-nav > li { position:relative; margin:0 !important; }
+.kx-inline-nav .navbar-nav > li > a {
+  color:#c7cede !important; font-weight:600 !important; font-size:15px !important;
+  padding:6px 0 !important; white-space:nowrap;
+}
+.kx-inline-nav .navbar-nav > li > a:hover { color:#fff !important; }
+/* the Account/user dropdown hugs the right edge like the marketing nav */
+.kx-inline-nav .navbar-nav > li.dropdown:last-child,
+.kx-inline-nav .navbar-nav > li:last-child { margin-left:auto !important; }
+.kx-inline-nav .dropdown-menu { position:absolute; right:0; left:auto; top:100%; z-index:1050; }
+
+/* ---------- submit ticket: helper cards + form polish ---------- */
+.kx-ticket-help { margin: 0 0 22px; }
+.kx-urgent {
+  background: linear-gradient(135deg, rgba(226,163,54,.12), rgba(226,163,54,.05));
+  border: 1px solid #6b531f; border-radius: 12px; padding: 14px 18px;
+  font-size: 14.5px; color: #ecc575; margin-bottom: 12px; line-height: 1.55;
+}
+.kx-urgent a { color: #fff; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.kx-tips {
+  background: var(--kx-surface-1, #171e2e); border: 1px solid var(--kx-border, #2a3347);
+  border-radius: 12px; padding: 14px 18px; font-size: 13.5px;
+  color: var(--kx-text-muted, #98a2b8); line-height: 1.6;
+}
+.kx-tips strong { color: var(--kx-text, #e6e9f2); }
+.kx-tips ul { margin: 8px 0 0; padding-left: 4px; list-style: none; }
+.kx-tips li { margin: 4px 0; }
+.kx-tips li::before { content: '\2713'; color: #2fbf71; font-weight: 800; margin-right: 8px; }
+#frmTicketSubmit .form-control, .submitticket-body .form-control {
+  padding: 11px 14px; font-size: 15px; border-radius: 9px;
+}
+#frmTicketSubmit textarea.form-control { min-height: 190px; line-height: 1.6; }
+#frmTicketSubmit label, .submitticket-body label {
+  font-weight: 700; font-size: 13px; letter-spacing: .02em;
+}
+#frmTicketSubmit .btn-primary, .submitticket-body .btn-primary {
+  padding: 12px 30px; font-weight: 800; font-size: 15px; border-radius: 9px;
+}
+/* attachment rows breathe a little */
+#fileUploadsContainer .file-upload, .drag-and-drop-upload { margin-top: 8px; }
+
+/* ---------- header bar = marketing nav, exactly ----------
+   After the one-row relocation the visible bar is #header (the old
+   #main-menu is hidden), so IT must carry the marketing nav's look:
+   solid #0b0f1a, 1px #1c2436 hairline, ~72px tall. */
+#header, .app-header, header#header, #header.navbar, nav#header {
+  background: #0b0f1a !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-bottom: 1px solid #1c2436 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+/* height parity: marketing = 36px logo + 18px padding each side (72px).
+   brand already carries 8px, the row adds the last 10px. */
+.kx-onerow { padding-top: 10px !important; padding-bottom: 10px !important; }
+/* link tone parity with .kx-nav .links a */
+.kx-inline-nav .navbar-nav > li > a { color: #c7cede !important; }
+.kx-inline-nav .navbar-nav > li > a:hover { color: #fff !important; }
+
+/* ---------- .kx-pnav: the portal header, IDENTICAL to the marketing
+   .kx-nav by construction (keep both in step with site-shell.php) ---------- */
+.kx-pnav {
+  background: #0b0f1a;
+  border-bottom: 1px solid #1c2436;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  position: relative; z-index: 1040;
+}
+.kx-pnav .in {
+  width: 100%; margin: 0 auto; padding: 18px 15px;
+  display: flex; align-items: center; gap: 30px; flex-wrap: wrap;
+}
+@media (min-width: 576px)  { .kx-pnav .in { max-width: 540px; } }
+@media (min-width: 768px)  { .kx-pnav .in { max-width: 720px; } }
+@media (min-width: 992px)  { .kx-pnav .in { max-width: 960px; } }
+@media (min-width: 1200px) { .kx-pnav .in { max-width: 1140px; } }
+.kx-pnav .logo {
+  font-size: 24px; font-weight: 900; color: #fff; letter-spacing: .02em;
+  text-decoration: none; display: flex; align-items: center;
+}
+.kx-pnav .logo img {
+  height: 36px; display: block;
+  filter: invert(1) hue-rotate(180deg) brightness(1.05);
+}
+.kx-pnav .links {
+  display: flex; gap: 22px; flex-wrap: wrap; margin-left: auto;
+  align-items: center;
+}
+.kx-pnav .links a {
+  color: #c7cede; font-weight: 600; font-size: 15px; text-decoration: none;
+  white-space: nowrap; transition: color .15s;
+}
+.kx-pnav .links a:hover { color: #fff; text-decoration: none; }
+.kx-pnav .links a.on { color: #fff; border-bottom: 2px solid #4d8dff; padding-bottom: 3px; }
+@media (max-width: 640px) { .kx-pnav .links { gap: 16px; } }

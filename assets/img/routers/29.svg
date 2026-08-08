@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 300">
+  <defs>
+    <linearGradient id="body29" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#edeff3"/>
+    </linearGradient>
+    <linearGradient id="pod29" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e8eaef"/>
+    </linearGradient>
+    <linearGradient id="band29" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d7dbe2"/>
+      <stop offset="1" stop-color="#aeb5c0"/>
+    </linearGradient>
+    <filter id="soft29" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="11" flood-color="#0a0e18" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- gateway (behind) -->
+  <g filter="url(#soft29)">
+    <path d="M42 168 l6 -110 a16 16 0 0 1 16 -15 h150 a16 16 0 0 1 16 15 l6 110 z"
+          fill="url(#body29)" stroke="#dde1e8" stroke-width="2"/>
+    <rect x="46" y="164" width="186" height="12" rx="4" fill="#c8cdd6"/>
+  </g>
+  <g fill="#b3bac5">
+    <circle cx="84" cy="74" r="2.4"/><circle cx="102" cy="74" r="2.4"/>
+    <circle cx="120" cy="74" r="2.4"/><circle cx="138" cy="74" r="2.4"/>
+    <circle cx="156" cy="74" r="2.4"/><circle cx="174" cy="74" r="2.4"/>
+    <circle cx="192" cy="74" r="2.4"/>
+  </g>
+  <g fill="none" stroke="#9aa2ae" stroke-width="2.4" stroke-linecap="round">
+    <path d="M96 138 a7 7 0 1 1 7 7 a7 7 0 1 1 -7 -7"/>
+  </g>
+  <text x="116" y="147" font-size="10" font-weight="700" letter-spacing="1"
+        fill="#8f97a4" font-family="Arial, Helvetica, sans-serif">CLOUD MESH</text>
+
+  <!-- satellite pod, back right -->
+  <g filter="url(#soft29)">
+    <path d="M236 158 h44 a9 9 0 0 1 9 8 l7 74 h-76 l7 -74 a9 9 0 0 1 9 -8z"
+          fill="url(#pod29)" stroke="#dde1e8" stroke-width="1.6"/>
+    <rect x="216" y="238" width="84" height="18" rx="9" fill="url(#band29)"/>
+    <rect x="222" y="254" width="72" height="8" rx="4" fill="#5b626e"/>
+  </g>
+  <g fill="none" stroke="#a6adb9" stroke-width="2.2" stroke-linecap="round">
+    <path d="M248 196 a6 6 0 1 1 6 6 a6 6 0 1 1 -6 -6"/>
+  </g>
+  <text x="240" y="218" font-size="8.5" font-weight="700" letter-spacing="1"
+        fill="#9aa2ae" font-family="Arial, Helvetica, sans-serif">CLOUD MESH</text>
+
+  <!-- satellite pod, front -->
+  <g filter="url(#soft29)">
+    <path d="M128 148 h52 a10 10 0 0 1 10 9 l8 86 h-88 l8 -86 a10 10 0 0 1 10 -9z"
+          fill="url(#pod29)" stroke="#dde1e8" stroke-width="1.6"/>
+    <rect x="104" y="240" width="100" height="21" rx="10" fill="url(#band29)"/>
+    <rect x="111" y="258" width="86" height="9" rx="4.5" fill="#5b626e"/>
+  </g>
+  <g fill="none" stroke="#a6adb9" stroke-width="2.4" stroke-linecap="round">
+    <path d="M144 190 a7 7 0 1 1 7 7 a7 7 0 1 1 -7 -7"/>
+  </g>
+  <text x="132" y="216" font-size="9.5" font-weight="700" letter-spacing="1"
+        fill="#9aa2ae" font-family="Arial, Helvetica, sans-serif">CLOUD MESH</text>
+
+  <ellipse cx="180" cy="276" rx="120" ry="6" fill="#0a0e18" opacity="0.15"/>
+</svg>
