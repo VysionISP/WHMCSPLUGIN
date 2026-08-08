@@ -24,8 +24,14 @@ Module path: `modules/servers/virtutelnbn/`
 1. Copy `modules/servers/virtutelnbn/` into your WHMCS installation.
 2. Create the server entry (Setup → Products/Services → Servers):
    - **Hostname**: VirtuTel API base URL (HTTPS enforced)
-   - **Password**: VirtuTel API key (WHMCS stores it encrypted)
+   - **Username**: VirtuTel Client ID
+   - **Password**: VirtuTel Client Secret (WHMCS stores it encrypted)
    - **Access Hash**: webhook shared secret — generate with `openssl rand -hex 32`
+
+   You never enter an access token yourself: the module exchanges the Client
+   ID + Secret for a ~28-day token, caches it encrypted in the database
+   (`mod_virtutel_token`), renews it automatically 2 days before expiry
+   (checked on every WHMCS cron run), and refreshes immediately on a 401.
 3. Configure your NBN product(s): Module Settings tab → VirtuTel NBN Provisioning → set the Plan Code.
 4. Add two **custom fields** to each NBN product (admin-only or on order form as you prefer):
    - `NBN Location ID` (preferred, e.g. `LOC000012345678`)

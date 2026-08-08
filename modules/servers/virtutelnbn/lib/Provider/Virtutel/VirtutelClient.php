@@ -2,6 +2,7 @@
 
 namespace Vysion\VirtutelNbn\Provider\Virtutel;
 
+use Vysion\VirtutelNbn\Auth\TokenProviderInterface;
 use Vysion\VirtutelNbn\Exception\ApiException;
 use Vysion\VirtutelNbn\Exception\AuthException;
 use Vysion\VirtutelNbn\Repository\ApiLogRepository;
@@ -11,7 +12,10 @@ use Vysion\VirtutelNbn\Repository\ApiLogRepository;
  *
  * Security properties:
  *  - HTTPS enforced upstream (Config), TLS peer + host verification ON.
- *  - Bearer auth; the token is never logged (headers are redacted).
+ *  - Bearer auth via TokenProviderInterface (client-credentials tokens,
+ *    auto-renewed); the token is never logged.
+ *  - A 401 triggers exactly one forced token refresh + retry — expired
+ *    tokens self-heal without failing the WHMCS action.
  *  - Bounded timeouts and bounded retries with backoff on transient errors.
  *  - Request/response bodies logged with sensitive keys redacted.
  */
@@ -24,7 +28,7 @@ final class VirtutelClient
 
     public function __construct(
         private readonly string $baseUrl,
-        private readonly string $apiKey,
+        private readonly TokenProviderInterface $tokenProvider,
         private readonly ?ApiLogRepository $log = null,
     ) {
     }
@@ -38,13 +42,15 @@ final class VirtutelClient
         $json = $body === null ? null : json_encode($body, JSON_UNESCAPED_SLASHES);
 
         $attempt = 0;
+        $authRetried = false;
         $lastError = null;
+        $accessToken = $this->tokenProvider->token();
 
         while ($attempt < self::MAX_ATTEMPTS) {
             $attempt++;
             $started = microtime(true);
 
-            [$status, $responseBody, $curlError] = $this->execute($method, $url, $json);
+            [$status, $responseBody, $curlError] = $this->execute($method, $url, $json, $accessToken);
 
             $durationMs = (int) round((microtime(true) - $started) * 1000);
             $decoded = $responseBody !== null ? json_decode($responseBody, true) : null;
@@ -72,8 +78,19 @@ final class VirtutelClient
                 );
             }
 
-            if ($status === 401 || $status === 403) {
-                throw new AuthException('VirtuTel API rejected the credentials (HTTP ' . $status . ').', $status);
+            if ($status === 401) {
+                // Token likely expired: force one refresh and retry.
+                if (!$authRetried) {
+                    $authRetried = true;
+                    $attempt--; // auth retry doesn't consume a transient-error attempt
+                    $accessToken = $this->tokenProvider->token(true);
+                    continue;
+                }
+                throw new AuthException('VirtuTel API rejected the access token even after renewal (HTTP 401).', $status);
+            }
+
+            if ($status === 403) {
+                throw new AuthException('VirtuTel API denied access to this resource (HTTP 403).', $status);
             }
 
             if ($status >= 400) {
@@ -92,12 +109,12 @@ final class VirtutelClient
     /**
      * @return array{0: ?int, 1: ?string, 2: ?string} [httpStatus, body, curlError]
      */
-    private function execute(string $method, string $url, ?string $json): array
+    private function execute(string $method, string $url, ?string $json, string $accessToken): array
     {
         $ch = curl_init($url);
         $headers = [
             'Accept: application/json',
-            'Authorization: Bearer ' . $this->apiKey,
+            'Authorization: Bearer ' . $accessToken,
         ];
         if ($json !== null) {
             $headers[] = 'Content-Type: application/json';

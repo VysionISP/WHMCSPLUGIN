@@ -50,18 +50,24 @@ don't touch WHMCS state).
 
 ## Security decisions
 
-1. Secrets live in the WHMCS server record (Password is WHMCS-encrypted); never
-   in code or module tables.
-2. Outbound: HTTPS enforced at config parse time, TLS peer verification on,
+1. Secrets live in the WHMCS server record (Username = Client ID, Password =
+   Client Secret, WHMCS-encrypted); never in code. Access tokens obtained from
+   them are cached WHMCS-encrypted in `mod_virtutel_token`.
+2. Auth: OAuth2-style client-credentials flow (`Auth/TokenManager`). VirtuTel
+   issues ~28-day access tokens; the manager renews 2 days before expiry, a
+   cron keep-alive (hooks.php) guarantees renewal even with no traffic, and a
+   401 from the API triggers exactly one forced refresh + retry in
+   `VirtutelClient`.
+3. Outbound: HTTPS enforced at config parse time, TLS peer verification on,
    bounded timeouts and retries, bearer auth, log redaction
    (`VirtutelClient::redact`).
-3. Inbound: HMAC-SHA256 over `timestamp.body`, constant-time compare, ±300 s
+4. Inbound: HMAC-SHA256 over `timestamp.body`, constant-time compare, ±300 s
    replay window, 1 MiB payload cap, POST-only, generic error bodies,
    unique-event-id idempotency.
-4. Webhook payloads are treated as *signals*, not facts: transitions to
+5. Webhook payloads are treated as *signals*, not facts: transitions to
    active/cancelled/terminated re-fetch the order from the API before WHMCS
    state changes.
-5. Processing is asynchronous (cron) so the public endpoint does minimal work
+6. Processing is asynchronous (cron) so the public endpoint does minimal work
    under attacker-controllable input.
 
 ## Incremental roadmap

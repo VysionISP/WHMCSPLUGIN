@@ -4,7 +4,9 @@
  *
  * Server credential mapping (Setup > Products/Services > Servers):
  *   Hostname    = VirtuTel API base URL
- *   Password    = VirtuTel API key (encrypted by WHMCS)
+ *   Username    = VirtuTel Client ID
+ *   Password    = VirtuTel Client Secret (encrypted by WHMCS); exchanged
+ *                 for a ~28-day access token, auto-renewed by TokenManager
  *   Access Hash = Webhook shared secret (HMAC key)
  *
  * Webhook endpoint to register with VirtuTel:

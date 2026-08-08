@@ -2,6 +2,7 @@
 
 namespace Vysion\VirtutelNbn\Service;
 
+use Vysion\VirtutelNbn\Auth\TokenManager;
 use Vysion\VirtutelNbn\Config;
 use Vysion\VirtutelNbn\Exception\ModuleException;
 use Vysion\VirtutelNbn\Installer;
@@ -11,6 +12,7 @@ use Vysion\VirtutelNbn\Provider\Virtutel\VirtutelProvider;
 use Vysion\VirtutelNbn\Repository\ApiLogRepository;
 use Vysion\VirtutelNbn\Repository\OrderRepository;
 use Vysion\VirtutelNbn\Repository\ServiceRepository;
+use Vysion\VirtutelNbn\Repository\TokenRepository;
 
 /**
  * Orchestrates WHMCS module actions against the upstream provider and the
@@ -31,7 +33,13 @@ final class ProvisioningService
     {
         Installer::ensureInstalled();
         $config = new Config($params);
-        $client = new VirtutelClient($config->apiBaseUrl(), $config->apiKey(), new ApiLogRepository());
+        $tokens = new TokenManager(
+            $config->apiBaseUrl(),
+            $config->clientId(),
+            $config->clientSecret(),
+            new TokenRepository(),
+        );
+        $client = new VirtutelClient($config->apiBaseUrl(), $tokens, new ApiLogRepository());
         $provider = new VirtutelProvider($client);
 
         return new self($provider, new ServiceRepository(), new OrderRepository(), new QualificationService($provider));

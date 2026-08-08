@@ -65,6 +65,16 @@ final class Installer
             });
         }
 
+        if (!$schema->hasTable('mod_virtutel_token')) {
+            $schema->create('mod_virtutel_token', function (Blueprint $table) {
+                $table->increments('id');
+                $table->string('provider', 32)->unique();
+                $table->text('access_token'); // stored WHMCS-encrypted
+                $table->timestamp('expires_at')->nullable();
+                $table->timestamp('updated_at')->nullable();
+            });
+        }
+
         if (!$schema->hasTable('mod_virtutel_api_log')) {
             $schema->create('mod_virtutel_api_log', function (Blueprint $table) {
                 $table->increments('id');

@@ -9,7 +9,9 @@ use Vysion\VirtutelNbn\Exception\ConfigurationException;
  *
  * Credential mapping (WHMCS server record for the "VirtuTel NBN" server):
  *   - Hostname     -> API base URL (https://...)
- *   - Password     -> API key / bearer token (stored encrypted by WHMCS)
+ *   - Username     -> VirtuTel Client ID
+ *   - Password     -> VirtuTel Client Secret (stored encrypted by WHMCS);
+ *                     exchanged for a ~28-day access token by TokenManager
  *   - Access Hash  -> Webhook shared secret (HMAC key for inbound webhooks)
  *
  * Product-level module settings (ConfigOptions):
@@ -38,14 +40,24 @@ final class Config
         return rtrim($host, '/');
     }
 
-    public function apiKey(): string
+    public function clientId(): string
     {
-        $key = (string) ($this->params['serverpassword'] ?? '');
-        if ($key === '') {
-            throw new ConfigurationException('VirtuTel API key is not set on the server record (Password field).');
+        $id = trim((string) ($this->params['serverusername'] ?? ''));
+        if ($id === '') {
+            throw new ConfigurationException('VirtuTel Client ID is not set on the server record (Username field).');
         }
 
-        return $key;
+        return $id;
+    }
+
+    public function clientSecret(): string
+    {
+        $secret = (string) ($this->params['serverpassword'] ?? '');
+        if ($secret === '') {
+            throw new ConfigurationException('VirtuTel Client Secret is not set on the server record (Password field).');
+        }
+
+        return $secret;
     }
 
     public function webhookSecret(): string
