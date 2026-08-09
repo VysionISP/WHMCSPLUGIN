@@ -751,13 +751,20 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 } else {
                     $aaa = (new \WHMCS\Module\Server\VirtutelNbn\Radius\FreeRadiusSqlProvisioner($radiusConfig))
                         ->status((string) $row->avc_id);
-                    if ($aaa !== null) {
-                        $fields['RADIUS'] = '<span style="color:#1d9e55;font-weight:700">&#10003; Provisioned</span>'
-                            . ' <small style="color:#667">group <code>'
-                            . htmlspecialchars($aaa['group'] !== '' ? $aaa['group'] : '(none!)') . '</code>'
+                    if ($aaa !== null && $aaa['group'] === '') {
+                        $fields['RADIUS'] = '<span style="color:#a3690e;font-weight:700">&#9888; Half-provisioned</span>'
+                            . ' <small style="color:#667">radcheck exists but no group row &mdash; use the '
+                            . '<strong>Add to RADIUS</strong> button to repair'
                             . ($aaa['rate'] !== ''
                                 ? ' &middot; rate <code>' . htmlspecialchars($aaa['rate']) . '</code>' : '')
                             . '</small>';
+                    } elseif ($aaa !== null) {
+                        $fields['RADIUS'] = '<span style="color:#1d9e55;font-weight:700">&#10003; Provisioned</span>'
+                            . ' <small style="color:#667">group <code>' . htmlspecialchars($aaa['group']) . '</code>'
+                            . ($aaa['rate'] !== ''
+                                ? ' &middot; rate <code>' . htmlspecialchars($aaa['rate']) . '</code>'
+                                : '')
+                            . ' <span title="MikroTik rate-limit is rx/tx: upload/download">&#9432;</span></small>';
                     } else {
                         $fields['RADIUS'] = '<span style="color:#c0392b;font-weight:700">&#10007; Not in RADIUS</span>'
                             . ' <small style="color:#667">sessions on this AVC will not authenticate &mdash; '
@@ -1404,11 +1411,15 @@ function virtutel_nbn_AdminCustomButtonArray(array $params = []): array
             $avc = (string) ($row->avc_id ?? '');
             if ($avc !== '') {
                 $radiusConfig = \WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::load();
-                if (\WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::isConfigured($radiusConfig)
-                    && !(new \WHMCS\Module\Server\VirtutelNbn\Radius\FreeRadiusSqlProvisioner($radiusConfig))
-                        ->exists($avc)
-                ) {
-                    $buttons = ['Add to RADIUS' => 'addtoradius'] + $buttons;
+                if (\WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::isConfigured($radiusConfig)) {
+                    // Offer the button when the AVC is missing OR only
+                    // half-provisioned (radcheck present but no group row —
+                    // it would authenticate with no active/suspended state).
+                    $aaa = (new \WHMCS\Module\Server\VirtutelNbn\Radius\FreeRadiusSqlProvisioner($radiusConfig))
+                        ->status($avc);
+                    if ($aaa === null || $aaa['group'] === '') {
+                        $buttons = ['Add to RADIUS' => 'addtoradius'] + $buttons;
+                    }
                 }
             }
         }
