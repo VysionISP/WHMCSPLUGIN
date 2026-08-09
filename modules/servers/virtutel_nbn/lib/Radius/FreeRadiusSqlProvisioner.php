@@ -41,6 +41,40 @@ class FreeRadiusSqlProvisioner implements RadiusProvisioner
             $pdo->rollBack();
             throw $e;
         }
+
+        $this->ensureUserinfo($pdo, $avcId);
+    }
+
+    /**
+     * daloRADIUS bookkeeping: its user list is driven by its own userinfo
+     * table, so subscribers written directly to the RADIUS tables are
+     * invisible in the GUI without a row there. Purely cosmetic — skipped
+     * silently when daloRADIUS (or its schema variant) isn't present.
+     */
+    private function ensureUserinfo(\PDO $pdo, string $avcId): void
+    {
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?'
+            );
+            $stmt->execute([$this->config['db_name'], 'userinfo']);
+            if ((int) $stmt->fetchColumn() === 0) {
+                return;
+            }
+
+            $exists = $pdo->prepare('SELECT COUNT(*) FROM userinfo WHERE username = ?');
+            $exists->execute([$avcId]);
+            if ((int) $exists->fetchColumn() > 0) {
+                return;
+            }
+
+            $pdo->prepare(
+                'INSERT INTO userinfo (username, notes, creationdate, creationby) VALUES (?, ?, NOW(), ?)'
+            )->execute([$avcId, 'Provisioned by WHMCS (Virtutel NBN module)', 'whmcs']);
+        } catch (\Throwable $e) {
+            // Older/newer daloRADIUS schemas differ — never let GUI
+            // bookkeeping break AAA provisioning.
+        }
     }
 
     public function applySpeed(string $avcId, string $speedTier): void
@@ -64,6 +98,11 @@ class FreeRadiusSqlProvisioner implements RadiusProvisioner
         $pdo = $this->pdo();
         foreach (['radcheck', 'radreply', 'radusergroup'] as $table) {
             $pdo->prepare("DELETE FROM {$table} WHERE username = ?")->execute([$avcId]);
+        }
+        try {
+            $pdo->prepare('DELETE FROM userinfo WHERE username = ?')->execute([$avcId]);
+        } catch (\Throwable $e) {
+            // daloRADIUS not installed — nothing to clean up.
         }
     }
 
