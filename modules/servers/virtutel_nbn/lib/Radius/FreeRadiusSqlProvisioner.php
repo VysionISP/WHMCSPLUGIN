@@ -87,6 +87,34 @@ class FreeRadiusSqlProvisioner implements RadiusProvisioner
         return (int) $stmt->fetchColumn() > 0;
     }
 
+    /**
+     * Current AAA state for the admin service tab.
+     *
+     * @return array{group: string, rate: string}|null null when the
+     *         subscriber is not provisioned at all
+     */
+    public function status(string $avcId): ?array
+    {
+        if (!$this->exists($avcId)) {
+            return null;
+        }
+
+        $pdo = $this->pdo();
+        $group = $pdo->prepare(
+            'SELECT groupname FROM radusergroup WHERE username = ? ORDER BY priority LIMIT 1'
+        );
+        $group->execute([$avcId]);
+        $rate = $pdo->prepare(
+            'SELECT value FROM radreply WHERE username = ? AND attribute = ? LIMIT 1'
+        );
+        $rate->execute([$avcId, $this->config['rate_limit_attr']]);
+
+        return [
+            'group' => (string) ($group->fetchColumn() ?: ''),
+            'rate' => (string) ($rate->fetchColumn() ?: ''),
+        ];
+    }
+
     /** Connectivity/schema check for the admin Test button. */
     public function healthCheck(): array
     {

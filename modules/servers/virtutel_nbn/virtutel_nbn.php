@@ -739,6 +739,37 @@ function virtutel_nbn_AdminServicesTabFields(array $params): array
                 . date('Y-m-d H:i', (int) ($cpe['at'] ?? 0)) . ')</small>';
         }
 
+        // RADIUS (AAA) presence: green when the AVC is provisioned in
+        // FreeRADIUS, red with a pointer to the Add to RADIUS button when
+        // missing — a session on an unprovisioned AVC will not authenticate.
+        if ($row && (string) ($row->avc_id ?? '') !== '') {
+            try {
+                $radiusConfig = \WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::load();
+                if (!\WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::isConfigured($radiusConfig)) {
+                    $fields['RADIUS'] = '<span style="color:#889">FreeRADIUS not configured '
+                        . '(Addons &rarr; Virtutel NBN Tools &rarr; Configure).</span>';
+                } else {
+                    $aaa = (new \WHMCS\Module\Server\VirtutelNbn\Radius\FreeRadiusSqlProvisioner($radiusConfig))
+                        ->status((string) $row->avc_id);
+                    if ($aaa !== null) {
+                        $fields['RADIUS'] = '<span style="color:#1d9e55;font-weight:700">&#10003; Provisioned</span>'
+                            . ' <small style="color:#667">group <code>'
+                            . htmlspecialchars($aaa['group'] !== '' ? $aaa['group'] : '(none!)') . '</code>'
+                            . ($aaa['rate'] !== ''
+                                ? ' &middot; rate <code>' . htmlspecialchars($aaa['rate']) . '</code>' : '')
+                            . '</small>';
+                    } else {
+                        $fields['RADIUS'] = '<span style="color:#c0392b;font-weight:700">&#10007; Not in RADIUS</span>'
+                            . ' <small style="color:#667">sessions on this AVC will not authenticate &mdash; '
+                            . 'use the <strong>Add to RADIUS</strong> module command button to provision it.</small>';
+                    }
+                }
+            } catch (\Throwable $e) {
+                $fields['RADIUS'] = '<span style="color:#c0392b">RADIUS check failed: '
+                    . htmlspecialchars($e->getMessage()) . '</span>';
+            }
+        }
+
         // Diagnostic tests: per-technology picker (runs on Save Changes)
         // and the last few results.
         if ($row && (string) ($row->avc_id ?? '') !== '') {
@@ -1350,28 +1381,94 @@ function virtutel_nbn_handle_test_request(int $serviceId): void
  */
 function virtutel_nbn_AdminCustomButtonArray(array $params = []): array
 {
-    // Only offer the health check once the service is linked to Virtutel.
-    try {
-        $serviceId = (int) ($params['serviceid'] ?? 0);
-        if ($serviceId > 0) {
-            $linked = WHMCS\Database\Capsule::table('mod_virtutel_services')
-                ->where('whmcs_service_id', $serviceId)
-                ->value('vt_service_id');
-            if ((string) $linked === '') {
-                return [];
-            }
-        }
-    } catch (\Throwable $e) {
-        // fall through — show the button rather than hide functionality
-    }
-
-    return [
+    $buttons = [
         'Run Service Health Check' => 'runhealthcheck',
         'Refresh from Virtutel' => 'refreshfromvt',
         'AVC Utilisation' => 'avcutil',
         'Reset Daily Test Limit' => 'resetdailytests',
         'Cancel Service (Disconnect)' => 'cancelservice',
     ];
+
+    // Only offer module commands once the service is linked to Virtutel;
+    // offer Add to RADIUS only while the AVC is missing from AAA.
+    try {
+        $serviceId = (int) ($params['serviceid'] ?? 0);
+        if ($serviceId > 0) {
+            $row = WHMCS\Database\Capsule::table('mod_virtutel_services')
+                ->where('whmcs_service_id', $serviceId)
+                ->first();
+            if ((string) ($row->vt_service_id ?? '') === '') {
+                return [];
+            }
+
+            $avc = (string) ($row->avc_id ?? '');
+            if ($avc !== '') {
+                $radiusConfig = \WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::load();
+                if (\WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::isConfigured($radiusConfig)
+                    && !(new \WHMCS\Module\Server\VirtutelNbn\Radius\FreeRadiusSqlProvisioner($radiusConfig))
+                        ->exists($avc)
+                ) {
+                    $buttons = ['Add to RADIUS' => 'addtoradius'] + $buttons;
+                }
+            }
+        }
+    } catch (\Throwable $e) {
+        // fall through — show the buttons rather than hide functionality
+    }
+
+    return $buttons;
+}
+
+/**
+ * Manually provision this service's AVC into FreeRADIUS (radcheck /
+ * radreply / radusergroup). Normally automatic when a connect order
+ * completes — this button covers services linked after the fact, imports
+ * from another platform, or a repaired AAA database.
+ */
+function virtutel_nbn_addtoradius(array $params): string
+{
+    try {
+        Migrations::ensure();
+
+        $serviceId = (int) $params['serviceid'];
+        $row = WHMCS\Database\Capsule::table('mod_virtutel_services')
+            ->where('whmcs_service_id', $serviceId)
+            ->first();
+
+        $avc = (string) ($row->avc_id ?? '');
+        if ($avc === '') {
+            return 'No AVC ID on file for this service — link it to a Virtutel service first.';
+        }
+
+        $speedTier = trim((string) ($row->speed_tier ?? ''));
+        if ($speedTier === '') {
+            $speedTier = trim((string) ($params['configoption1'] ?? ''));
+        }
+        if ($speedTier === '') {
+            return 'No speed tier on the service or product — set the product\'s Speed Tier and try again.';
+        }
+
+        $radiusConfig = \WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::load();
+        if (!\WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::isConfigured($radiusConfig)) {
+            return 'FreeRADIUS is not configured (Addons > Virtutel NBN Tools > Configure).';
+        }
+
+        $provisioner = new \WHMCS\Module\Server\VirtutelNbn\Radius\FreeRadiusSqlProvisioner($radiusConfig);
+        $already = $provisioner->exists($avc);
+        $provisioner->provision($avc, $speedTier);
+
+        logActivity(sprintf(
+            'Virtutel NBN: %s AVC %s in FreeRADIUS (%s) via admin button (service #%d)',
+            $already ? 'refreshed' : 'provisioned',
+            $avc,
+            $speedTier,
+            $serviceId
+        ));
+
+        return 'success';
+    } catch (\Throwable $e) {
+        return 'RADIUS provisioning failed: ' . $e->getMessage();
+    }
 }
 
 /**
