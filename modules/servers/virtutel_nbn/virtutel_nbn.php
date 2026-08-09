@@ -1412,14 +1412,14 @@ function virtutel_nbn_AdminCustomButtonArray(array $params = []): array
             if ($avc !== '') {
                 $radiusConfig = \WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::load();
                 if (\WHMCS\Module\Server\VirtutelNbn\Radius\RadiusConfig::isConfigured($radiusConfig)) {
-                    // Offer the button when the AVC is missing OR only
-                    // half-provisioned (radcheck present but no group row —
-                    // it would authenticate with no active/suspended state).
+                    // Always offer AAA provisioning: "Add" while the AVC is
+                    // missing or half-provisioned (no group row), "Re-sync"
+                    // once present — same handler, rewrites all rows from
+                    // the service's current state.
                     $aaa = (new \WHMCS\Module\Server\VirtutelNbn\Radius\FreeRadiusSqlProvisioner($radiusConfig))
                         ->status($avc);
-                    if ($aaa === null || $aaa['group'] === '') {
-                        $buttons = ['Add to RADIUS' => 'addtoradius'] + $buttons;
-                    }
+                    $label = ($aaa === null || $aaa['group'] === '') ? 'Add to RADIUS' : 'Re-sync RADIUS';
+                    $buttons = [$label => 'addtoradius'] + $buttons;
                 }
             }
         }
