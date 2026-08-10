@@ -41,22 +41,36 @@ $plans = [
 // --- product group -----------------------------------------------------
 $gid = Capsule::table('tblproductgroups')->where('name', 'NBN Plans')->value('id');
 if (!$gid) {
-    $groupRow = [
+    // Schema drifts between WHMCS versions (9 dropped disabledordertypes,
+    // added slug/timestamps) — insert only columns that actually exist.
+    $columns = array_map(
+        fn ($row) => (array) $row,
+        Capsule::select(
+            'SELECT COLUMN_NAME AS c FROM information_schema.columns'
+            . " WHERE table_schema = DATABASE() AND table_name = 'tblproductgroups'"
+        )
+    );
+    $columns = array_map(fn ($row) => strtolower((string) ($row['c'] ?? $row['C'] ?? '')), $columns);
+
+    $candidates = [
         'name' => 'NBN Plans',
+        'slug' => 'nbn-plans',
         'headline' => 'NBN Internet',
         'tagline' => 'Fast, local NBN — no lock-ins',
         'orderfrmtpl' => '',
         'disabledordertypes' => '',
         'hidden' => 0,
         'order' => 1,
+        'created_at' => date('Y-m-d H:i:s'),
+        'updated_at' => date('Y-m-d H:i:s'),
     ];
-    try {
-        $gid = Capsule::table('tblproductgroups')->insertGetId($groupRow);
-    } catch (\Throwable $e) {
-        // Some schema versions require a slug column.
-        $groupRow['slug'] = 'nbn-plans';
-        $gid = Capsule::table('tblproductgroups')->insertGetId($groupRow);
-    }
+    $groupRow = array_filter(
+        $candidates,
+        fn ($key) => in_array(strtolower($key), $columns, true),
+        ARRAY_FILTER_USE_KEY
+    );
+
+    $gid = Capsule::table('tblproductgroups')->insertGetId($groupRow);
     echo "Created product group 'NBN Plans' (gid {$gid})\n";
 } else {
     echo "Product group 'NBN Plans' exists (gid {$gid})\n";
